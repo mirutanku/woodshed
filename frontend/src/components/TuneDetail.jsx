@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
+import AudioPlayer from './AudioPlayer'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
@@ -14,11 +15,32 @@ function TuneDetail({ tuneId, onBack }) {
   const [saving, setSaving] = useState(false)
   const [expandedRecording, setExpandedRecording] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [recordingSegments, setRecordingSegments] = useState({})
+  const [playbackTime, setPlaybackTime] = useState(0)
 
   useEffect(() => {
     fetchTune()
     fetchRecordings()
   }, [tuneId])
+
+  useEffect(() => {
+    if (expandedRecording && !recordingSegments[expandedRecording]) {
+      fetchSegments(expandedRecording)
+    }
+  }, [expandedRecording])
+
+  async function fetchSegments(recordingId) {
+    try {
+      const res = await api.get(`/recordings/${recordingId}/segments`)
+      setRecordingSegments(prev => ({ ...prev, [recordingId]: res.data }))
+    } catch (err) {
+      console.error('Failed to fetch segments:', err)
+    }
+  }
+
+  function handleSegmentsChanged(recordingId) {
+    fetchSegments(recordingId)
+  }
 
   async function fetchTune() {
     try {
@@ -280,45 +302,56 @@ function TuneDetail({ tuneId, onBack }) {
         </div>
       ) : (
         <div className="recording-list">
-          {recordings.map(rec => (
-            <div key={rec.id}>
-              <div className="recording-item">
-                <div className="recording-info">
-                  <span className="recording-name">{rec.original_name}</span>
-                  <div className="recording-meta">
-                    {rec.artist && <span>{rec.artist}</span>}
-                    <span>{formatFileSize(rec.file_size)}</span>
-                    <span>{formatDate(rec.created_at)}</span>
+          {recordings.map(rec => {
+            const isExpanded = expandedRecording === rec.id
+            const segments = recordingSegments[rec.id] || []
+            return (
+              <div key={rec.id}>
+                <div
+                  className={`recording-item ${isExpanded ? 'expanded' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setExpandedRecording(isExpanded ? null : rec.id)}
+                >
+                  <div className="recording-info">
+                    <span className="recording-name">{rec.original_name}</span>
+                    <div className="recording-meta">
+                      {rec.artist && <span>{rec.artist}</span>}
+                      {rec.key && <span>{rec.key}</span>}
+                      <span>{formatFileSize(rec.file_size)}</span>
+                      <span>{formatDate(rec.created_at)}</span>
+                    </div>
+                    {rec.description && (
+                      <span className="text-sm text-dim mt-sm">{rec.description}</span>
+                    )}
                   </div>
-                  {rec.description && (
-                    <span className="text-sm text-dim mt-sm">{rec.description}</span>
-                  )}
+                  <div className="recording-actions">
+                    <span className="text-dim">{isExpanded ? '▾' : '▸'}</span>
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{ color: 'var(--color-danger)' }}
+                      onClick={e => { e.stopPropagation(); handleDeleteRecording(rec.id) }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-                <div className="recording-actions">
-                  <button
-                    className="btn-ghost btn-sm"
-                    onClick={() =>
-                      setExpandedRecording(expandedRecording === rec.id ? null : rec.id)
-                    }
-                  >
-                    {expandedRecording === rec.id ? 'Hide Segments' : 'Segments'}
-                  </button>
-                  <button
-                    className="btn-ghost btn-sm"
-                    style={{ color: 'var(--color-danger)' }}
-                    onClick={() => handleDeleteRecording(rec.id)}
-                  >
-                    ×
-                  </button>
-                </div>
+                {isExpanded && (
+                  <div className="recording-expanded fade-in">
+                    <AudioPlayer
+                      filename={rec.filename}
+                      segments={segments}
+                      onTimeUpdate={setPlaybackTime}
+                    />
+                    <SegmentList
+                      recordingId={rec.id}
+                      onChanged={() => handleSegmentsChanged(rec.id)}
+                      playbackTime={playbackTime}
+                    />
+                  </div>
+                )}
               </div>
-              {expandedRecording === rec.id && (
-                <div style={{ marginLeft: 'var(--space-lg)', marginTop: 'var(--space-sm)' }}>
-                  <SegmentList recordingId={rec.id} />
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

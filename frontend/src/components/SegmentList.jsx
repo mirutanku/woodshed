@@ -7,12 +7,13 @@ const SEGMENT_COLORS = [
 ]
 
 function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
+  const s = Math.round(seconds)
+  const mins = Math.floor(s / 60)
+  const secs = s % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function SegmentList({ recordingId }) {
+function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
   const [segments, setSegments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -53,12 +54,20 @@ function SegmentList({ recordingId }) {
 
   function startEdit(segment) {
     setLabel(segment.label)
-    setStartTime(segment.start_time.toString())
-    setEndTime(segment.end_time.toString())
+    setStartTime(Math.round(segment.start_time).toString())
+    setEndTime(Math.round(segment.end_time).toString())
     setColor(segment.color || SEGMENT_COLORS[0])
     setNotes(segment.notes || '')
     setEditingId(segment.id)
     setShowForm(true)
+  }
+
+  function markStart() {
+    setStartTime(Math.round(playbackTime).toString())
+  }
+
+  function markEnd() {
+    setEndTime(Math.round(playbackTime).toString())
   }
 
   async function handleSubmit(e) {
@@ -69,8 +78,8 @@ function SegmentList({ recordingId }) {
     try {
       const payload = {
         label: label.trim(),
-        start_time: parseFloat(startTime),
-        end_time: parseFloat(endTime),
+        start_time: parseInt(startTime, 10),
+        end_time: parseInt(endTime, 10),
         color,
         notes: notes.trim() || null,
       }
@@ -82,6 +91,7 @@ function SegmentList({ recordingId }) {
       }
 
       await fetchSegments()
+      if (onChanged) onChanged()
       resetForm()
     } catch (err) {
       console.error('Failed to save segment:', err)
@@ -94,6 +104,7 @@ function SegmentList({ recordingId }) {
     try {
       await api.delete(`/segments/${segmentId}`)
       setSegments(prev => prev.filter(s => s.id !== segmentId))
+      if (onChanged) onChanged()
     } catch (err) {
       console.error('Failed to delete segment:', err)
     }
@@ -149,23 +160,43 @@ function SegmentList({ recordingId }) {
           </div>
           <div className="form-group">
             <label>Start (sec)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={startTime}
-              onChange={e => setStartTime(e.target.value)}
-              placeholder="0.0"
-            />
+            <div className="mark-input">
+              <input
+                type="number"
+                step="1"
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+                placeholder="0"
+              />
+              <button
+                type="button"
+                className="mark-btn"
+                onClick={markStart}
+                title="Mark current playback time as start"
+              >
+                ● Mark
+              </button>
+            </div>
           </div>
           <div className="form-group">
             <label>End (sec)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-              placeholder="30.0"
-            />
+            <div className="mark-input">
+              <input
+                type="number"
+                step="1"
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+                placeholder="0"
+              />
+              <button
+                type="button"
+                className="mark-btn"
+                onClick={markEnd}
+                title="Mark current playback time as end"
+              >
+                ● Mark
+              </button>
+            </div>
           </div>
           <div className="form-group">
             <label>Color</label>
