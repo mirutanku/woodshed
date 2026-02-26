@@ -1,10 +1,14 @@
 import { useState, useRef } from 'react'
 import api from '../api'
+import KeyPicker from './KeyPicker'
+import { buildKey } from '../keyConstants'
 
 function RecordingUpload({ tuneId, onUploaded }) {
   const [file, setFile] = useState(null)
   const [artist, setArtist] = useState('')
   const [description, setDescription] = useState('')
+  const [keyTonic, setKeyTonic] = useState('')
+  const [keyQuality, setKeyQuality] = useState('')
   const [uploading, setUploading] = useState(false)
   const [dragover, setDragover] = useState(false)
   const [error, setError] = useState('')
@@ -48,6 +52,12 @@ function RecordingUpload({ tuneId, onUploaded }) {
   async function handleUpload() {
     if (!file) return
 
+    // All-or-nothing key validation
+    if ((keyTonic && !keyQuality) || (!keyTonic && keyQuality)) {
+      setError('Please select both a tonic and quality for the key, or leave both blank')
+      return
+    }
+
     setUploading(true)
     setError('')
 
@@ -56,6 +66,8 @@ function RecordingUpload({ tuneId, onUploaded }) {
       formData.append('file', file)
       if (artist.trim()) formData.append('artist', artist.trim())
       if (description.trim()) formData.append('description', description.trim())
+      const key = buildKey(keyTonic, keyQuality)
+      if (key) formData.append('key', key)
 
       await api.post(`/tunes/${tuneId}/recordings`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -65,6 +77,8 @@ function RecordingUpload({ tuneId, onUploaded }) {
       setFile(null)
       setArtist('')
       setDescription('')
+      setKeyTonic('')
+      setKeyQuality('')
       if (fileInputRef.current) fileInputRef.current.value = ''
 
       onUploaded()
@@ -132,6 +146,14 @@ function RecordingUpload({ tuneId, onUploaded }) {
                 />
               </div>
             </div>
+
+            <KeyPicker
+              tonic={keyTonic}
+              quality={keyQuality}
+              onTonicChange={setKeyTonic}
+              onQualityChange={setKeyQuality}
+              label="Key (if different)"
+            />
 
             <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
               <button

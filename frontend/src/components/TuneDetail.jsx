@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
+import KeyPicker from './KeyPicker'
+import { parseKey, buildKey } from '../keyConstants'
 
 function TuneDetail({ tuneId, onBack }) {
   const [tune, setTune] = useState(null)
@@ -22,10 +24,12 @@ function TuneDetail({ tuneId, onBack }) {
     try {
       const res = await api.get(`/tunes/${tuneId}`)
       setTune(res.data)
+      const parsed = parseKey(res.data.key)
       setEditForm({
         title: res.data.title || '',
         composer: res.data.composer || '',
-        key: res.data.key || '',
+        keyTonic: parsed.tonic,
+        keyQuality: parsed.quality,
         tempo: res.data.tempo || '',
         form: res.data.form || '',
         status: res.data.status || 'learning',
@@ -49,12 +53,19 @@ function TuneDetail({ tuneId, onBack }) {
 
   async function handleSaveEdit(e) {
     e.preventDefault()
+
+    // All-or-nothing key validation
+    if ((editForm.keyTonic && !editForm.keyQuality) || (!editForm.keyTonic && editForm.keyQuality)) {
+      alert('Please select both a tonic and quality for the key, or leave both blank')
+      return
+    }
+
     setSaving(true)
     try {
       const payload = {
         title: editForm.title.trim(),
         composer: editForm.composer.trim() || null,
-        key: editForm.key.trim() || null,
+        key: buildKey(editForm.keyTonic, editForm.keyQuality),
         tempo: editForm.tempo ? parseInt(editForm.tempo, 10) : null,
         form: editForm.form.trim() || null,
         status: editForm.status,
@@ -148,14 +159,12 @@ function TuneDetail({ tuneId, onBack }) {
                     onChange={e => handleEditChange('composer', e.target.value)}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Key</label>
-                  <input
-                    type="text"
-                    value={editForm.key}
-                    onChange={e => handleEditChange('key', e.target.value)}
-                  />
-                </div>
+                <KeyPicker
+                  tonic={editForm.keyTonic}
+                  quality={editForm.keyQuality}
+                  onTonicChange={v => handleEditChange('keyTonic', v)}
+                  onQualityChange={v => handleEditChange('keyQuality', v)}
+                />
               </div>
               <div className="form-row mb-md">
                 <div className="form-group">
@@ -233,7 +242,7 @@ function TuneDetail({ tuneId, onBack }) {
           <div className="tune-meta-grid">
             {tune.key && (
               <div className="meta-item">
-                <span className="meta-label">Key</span>
+                <span className="meta-label">Canonical Key</span>
                 <span className="meta-value">{tune.key}</span>
               </div>
             )}

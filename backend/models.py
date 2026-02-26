@@ -44,6 +44,7 @@ class Recording(Base):
     filename = Column(String, nullable=False)     # stored filename on disk
     original_name = Column(String, nullable=False)   # what the user uploaded
     artist = Column(String, nullable=True)
+    key = Column(String, nullable=True)
     description = Column(Text, nullable=True)
     duration = Column(Float, nullable=True)  # in seconds
     file_size = Column(Integer, nullable=True)  # in bytes

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
+import KeyPicker from './KeyPicker'
+import { parseKey, buildKey } from '../keyConstants'
 
 const STATUS_FILTERS = ['all', 'learning', 'transcribing', 'playable', 'polished', 'retired']
 
@@ -106,7 +108,8 @@ function AddTuneForm({ onCancel, onAdded }) {
   const [form, setForm] = useState({
     title: '',
     composer: '',
-    key: '',
+    keyTonic: '',
+    keyQuality: '',
     tempo: '',
     form: '',
     status: 'learning',
@@ -126,6 +129,12 @@ function AddTuneForm({ onCancel, onAdded }) {
       return
     }
 
+    // All-or-nothing key validation
+    if ((form.keyTonic && !form.keyQuality) || (!form.keyTonic && form.keyQuality)) {
+      setError('Please select both a tonic and quality for the key, or leave both blank')
+      return
+    }
+
     setSaving(true)
     setError('')
 
@@ -133,7 +142,7 @@ function AddTuneForm({ onCancel, onAdded }) {
       const payload = {
         title: form.title.trim(),
         composer: form.composer.trim() || null,
-        key: form.key.trim() || null,
+        key: buildKey(form.keyTonic, form.keyQuality),
         tempo: form.tempo ? parseInt(form.tempo, 10) : null,
         form: form.form.trim() || null,
         status: form.status,
@@ -175,15 +184,12 @@ function AddTuneForm({ onCancel, onAdded }) {
               placeholder="e.g. John Coltrane"
             />
           </div>
-          <div className="form-group">
-            <label>Key</label>
-            <input
-              type="text"
-              value={form.key}
-              onChange={e => handleChange('key', e.target.value)}
-              placeholder="e.g. B major"
-            />
-          </div>
+          <KeyPicker
+            tonic={form.keyTonic}
+            quality={form.keyQuality}
+            onTonicChange={v => handleChange('keyTonic', v)}
+            onQualityChange={v => handleChange('keyQuality', v)}
+          />
         </div>
 
         <div className="form-row mb-md">

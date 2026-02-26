@@ -82,6 +82,7 @@ class RecordingResponse(BaseModel):
     filename: str
     original_name: str
     artist: str | None
+    key: str | None
     description: str | None
     duration: float | None
     file_size: int | None

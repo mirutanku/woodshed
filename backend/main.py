@@ -188,6 +188,7 @@ async def upload_recording(
     tune_id: int,
     file: UploadFile = File(...),
     artist: str = Form(default=None),
+    key: str = Form(default=None),
     description: str = Form(default=None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -225,6 +226,7 @@ async def upload_recording(
         filename=stored_filename,
         original_name=file.filename,
         artist=artist,
+        key=key,
         description=description,
         file_size=file_size,
     )

@@ -10,6 +10,7 @@ lerna-debug.log*
 backend/venv/
 backend/__pycache__/
 backend/.env
+backend/uploads/
 
 frontend/node_modules/
 frontend/dist/
