@@ -182,6 +182,7 @@ function TuneDetail({ tuneId, onBack }) {
                   onChange={e => handleEditChange('status', e.target.value)}
                 >
                   <option value="learning">Learning</option>
+                  <option value="transcribing">Transcribing</option>
                   <option value="playable">Playable</option>
                   <option value="polished">Polished</option>
                   <option value="retired">Retired</option>

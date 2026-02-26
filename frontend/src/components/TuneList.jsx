@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 
-const STATUS_FILTERS = ['all', 'learning', 'playable', 'polished', 'retired']
+const STATUS_FILTERS = ['all', 'learning', 'transcribing', 'playable', 'polished', 'retired']
 
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])
@@ -214,6 +214,7 @@ function AddTuneForm({ onCancel, onAdded }) {
             onChange={e => handleChange('status', e.target.value)}
           >
             <option value="learning">Learning</option>
+            <option value="transcribing">Transcribing</option>
             <option value="playable">Playable</option>
             <option value="polished">Polished</option>
             <option value="retired">Retired</option>

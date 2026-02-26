@@ -30,6 +30,7 @@
 
   /* Status colors */
   --status-learning:   #d4a04a;
+  --status-transcribing: #b85e2e;
   --status-playable:   #5a9e6f;
   --status-polished:   #6b8ec4;
   --status-retired:    #7a6e62;
@@ -285,6 +286,10 @@ label {
 .status-badge.learning {
   background: rgba(212, 160, 74, 0.15);
   color: var(--status-learning);
+}
+.status-badge.transcribing {
+  background: rgba(184, 94, 46, 0.15);
+  color: var(--status-transcribing);
 }
 .status-badge.playable {
   background: rgba(90, 158, 111, 0.15);
