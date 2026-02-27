@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
+import { useToast } from './Toast'
 import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
 import AudioPlayer from './AudioPlayer'
@@ -7,6 +8,7 @@ import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
 function TuneDetail({ tuneId, onBack }) {
+  const toast = useToast()
   const [tune, setTune] = useState(null)
   const [recordings, setRecordings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -96,6 +98,7 @@ function TuneDetail({ tuneId, onBack }) {
       const res = await api.patch(`/tunes/${tuneId}`, payload)
       setTune(res.data)
       setEditing(false)
+      toast('Changes saved')
     } catch (err) {
       console.error('Failed to update tune:', err)
     } finally {
@@ -106,6 +109,7 @@ function TuneDetail({ tuneId, onBack }) {
   async function handleDelete() {
     try {
       await api.delete(`/tunes/${tuneId}`)
+      toast('Tune deleted')
       onBack()
     } catch (err) {
       const detail = err.response?.data?.detail
@@ -119,6 +123,7 @@ function TuneDetail({ tuneId, onBack }) {
       await api.delete(`/recordings/${recordingId}`)
       setRecordings(prev => prev.filter(r => r.id !== recordingId))
       if (expandedRecording === recordingId) setExpandedRecording(null)
+      toast('Recording deleted')
     } catch (err) {
       console.error('Failed to delete recording:', err)
     }

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
+import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
-const STATUS_FILTERS = ['all', 'learning', 'transcribing', 'playable', 'polished', 'retired']
+const STATUS_FILTERS = ['all', 'learning', 'playable', 'polished', 'retired']
 
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])
@@ -105,6 +106,7 @@ function TuneList({ onSelectTune }) {
 
 
 function AddTuneForm({ onCancel, onAdded }) {
+  const toast = useToast()
   const [form, setForm] = useState({
     title: '',
     composer: '',
@@ -149,6 +151,7 @@ function AddTuneForm({ onCancel, onAdded }) {
         notes: form.notes.trim() || null,
       }
       await api.post('/tunes', payload)
+      toast(`Added "${form.title.trim()}"`)
       onAdded()
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to add tune')

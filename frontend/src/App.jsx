@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+import { setOnUnauthorized } from './api'
+import { ToastProvider } from './components/Toast'
 import LoginForm from './components/LoginForm'
 import Nav from './components/Nav'
 import TuneList from './components/TuneList'
@@ -22,6 +24,11 @@ function App() {
     setSelectedTuneId(null)
   }
 
+  // Register the 401 handler so expired tokens redirect to login
+  useEffect(() => {
+    setOnUnauthorized(handleLogout)
+  }, [])
+
   function handleSelectTune(tuneId) {
     setSelectedTuneId(tuneId)
     setCurrentView('tune-detail')
@@ -33,31 +40,37 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginForm onLogin={handleLogin} />
+    return (
+      <ToastProvider>
+        <LoginForm onLogin={handleLogin} />
+      </ToastProvider>
+    )
   }
 
   return (
-    <div className="app">
-      <Nav
-        currentView={currentView}
-        onNavigate={setCurrentView}
-        onLogout={handleLogout}
-      />
-      <main className="main-content">
-        {currentView === 'tunes' && (
-          <TuneList onSelectTune={handleSelectTune} />
-        )}
-        {currentView === 'tune-detail' && selectedTuneId && (
-          <TuneDetail
-            tuneId={selectedTuneId}
-            onBack={handleBackToTunes}
-          />
-        )}
-        {currentView === 'practice' && (
-          <PracticeLog />
-        )}
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="app">
+        <Nav
+          currentView={currentView}
+          onNavigate={setCurrentView}
+          onLogout={handleLogout}
+        />
+        <main className="main-content">
+          {currentView === 'tunes' && (
+            <TuneList onSelectTune={handleSelectTune} />
+          )}
+          {currentView === 'tune-detail' && selectedTuneId && (
+            <TuneDetail
+              tuneId={selectedTuneId}
+              onBack={handleBackToTunes}
+            />
+          )}
+          {currentView === 'practice' && (
+            <PracticeLog />
+          )}
+        </main>
+      </div>
+    </ToastProvider>
   )
 }
 

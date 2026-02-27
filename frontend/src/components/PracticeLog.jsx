@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
+import { useToast } from './Toast'
 
 function StarRating({ value, onChange }) {
   return (
@@ -325,6 +326,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
 
 
 function PracticeLog() {
+  const toast = useToast()
   const [sessions, setSessions] = useState([])
   const [tunes, setTunes] = useState([])
   const [performances, setPerformances] = useState([])
@@ -377,12 +379,14 @@ function PracticeLog() {
 
   async function handleAddPerformance(data) {
     await api.post('/performances', data)
+    toast(`Added "${data.title}"`)
     fetchPerformances()
   }
 
   async function handleDeletePerformance(id) {
     await api.delete(`/performances/${id}`)
     setPerformances(prev => prev.filter(p => p.id !== id))
+    toast('Performance removed')
   }
 
   function addEntry() {
@@ -448,6 +452,7 @@ function PracticeLog() {
       setSessionDuration('')
       setSessionNotes('')
       setEntries([])
+      toast('Session logged')
       fetchSessions()
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to log session')

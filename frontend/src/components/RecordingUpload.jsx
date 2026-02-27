@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react'
 import api from '../api'
+import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { buildKey } from '../keyConstants'
 
 function RecordingUpload({ tuneId, onUploaded }) {
+  const toast = useToast()
   const [file, setFile] = useState(null)
   const [artist, setArtist] = useState('')
   const [description, setDescription] = useState('')
@@ -81,6 +83,7 @@ function RecordingUpload({ tuneId, onUploaded }) {
       setKeyQuality('')
       if (fileInputRef.current) fileInputRef.current.value = ''
 
+      toast('Recording uploaded')
       onUploaded()
     } catch (err) {
       setError(err.response?.data?.detail || 'Upload failed')
