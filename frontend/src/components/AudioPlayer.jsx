@@ -26,7 +26,7 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
   const [loopSegment, setLoopSegment] = useState(null) // segment object or null
   const [error, setError] = useState('')
 
-  const audioUrl = `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000'}/uploads/${filename}`
+  const audioUrl = `/uploads/${filename}`
 
   // --- Animation frame loop for smooth progress updates ---
 

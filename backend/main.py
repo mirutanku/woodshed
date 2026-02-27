@@ -34,8 +34,8 @@ security = HTTPBearer()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        os.getenv("FRONTEND_URL", ""),
+        "http://localhost:5173",      # Vite dev server
+        os.getenv("FRONTEND_URL", ""),  # Custom domain if needed
     ],
     allow_credentials=True,
     allow_methods=["*"],
