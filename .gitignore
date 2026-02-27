@@ -28,3 +28,6 @@ frontend/dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+*.pyc
+*.db
+*.sqlite3

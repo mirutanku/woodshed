@@ -1,9 +1,11 @@
 import os
 import uuid
+import pathlib
 from datetime import date
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
@@ -78,6 +80,13 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = create_access_token(db_user.id)
     return {"access_token": token, "token_type": "bearer"}
+
+
+# --- Health check ---
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok"}
 
 
 # --- Tunes ---
@@ -442,3 +451,19 @@ def delete_performance(
         raise HTTPException(status_code=404, detail="Performance not found")
     db.delete(performance)
     db.commit()
+
+
+# --- Server built frontend ---
+
+STATIC_DIR = pathlib.Path(__file__).parent / "static"
+
+if STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="frontend-assets")
+
+    @app.get("/{path:path}")
+    async def serve_frontend(path: str):
+        file_path = STATIC_DIR / path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        else:
+            return FileResponse(STATIC_DIR / "index.html")
