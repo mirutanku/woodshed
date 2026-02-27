@@ -163,3 +163,25 @@ class PracticeSessionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# --- Performances ---
+
+class PerformanceCreate(BaseModel):
+    title: str
+    date: date
+    time: str | None = None
+    venue: str | None = None
+    notes: str | None = None
+
+class PerformanceResponse(BaseModel):
+    id: int
+    title: str
+    date: date
+    time: str | None
+    venue: str | None
+    notes: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

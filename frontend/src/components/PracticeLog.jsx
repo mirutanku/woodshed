@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 
 function StarRating({ value, onChange }) {
@@ -32,9 +32,302 @@ function StarDisplay({ value }) {
 
 const FOCUS_OPTIONS = ['transcription', 'technique', 'memorization', 'tempo', 'ear training', 'reading']
 
+function UpcomingPerformances({ performances, onAdd, onDelete }) {
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
+  const [venue, setVenue] = useState('')
+  const [time, setTime] = useState('')
+  const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Filter to upcoming (today or later) and sort soonest first
+  const upcoming = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return performances
+      .filter(p => p.date >= today)
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [performances])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!title.trim() || !date) return
+
+    setSaving(true)
+    try {
+      await onAdd({
+        title: title.trim(),
+        date,
+        time: time.trim() || null,
+        venue: venue.trim() || null,
+        notes: notes.trim() || null,
+      })
+      setTitle('')
+      setDate('')
+      setTime('')
+      setVenue('')
+      setNotes('')
+      setShowForm(false)
+    } catch (err) {
+      console.error('Failed to add performance:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function formatPerformanceDate(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  function daysUntil(dateStr) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(dateStr + 'T12:00:00')
+    const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24))
+    if (diff === 0) return 'today'
+    if (diff === 1) return 'tomorrow'
+    return `in ${diff} days`
+  }
+
+  return (
+    <div className="summary-section">
+      <div className="summary-section-header">
+        <h3>Upcoming</h3>
+        <button
+          className="btn-ghost btn-sm"
+          onClick={() => setShowForm(!showForm)}
+          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+        >
+          {showForm ? '×' : '+'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="perf-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Gig name"
+            autoFocus
+          />
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+          />
+          <input
+            type="time"
+            value={time}
+            onChange={e => setTime(e.target.value)}
+          />
+          <input
+            type="text"
+            value={venue}
+            onChange={e => setVenue(e.target.value)}
+            placeholder="Venue (optional)"
+          />
+          <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+            <button type="submit" className="btn-primary btn-sm" disabled={saving}>
+              {saving ? '...' : 'Add'}
+            </button>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {upcoming.length === 0 && !showForm ? (
+        <p className="text-sm text-dim">No upcoming gigs.</p>
+      ) : (
+        <div className="perf-list">
+          {upcoming.map(p => (
+            <div key={p.id} className="perf-item">
+              <div className="perf-info">
+                <span className="perf-title">{p.title}</span>
+                <span className="perf-meta">
+                  {formatPerformanceDate(p.date)}
+                  {p.time && ` at ${p.time}`}
+                  {p.venue && ` · ${p.venue}`}
+                  <span className="perf-countdown">{daysUntil(p.date)}</span>
+                </span>
+              </div>
+              <button
+                className="btn-ghost btn-sm"
+                style={{ color: 'var(--color-danger)', padding: '0.1rem 0.4rem', fontSize: '0.75rem' }}
+                onClick={() => onDelete(p.id)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance }) {
+  const stats = useMemo(() => {
+    if (sessions.length === 0) return null
+
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    const thisWeek = sessions.filter(s => {
+      const d = new Date(s.date + 'T12:00:00')
+      return d >= startOfWeek
+    })
+
+    const weekMinutes = thisWeek.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
+    const weekSessions = thisWeek.length
+
+    // Streak
+    const sessionDates = new Set(sessions.map(s => s.date))
+    let streak = 0
+    const checkDate = new Date(now)
+    const todayStr = checkDate.toISOString().split('T')[0]
+    if (!sessionDates.has(todayStr)) {
+      checkDate.setDate(checkDate.getDate() - 1)
+    }
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0]
+      if (sessionDates.has(dateStr)) {
+        streak++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else {
+        break
+      }
+    }
+
+    // Most practiced tunes
+    const tuneCounts = {}
+    sessions.forEach(s => {
+      s.entries.forEach(e => {
+        const title = e.tune_title || 'Unknown'
+        if (!tuneCounts[title]) tuneCounts[title] = { count: 0, totalMinutes: 0 }
+        tuneCounts[title].count++
+        tuneCounts[title].totalMinutes += e.duration_minutes || 0
+      })
+    })
+
+    const topTunes = Object.entries(tuneCounts)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5)
+
+    // Tempo progress
+    const tempoByTune = {}
+    sessions.forEach(s => {
+      s.entries.forEach(e => {
+        if (e.tempo_practiced && e.tune_title) {
+          if (!tempoByTune[e.tune_title]) tempoByTune[e.tune_title] = []
+          tempoByTune[e.tune_title].push({
+            date: s.date,
+            tempo: e.tempo_practiced,
+          })
+        }
+      })
+    })
+
+    const tempoProgress = Object.entries(tempoByTune)
+      .filter(([, entries]) => entries.length >= 2)
+      .map(([title, entries]) => {
+        const sorted = entries.sort((a, b) => a.date.localeCompare(b.date))
+        const first = sorted[0].tempo
+        const last = sorted[sorted.length - 1].tempo
+        const max = Math.max(...sorted.map(e => e.tempo))
+        return { title, first, last, max, sessions: sorted.length }
+      })
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 5)
+
+    return { weekSessions, weekMinutes, streak, topTunes, tempoProgress }
+  }, [sessions])
+
+  if (!stats) return null
+
+  return (
+    <div className="practice-summary fade-in">
+      <div className="summary-stats">
+        <div className="summary-stat">
+          <span className="summary-number">{stats.weekSessions}</span>
+          <span className="summary-label">This Week</span>
+        </div>
+        <div className="summary-stat">
+          <span className="summary-number">
+            {stats.weekMinutes > 0 ? `${Math.round(stats.weekMinutes / 60 * 10) / 10}h` : '—'}
+          </span>
+          <span className="summary-label">Hours</span>
+        </div>
+        <div className="summary-stat">
+          <span className="summary-number">{stats.streak > 0 ? `${stats.streak}d` : '—'}</span>
+          <span className="summary-label">Streak</span>
+        </div>
+      </div>
+
+      <div className="summary-details">
+        {stats.topTunes.length > 0 && (
+          <div className="summary-section">
+            <h3>Most Practiced</h3>
+            <div className="summary-tune-list">
+              {stats.topTunes.map(([title, data]) => (
+                <div key={title} className="summary-tune-row">
+                  <span className="summary-tune-title">{title}</span>
+                  <span className="summary-tune-count">
+                    {data.count} session{data.count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <UpcomingPerformances
+          performances={performances}
+          onAdd={onAddPerformance}
+          onDelete={onDeletePerformance}
+        />
+
+        {stats.tempoProgress.length > 0 && (
+          <div className="summary-section">
+            <h3>Tempo Progress</h3>
+            <div className="summary-tune-list">
+              {stats.tempoProgress.map(tp => {
+                const delta = tp.last - tp.first
+                return (
+                  <div key={tp.title} className="summary-tune-row">
+                    <span className="summary-tune-title">{tp.title}</span>
+                    <span className="summary-tempo-range">
+                      {tp.first} → {tp.last} bpm
+                      {delta !== 0 && (
+                        <span className={delta > 0 ? 'tempo-up' : 'tempo-down'}>
+                          {delta > 0 ? ' ↑' : ' ↓'}{Math.abs(delta)}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
 function PracticeLog() {
   const [sessions, setSessions] = useState([])
   const [tunes, setTunes] = useState([])
+  const [performances, setPerformances] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expandedSession, setExpandedSession] = useState(null)
@@ -50,6 +343,7 @@ function PracticeLog() {
   useEffect(() => {
     fetchSessions()
     fetchTunes()
+    fetchPerformances()
   }, [])
 
   async function fetchSessions() {
@@ -72,11 +366,30 @@ function PracticeLog() {
     }
   }
 
+  async function fetchPerformances() {
+    try {
+      const res = await api.get('/performances')
+      setPerformances(res.data)
+    } catch (err) {
+      console.error('Failed to fetch performances:', err)
+    }
+  }
+
+  async function handleAddPerformance(data) {
+    await api.post('/performances', data)
+    fetchPerformances()
+  }
+
+  async function handleDeletePerformance(id) {
+    await api.delete(`/performances/${id}`)
+    setPerformances(prev => prev.filter(p => p.id !== id))
+  }
+
   function addEntry() {
     setEntries(prev => [
       ...prev,
       {
-        id: Date.now(), // local key
+        id: Date.now(),
         tune_id: '',
         focus: '',
         tempo_practiced: '',
@@ -130,7 +443,6 @@ function PracticeLog() {
       }
       await api.post('/sessions', payload)
 
-      // Reset
       setShowForm(false)
       setSessionDate(new Date().toISOString().split('T')[0])
       setSessionDuration('')
@@ -171,6 +483,16 @@ function PracticeLog() {
           {showForm ? 'Cancel' : '+ Log Session'}
         </button>
       </div>
+
+      {/* Summary dashboard */}
+      {!showForm && (sessions.length > 0 || performances.length > 0) && (
+        <PracticeSummary
+          sessions={sessions}
+          performances={performances}
+          onAddPerformance={handleAddPerformance}
+          onDeletePerformance={handleDeletePerformance}
+        />
+      )}
 
       {/* New session form */}
       {showForm && (

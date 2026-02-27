@@ -16,6 +16,7 @@ class User(Base):
    
     tunes = relationship("Tune", back_populates="user")
     sessions = relationship("PracticeSession", back_populates="user")
+    performances = relationship("Performance", back_populates="user")
 
 
 class Tune(Base):
@@ -98,3 +99,17 @@ class PracticeEntry(Base):
     session = relationship("PracticeSession", back_populates="entries")
     tune = relationship("Tune", back_populates="practice_entries")
     segment = relationship("Segment", back_populates="practice_entries")
+
+class Performance(Base):
+    __tablename__ = "performances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)  # e.g. "Jazz Night at Blue Note"
+    date = Column(Date, nullable=False)
+    time = Column(String, nullable=True)  # e.g. "7:30 PM"
+    venue = Column(String, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="performances")

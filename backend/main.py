@@ -7,14 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
-from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry
+from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance
 from schemas import (
     UserCreate, UserResponse, TokenResponse,
     TuneCreate, TuneUpdate, TuneResponse,
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
-    PracticeEntryCreate, PracticeEntryResponse,
+    PracticeEntryCreate, PracticeEntryResponse, PerformanceCreate, PerformanceResponse
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi.security import HTTPBearer
@@ -406,3 +406,39 @@ def create_session(
             "tune_title": entry.tune.title if entry.tune else "",
         })
     return {**db_session.__dict__, "entries": entry_responses}
+
+
+# --- Performances ---
+
+@app.get("/api/performances", response_model=list[PerformanceResponse])
+def get_performances(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(Performance).filter(Performance.user_id == current_user.id).all()
+
+@app.post("/api/performances", response_model=PerformanceResponse, status_code=201)
+def create_performance(
+    performance: PerformanceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db_performance = Performance(user_id=current_user.id, **performance.model_dump())
+    db.add(db_performance)
+    db.commit()
+    db.refresh(db_performance)
+    return db_performance
+
+@app.delete("/api/performances/{performance_id}", status_code=204)
+def delete_performance(
+    performance_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    performance = db.query(Performance).filter(
+        Performance.id == performance_id, Performance.user_id == current_user.id
+    ).first()
+    if not performance:
+        raise HTTPException(status_code=404, detail="Performance not found")
+    db.delete(performance)
+    db.commit()
