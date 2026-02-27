@@ -17,6 +17,7 @@ function TuneDetail({ tuneId, onBack }) {
   const [saving, setSaving] = useState(false)
   const [expandedRecording, setExpandedRecording] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState(null)
   const [recordingSegments, setRecordingSegments] = useState({})
   const [playbackTime, setPlaybackTime] = useState(0)
 
@@ -123,6 +124,7 @@ function TuneDetail({ tuneId, onBack }) {
       await api.delete(`/recordings/${recordingId}`)
       setRecordings(prev => prev.filter(r => r.id !== recordingId))
       if (expandedRecording === recordingId) setExpandedRecording(null)
+      setConfirmDeleteRecording(null)
       toast('Recording deleted')
     } catch (err) {
       console.error('Failed to delete recording:', err)
@@ -331,13 +333,23 @@ function TuneDetail({ tuneId, onBack }) {
                   </div>
                   <div className="recording-actions">
                     <span className="text-dim">{isExpanded ? '▾' : '▸'}</span>
-                    <button
-                      className="btn-ghost btn-sm"
-                      style={{ color: 'var(--color-danger)' }}
-                      onClick={e => { e.stopPropagation(); handleDeleteRecording(rec.id) }}
-                    >
-                      ×
-                    </button>
+                    {confirmDeleteRecording === rec.id ? (
+                      <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <span className="text-sm text-dim">Sure?</span>
+                        <button className="btn-danger btn-sm" onClick={() => handleDeleteRecording(rec.id)}>Yes</button>
+                        <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteRecording(null)}>No</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn-ghost btn-sm"
+                        style={{ color: 'var(--color-danger)' }}
+                        onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 </div>
                 {isExpanded && (

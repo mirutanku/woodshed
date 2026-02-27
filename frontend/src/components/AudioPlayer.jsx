@@ -183,6 +183,20 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     }
   }, [filename])
 
+  // Spacebar to toggle play/pause
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // Only handle spacebar, and not when typing in an input
+      if (e.code !== 'Space') return
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      e.preventDefault()
+      togglePlay()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPlaying])
+
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (

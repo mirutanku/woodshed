@@ -4,7 +4,7 @@ import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
-const STATUS_FILTERS = ['all', 'learning', 'playable', 'polished', 'retired']
+const STATUS_FILTERS = ['all', 'learning','transcribing','playable', 'polished', 'retired']
 
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])

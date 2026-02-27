@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
+import { useToast } from './Toast'
 
 const SEGMENT_COLORS = [
   '#d4a04a', '#5a9e6f', '#6b8ec4', '#c45b4a',
@@ -14,6 +15,7 @@ function formatTime(seconds) {
 }
 
 function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
+  const toast = useToast()
   const [segments, setSegments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -86,8 +88,10 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
 
       if (editingId) {
         await api.patch(`/segments/${editingId}`, payload)
+        toast('Segment updated')
       } else {
         await api.post(`/recordings/${recordingId}/segments`, payload)
+        toast(`Added "${label.trim()}"`)
       }
 
       await fetchSegments()
@@ -104,6 +108,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
     try {
       await api.delete(`/segments/${segmentId}`)
       setSegments(prev => prev.filter(s => s.id !== segmentId))
+      toast('Segment deleted')
       if (onChanged) onChanged()
     } catch (err) {
       console.error('Failed to delete segment:', err)
@@ -241,6 +246,9 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
           className="btn-ghost btn-sm mt-md"
           onClick={() => {
             setColor(SEGMENT_COLORS[segments.length % SEGMENT_COLORS.length])
+            if (playbackTime > 0) {
+              setStartTime(Math.round(playbackTime).toString())
+            }
             setShowForm(true)
           }}
         >
