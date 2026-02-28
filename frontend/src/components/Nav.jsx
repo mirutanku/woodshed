@@ -1,7 +1,7 @@
 function Nav({ currentView, onNavigate, onLogout }) {
   return (
     <nav className="nav">
-      <div className="nav-brand">Woodshed</div>
+      <div className="nav-brand" onClick={() => onNavigate('tunes')} style={{ cursor: 'pointer' }}>Woodshed</div>
       <div className="nav-links">
         <button
           className={`nav-link ${currentView === 'tunes' || currentView === 'tune-detail' ? 'active' : ''}`}
