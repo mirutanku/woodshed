@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 
-function SetlistManager() {
+function SetlistManager({onSelectTune}) {
   const toast = useToast()
   const [setlists, setSetlists] = useState([])
   const [tunes, setTunes] = useState([])
@@ -384,7 +384,11 @@ function SetlistManager() {
                     {setlist.entries.map((entry, idx) => (
                       <div key={entry.id} className="setlist-display-item">
                         <span className="setlist-display-number">{idx + 1}</span>
-                        <span className="entry-tune">{entry.tune_title}</span>
+                        <span className="entry-tune entry-tune-link"
+                        onClick={(e) => { e.stopPropagation(); onSelectTune(entry.tune_id) }}
+                        >
+                          {entry.tune_title}
+                        </span>
                       </div>
                     ))}
                   </div>

@@ -70,7 +70,7 @@ function App() {
             <PracticeLog />
           )}
           {currentView === 'setlists' && (
-            <SetlistManager />
+            <SetlistManager onSelectTune={handleSelectTune} />
           )}
         </main>
       </div>

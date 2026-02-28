@@ -1304,6 +1304,15 @@
   flex-shrink: 0;
 }
 
+.entry-tune-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.entry-tune-link:hover {
+  color: var(--color-amber);
+}
+
 /* --- Toasts --- */
 
 .toast-container {
