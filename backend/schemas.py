@@ -185,3 +185,41 @@ class PerformanceResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# -- Setlists ---
+
+class SetlistEntryCreate(BaseModel):
+    tune_id: int
+    position: int
+
+class SetlistEntryResponse(BaseModel):
+    id: int
+    tune_id: int
+    position: int
+    tune_title: str = ""
+
+    class Config:
+        from_attributes = True
+
+class SetlistCreate(BaseModel):
+    title: str
+    performance_id: int | None = None
+    notes: str | None = None
+    entries: list[SetlistEntryCreate] = [] # a setlist is comprised of setlist entries
+
+class SetlistUpdate(BaseModel):
+    title: str | None = None
+    performance_id: int | None = None
+    notes: str | None = None
+
+class SetlistResponse(BaseModel):
+    id: int
+    title: str
+    performance_id: int | None
+    notes: str | None
+    created_at: datetime
+    entries: list[SetlistEntryResponse] = []
+
+    class Config:
+        from_attributes = True

@@ -17,6 +17,7 @@ class User(Base):
     tunes = relationship("Tune", back_populates="user")
     sessions = relationship("PracticeSession", back_populates="user")
     performances = relationship("Performance", back_populates="user")
+    setlists = relationship("Setlist", back_populates="user")
 
 
 class Tune(Base):
@@ -113,3 +114,29 @@ class Performance(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="performances")
+    setlist = relationship("Setlist", back_populates="performance", uselist=False)  # one-to-one relationship, a performance has one setlist and a setlist belongs to one performance
+
+class Setlist(Base):
+    __tablename__ = "setlists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)  # e.g. "Main Set", "Encore"
+    performance_id = Column(Integer, ForeignKey("performances.id"), ondelete="SET NULL", nullable=True)  # a setlist can exist without being assigned to a performance, but if the performance is deleted, the setlist's performance_id will be set to NULL
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="setlists")
+    performance = relationship("Performance", back_populates="setlist")
+    entries = relationship("SetlistEntry", back_populates="setlist", cascade="all, delete-orphan", order_by="SetlistEntry.position")    # deleting a setlist also deletes its associated entries
+
+class SetlistEntry(Base):
+    __tablename__ = "setlist_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    setlist_id = Column(Integer, ForeignKey("setlists.id"), nullable=False)
+    tune_id = Column(Integer, ForeignKey("tunes.id"), nullable=False)
+    position = Column(Integer, nullable=False)  # order of the tune in the setlist
+    
+    setlist = relationship("Setlist", back_populates="setlist_entries")
+    tune = relationship("Tune", back_populates="setlist_entries")

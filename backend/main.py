@@ -9,14 +9,14 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
-from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance
+from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist
 from schemas import (
     UserCreate, UserResponse, TokenResponse,
     TuneCreate, TuneUpdate, TuneResponse,
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
-    PracticeEntryCreate, PracticeEntryResponse, PerformanceCreate, PerformanceResponse
+    PracticeEntryCreate, PracticeEntryResponse, PerformanceCreate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi.security import HTTPBearer
@@ -453,6 +453,169 @@ def delete_performance(
     db.commit()
 
 
+# --- Setlists ---
+
+@app.get("/api/setlists", response_model=list[SetlistResponse])
+def get_setlists(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    setlists = db.query(Setlist).filter(Setlist.user_id == current_user.id).all()
+    results = []
+    for setlist in setlists:
+        entry_responses = []
+        for entry in setlist.setlist_entries:
+            entry_responses.append({
+                **entry.__dict__,
+                "tune_title": entry.tune.title if entry.tune else "",
+            })
+        results.append({
+            **setlist.__dict__,
+            "entries": entry_responses,
+        })
+    return results
+
+@app.post("/api/setlists", response_model=SetlistResponse, status_code=201)
+def create_setlist(
+    setlist: SetlistCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db_setlist = Setlist(
+        user_id=current_user.id,
+        title=setlist.title,
+        performance_id=setlist.performance_id,
+        notes=setlist.notes,
+    )
+    db.add(db_setlist)
+    db.flush()
+
+    for entry_data in setlist.entries:
+        # Verify the tune belongs to this user
+        tune = db.query(Tune).filter(
+            Tune.id == entry_data.tune_id, Tune.user_id == current_user.id
+        ).first()
+        if not tune:
+            raise HTTPException(status_code=400, detail=f"Tune {entry_data.tune_id} not found")
+
+        db_entry = SetlistEntry(
+            setlist_id=db_setlist.id,
+            **entry_data.model_dump(),
+        )
+        db.add(db_entry)
+
+    db.commit()
+    db.refresh(db_setlist)
+
+    entry_responses = []
+    for entry in db_setlist.setlist_entries:
+        entry_responses.append({
+            **entry.__dict__,
+            "tune_title": entry.tune.title if entry.tune else "",
+        })
+    return {**db_setlist.__dict__, "entries": entry_responses}
+
+@app.post("/api/setlists/{setlist_id}", response_model=SetlistResponse)
+def get_setlist(
+    setlist_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    setlist = db.query(Setlist).filter(
+        Setlist.id == setlist_id, Setlist.user_id == current_user.id
+    ).first()
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+
+    entry_responses = []
+    for entry in setlist.setlist_entries:
+        entry_responses.append({
+            **entry.__dict__,
+            "tune_title": entry.tune.title if entry.tune else "",
+        })
+    return {**setlist.__dict__, "entries": entry_responses}
+
+@app.patch("/api/setlists/{setlist_id}", response_model=SetlistResponse)
+def update_setlist(
+    setlist_id: int,
+    updates: SetlistUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    setlist = db.query(Setlist).filter(
+        Setlist.id == setlist_id, Setlist.user_id == current_user.id
+    ).first()
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+    for key, value in updates.model_dump(exclude_unset=True).items():
+        setattr(setlist, key, value)
+    db.commit()
+    db.refresh(setlist)
+
+    entry_responses = []
+    for entry in setlist.setlist_entries:
+        entry_responses.append({
+            **entry.__dict__,
+            "tune_title": entry.tune.title if entry.tune else "",
+        })
+    return {**setlist.__dict__, "entries": entry_responses}
+
+@app.delete("/api/setlists/{setlist_id}", status_code=204)
+def delete_setlist(
+    setlist_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    setlist = db.query(Setlist).filter(
+        Setlist.id == setlist_id, Setlist.user_id == current_user.id
+    ).first()
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+    db.delete(setlist)
+    db.commit()
+
+@app.put("/api/setlists/{setlist_id}/entries", response_model=SetlistResponse)
+def update_setlist_entries(
+    setlist_id: int,
+    entries: list[SetlistEntryCreate],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    setlist = db.query(Setlist).filter(
+        Setlist.id == setlist_id, Setlist.user_id == current_user.id
+    ).first()
+    if not setlist:
+        raise HTTPException(status_code=404, detail="Setlist not found")
+
+    # Clear existing entries
+    db.query(SetlistEntry).filter(SetlistEntry.setlist_id == setlist_id).delete()
+
+    # Add new entries
+    for entry_data in entries:
+        tune = db.query(Tune).filter(
+            Tune.id == entry_data.tune_id, Tune.user_id == current_user.id
+        ).first()
+        if not tune:
+            raise HTTPException(status_code=400, detail=f"Tune {entry_data.tune_id} not found")
+
+        db_entry = SetlistEntry(
+            setlist_id=setlist_id,
+            **entry_data.model_dump(),
+        )
+        db.add(db_entry)
+
+    db.commit()
+    db.refresh(setlist)
+
+    entry_responses = []
+    for entry in setlist.setlist_entries:
+        entry_responses.append({
+            **entry.__dict__,
+            "tune_title": entry.tune.title if entry.tune else "",
+        })
+    return {**setlist.__dict__, "entries": entry_responses}
+
+    
 # --- Server built frontend ---
 
 STATIC_DIR = pathlib.Path(__file__).parent / "static"
