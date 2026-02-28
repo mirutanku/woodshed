@@ -20,6 +20,7 @@ function TuneDetail({ tuneId, onBack }) {
   const [confirmDeleteRecording, setConfirmDeleteRecording] = useState(null)
   const [recordingSegments, setRecordingSegments] = useState({})
   const [playbackTime, setPlaybackTime] = useState(0)
+  const [showUpload, setShowUpload] = useState(false)
 
   useEffect(() => {
     fetchTune()
@@ -301,11 +302,9 @@ function TuneDetail({ tuneId, onBack }) {
         <h2>Recordings</h2>
       </div>
 
-      <RecordingUpload tuneId={tuneId} onUploaded={fetchRecordings} />
-
       {recordings.length === 0 ? (
-        <div className="empty-state" style={{ padding: 'var(--space-lg)' }}>
-          <p className="text-dim">No recordings yet. Upload an audio file above.</p>
+        <div style={{ marginBottom: 'var(--space-md)' }}>
+          <RecordingUpload tuneId={tuneId} onUploaded={fetchRecordings} />
         </div>
       ) : (
         <div className="recording-list">
@@ -370,6 +369,28 @@ function TuneDetail({ tuneId, onBack }) {
             )
           })}
         </div>
+      )}
+
+      {/* Upload box — shown below recordings when recordings exist */}
+      {recordings.length > 0 && (
+        showUpload ? (
+          <div className="mt-md">
+            <RecordingUpload tuneId={tuneId} onUploaded={() => { fetchRecordings(); setShowUpload(false) }} />
+            <button
+              className="btn-ghost btn-sm mt-sm"
+              onClick={() => setShowUpload(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn-ghost mt-md"
+            onClick={() => setShowUpload(true)}
+          >
+            + Add Recording
+          </button>
+        )
       )}
     </div>
   )
