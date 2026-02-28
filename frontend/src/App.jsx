@@ -7,6 +7,7 @@ import Nav from './components/Nav'
 import TuneList from './components/TuneList'
 import TuneDetail from './components/TuneDetail'
 import PracticeLog from './components/PracticeLog'
+import SetlistManager from './components/SetlistManager'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'))
@@ -55,7 +56,7 @@ function App() {
           onNavigate={setCurrentView}
           onLogout={handleLogout}
         />
-        <main className="main-content">
+       <main className="main-content">
           {currentView === 'tunes' && (
             <TuneList onSelectTune={handleSelectTune} />
           )}
@@ -67,6 +68,9 @@ function App() {
           )}
           {currentView === 'practice' && (
             <PracticeLog />
+          )}
+          {currentView === 'setlists' && (
+            <SetlistManager />
           )}
         </main>
       </div>

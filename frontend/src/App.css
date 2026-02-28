@@ -1241,6 +1241,69 @@
   }
 }
 
+/* --- Setlists --- */
+
+.setlist-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.setlist-item-number {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.setlist-item-fields {
+  flex: 1;
+  min-width: 0;
+}
+
+.setlist-item-fields select {
+  width: 100%;
+}
+
+.setlist-item-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.setlist-item-actions .btn-ghost {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.setlist-item-actions .btn-ghost:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.setlist-display-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+.setlist-display-number {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 /* --- Toasts --- */
 
 .toast-container {

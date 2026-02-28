@@ -464,7 +464,7 @@ def get_setlists(
     results = []
     for setlist in setlists:
         entry_responses = []
-        for entry in setlist.setlist_entries:
+        for entry in setlist.entries:
             entry_responses.append({
                 **entry.__dict__,
                 "tune_title": entry.tune.title if entry.tune else "",
@@ -508,7 +508,7 @@ def create_setlist(
     db.refresh(db_setlist)
 
     entry_responses = []
-    for entry in db_setlist.setlist_entries:
+    for entry in db_setlist.entries:
         entry_responses.append({
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
@@ -528,7 +528,7 @@ def get_setlist(
         raise HTTPException(status_code=404, detail="Setlist not found")
 
     entry_responses = []
-    for entry in setlist.setlist_entries:
+    for entry in setlist.entries:
         entry_responses.append({
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
@@ -553,7 +553,7 @@ def update_setlist(
     db.refresh(setlist)
 
     entry_responses = []
-    for entry in setlist.setlist_entries:
+    for entry in setlist.entries:
         entry_responses.append({
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
@@ -608,7 +608,7 @@ def update_setlist_entries(
     db.refresh(setlist)
 
     entry_responses = []
-    for entry in setlist.setlist_entries:
+    for entry in setlist.entries:
         entry_responses.append({
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",

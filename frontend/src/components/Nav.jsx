@@ -10,6 +10,12 @@ function Nav({ currentView, onNavigate, onLogout }) {
           Tunes
         </button>
         <button
+          className={`nav-link ${currentView === 'setlists' ? 'active' : ''}`}
+          onClick={() => onNavigate('setlists')}
+        >
+          Setlists
+        </button>
+        <button
           className={`nav-link ${currentView === 'practice' ? 'active' : ''}`}
           onClick={() => onNavigate('practice')}
         >
