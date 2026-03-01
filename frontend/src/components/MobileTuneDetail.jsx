@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import RecordingUpload from './RecordingUpload'
 
 function formatTime(seconds) {
   const s = Math.round(seconds)
@@ -472,8 +473,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
       )}
 
       {recordings.length === 0 && (
-        <div className="empty-state">
-          <p>No recordings yet. Add recordings from desktop to start practicing.</p>
+        <div>
+          <RecordingUpload tuneId={tune.id} onUploaded={onRecordingsChanged} />
         </div>
       )}
     </div>
