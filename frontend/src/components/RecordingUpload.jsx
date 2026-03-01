@@ -21,7 +21,11 @@ function RecordingUpload({ tuneId, onUploaded }) {
     if (!selectedFile) return
 
     // Basic type check on the client side
-    if (!selectedFile.type.startsWith('audio/')) {
+    const validTypes = ['audio/', 'video/mp4', 'video/x-m4a']
+    const validExtensions = ['.mp3', '.wav', '.flac', '.ogg', '.aac', '.m4a', '.mp4', '.wma', '.aiff', '.opus']
+    const hasValidType = !selectedFile.type || validTypes.some(t => selectedFile.type.startsWith(t))
+    const hasValidExtension = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext))
+    if (!hasValidType && !hasValidExtension) {
       setError('Please select an audio file')
       return
     }
@@ -116,7 +120,7 @@ function RecordingUpload({ tuneId, onUploaded }) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="audio/*"
+            accept="audio/*,.mp3,.wav,.flac,.ogg,.aac,.m4a,.mp4,.wma,.aiff,.opus"
             style={{ display: 'none' }}
             onChange={e => handleFileSelect(e.target.files[0])}
           />
