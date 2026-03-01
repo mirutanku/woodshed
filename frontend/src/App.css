@@ -1192,6 +1192,29 @@
     padding: var(--space-md);
   }
 
+  /* Nav — compact on mobile */
+  .nav {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .nav-brand {
+    font-size: 1.1rem;
+  }
+
+  .nav-links {
+    gap: 2px;
+  }
+
+  .nav-link {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .nav-divider {
+    margin: 0 var(--space-xs);
+  }
+
+  /* Tune list */
   .tune-list-header {
     flex-direction: column;
     align-items: stretch;
@@ -1215,10 +1238,12 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  /* Forms */
   .form-row {
     grid-template-columns: 1fr;
   }
 
+  /* Practice log */
   .entry-row {
     grid-template-columns: 1fr;
     gap: var(--space-xs);
@@ -1238,6 +1263,101 @@
 
   .summary-number {
     font-size: 1.5rem;
+  }
+
+  /* Session cards */
+  .session-card-header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+
+  /* Audio player */
+  .audio-player {
+    padding: var(--space-md);
+  }
+
+  .player-controls {
+    gap: var(--space-md);
+  }
+
+  .transport-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .transport-btn.play-btn {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+
+  .speed-presets {
+    gap: 4px;
+  }
+
+  .speed-preset {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .speed-slider {
+    max-width: none;
+  }
+
+  .player-segment-chip {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .segment-chip-label {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .segment-chip-loop {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.95rem;
+  }
+
+  /* Segment list */
+  .segment-item {
+    padding: var(--space-md);
+  }
+
+  /* Setlist form */
+  .setlist-item-row {
+    flex-wrap: wrap;
+  }
+
+  .setlist-item-fields {
+    flex: 1 1 100%;
+    order: 2;
+  }
+
+  .setlist-item-actions {
+    order: 1;
+  }
+
+  /* Recording items */
+  .recording-info {
+    min-width: 0;
+  }
+
+  .recording-name {
+    word-break: break-word;
+  }
+
+  .recording-meta {
+    flex-wrap: wrap;
+  }
+
+  /* Practice header (used for page headers with buttons) */
+  .practice-header {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
   }
 }
 
@@ -1304,13 +1424,393 @@
   flex-shrink: 0;
 }
 
-.entry-tune-link {
-  cursor: pointer;
-  transition: color 0.15s ease;
+/* --- Shed Mode (mobile practice view) --- */
+
+.shed-mode {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-md);
 }
 
-.entry-tune-link:hover {
+.shed-header {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+.shed-header h1 {
+  font-size: 1.5rem;
+}
+
+.shed-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: var(--space-sm) 0;
+  margin-bottom: var(--space-md);
+}
+
+.shed-tune-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shed-tune-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+  min-height: 54px;
+  justify-content: center;
+}
+
+.shed-tune-btn:hover,
+.shed-tune-btn:active {
+  border-color: var(--color-amber-dim);
+}
+
+.shed-tune-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.shed-tune-composer {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.shed-now-playing {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+.shed-tune-now {
+  font-size: 1.75rem;
+  margin-bottom: var(--space-xs);
+}
+
+.shed-composer-now {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.shed-key-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: var(--color-amber-glow);
   color: var(--color-amber);
+  border-radius: var(--radius-md);
+}
+
+.shed-recording-picker {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+.shed-recording-btn {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shed-recording-btn.active {
+  background: var(--color-amber-glow);
+  border-color: var(--color-amber-dim);
+  color: var(--color-amber);
+}
+
+/* Timeline */
+
+.shed-timeline {
+  position: relative;
+  height: 32px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  margin-bottom: var(--space-sm);
+}
+
+.shed-timeline-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.shed-timeline-segment.looping {
+  opacity: 0.5;
+}
+
+.shed-timeline-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--color-amber);
+  opacity: 0.15;
+}
+
+.shed-timeline-playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--color-amber);
+}
+
+.shed-time {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+/* Transport */
+
+.shed-transport {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-lg);
+}
+
+.shed-play-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-amber);
+  color: var(--color-bg);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shed-play-btn:active {
+  transform: scale(0.95);
+  background: var(--color-gold);
+}
+
+/* Speed */
+
+.shed-speed {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.shed-speed-btn {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 56px;
+}
+
+.shed-speed-btn.active {
+  background: var(--color-amber-glow);
+  border-color: var(--color-amber-dim);
+  color: var(--color-amber);
+}
+
+.shed-speed-btn:active {
+  transform: scale(0.95);
+}
+
+/* Segments */
+
+.shed-segments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.shed-segment-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  min-height: 54px;
+}
+
+.shed-segment-btn.active {
+  border-color: var(--color-amber);
+  background: var(--color-amber-glow);
+}
+
+.shed-segment-btn:active {
+  transform: scale(0.98);
+}
+
+.shed-segment-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.shed-segment-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.shed-segment-time {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.shed-loop-indicator {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-amber);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.shed-loop-clear {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  background: none;
+  border: 1px solid var(--color-amber-dim);
+  border-radius: var(--radius-md);
+  color: var(--color-amber);
+  cursor: pointer;
+}
+
+.shed-loop-clear:active {
+  background: var(--color-amber-glow);
+}
+
+/* Quick mark segment */
+
+.shed-mark-trigger {
+  display: block;
+  width: 100%;
+  padding: var(--space-md);
+  background: none;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: var(--space-md);
+}
+
+.shed-mark-trigger:active {
+  border-color: var(--color-amber-dim);
+  color: var(--color-amber);
+}
+
+.shed-mark-panel {
+  margin-top: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-amber-dim);
+  border-radius: var(--radius-lg);
+}
+
+.shed-mark-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.shed-mark-title {
+  font-weight: 600;
+  color: var(--color-amber);
+}
+
+.shed-mark-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.shed-mark-btn {
+  flex: 1;
+  padding: var(--space-md);
+  background: var(--color-bg-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  min-height: 54px;
+}
+
+.shed-mark-btn:active {
+  transform: scale(0.97);
+}
+
+.shed-mark-btn.marked {
+  border-color: var(--color-amber);
+  background: var(--color-amber-glow);
+  color: var(--color-amber);
+}
+
+.shed-mark-save {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.shed-mark-input {
+  flex: 1;
+  font-size: 1rem;
+  padding: var(--space-md);
 }
 
 /* --- Toasts --- */

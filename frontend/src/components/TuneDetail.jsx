@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import useIsMobile from '../useIsMobile'
+import MobileTuneDetail from './MobileTuneDetail'
 import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
 import AudioPlayer from './AudioPlayer'
@@ -9,6 +11,7 @@ import { parseKey, buildKey } from '../keyConstants'
 
 function TuneDetail({ tuneId, onBack }) {
   const toast = useToast()
+  const isMobile = useIsMobile()
   const [tune, setTune] = useState(null)
   const [recordings, setRecordings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -157,6 +160,18 @@ function TuneDetail({ tuneId, onBack }) {
 
   if (!tune) {
     return <div className="empty-state"><p>Tune not found.</p></div>
+  }
+
+  // Mobile: render shed-style player with quick segment marking
+  if (isMobile) {
+    return (
+      <MobileTuneDetail
+        tune={tune}
+        recordings={recordings}
+        onBack={onBack}
+        onRecordingsChanged={fetchRecordings}
+      />
+    )
   }
 
   return (
