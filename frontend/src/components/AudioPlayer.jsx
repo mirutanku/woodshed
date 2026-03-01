@@ -26,6 +26,14 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
   const [loopSegment, setLoopSegment] = useState(null) // segment object or null
   const [error, setError] = useState('')
 
+  // Auto-ramp state
+  const [rampEnabled, setRampEnabled] = useState(false)
+  const [rampEnd, setRampEnd] = useState(1.0)
+  const [rampStep, setRampStep] = useState(0.05)
+  const [rampReachedMax, setRampReachedMax] = useState(false)
+  const speedRef = useRef(1.0)
+  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05 })
+
   const audioUrl = `/uploads/${filename}`
 
   // --- Animation frame loop for smooth progress updates ---
@@ -38,6 +46,21 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
 
       // Loop enforcement — if we're looping a segment and we've passed the end, jump back
       if (loopSegment && audio.currentTime >= loopSegment.end_time) {
+        // Auto-ramp: bump speed before looping back
+        const ramp = rampRef.current
+        if (ramp.enabled) {
+          const currentSpeed = speedRef.current
+          if (currentSpeed < ramp.end) {
+            const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
+            const rounded = Math.round(newSpeed * 100) / 100
+            setSpeed(rounded)
+            speedRef.current = rounded
+            audio.playbackRate = rounded
+            if (rounded >= ramp.end) {
+              setRampReachedMax(true)
+            }
+          }
+        }
         audio.currentTime = loopSegment.start_time
       }
 
@@ -111,11 +134,18 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
 
   function handleSpeedChange(newSpeed) {
     const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
-    setSpeed(clamped)
+    const rounded = Math.round(clamped * 100) / 100
+    setSpeed(rounded)
+    speedRef.current = rounded
     if (audioRef.current) {
-      audioRef.current.playbackRate = clamped
+      audioRef.current.playbackRate = rounded
     }
   }
+
+  // Keep ramp ref in sync
+  useEffect(() => {
+    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep }
+  }, [rampEnabled, rampEnd, rampStep])
 
   // --- Progress bar interaction ---
 
@@ -140,8 +170,10 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     if (loopSegment && loopSegment.id === segment.id) {
       // Clicking the active loop segment toggles it off
       setLoopSegment(null)
+      setRampReachedMax(false)
     } else {
       setLoopSegment(segment)
+      setRampReachedMax(false)
       audio.currentTime = segment.start_time
       setCurrentTime(segment.start_time)
       if (!isPlaying) {
@@ -181,6 +213,9 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     setDuration(0)
     setLoopSegment(null)
     setSpeed(1.0)
+    speedRef.current = 1.0
+    setRampEnabled(false)
+    setRampReachedMax(false)
     setError('')
     if (audioRef.current) {
       audioRef.current.playbackRate = 1.0
@@ -280,20 +315,68 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
           <span className="speed-value">{speed.toFixed(2)}×</span>
         </div>
 
-        {/* Loop indicator */}
+        {/* Loop indicator + auto-ramp */}
         {loopSegment && (
-          <div className="loop-indicator">
-            <span
-              className="loop-dot"
-              style={{ backgroundColor: loopSegment.color || 'var(--color-amber)' }}
-            />
-            <span className="loop-label">Looping: {loopSegment.label}</span>
-            <button
-              className="btn-ghost btn-sm"
-              onClick={() => setLoopSegment(null)}
-            >
-              ×
-            </button>
+          <div className="loop-indicator-wrap">
+            <div className="loop-indicator">
+              <span
+                className="loop-dot"
+                style={{ backgroundColor: loopSegment.color || 'var(--color-amber)' }}
+              />
+              <span className="loop-label">Looping: {loopSegment.label} at {Math.round(speed * 100)}%</span>
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() => { setLoopSegment(null); setRampReachedMax(false) }}
+              >
+                ×
+              </button>
+            </div>
+            {!rampEnabled ? (
+              <button
+                className="ramp-toggle"
+                onClick={() => {
+                  setRampEnd(1.0)
+                  setRampStep(0.05)
+                  setRampReachedMax(false)
+                  setRampEnabled(true)
+                }}
+              >
+                Auto-Ramp ↗
+              </button>
+            ) : (
+              <div className="ramp-controls">
+                <span className="ramp-title">Auto-Ramp</span>
+                <div className="ramp-fields">
+                  <label>
+                    Target
+                    <select
+                      value={rampEnd}
+                      onChange={e => { setRampEnd(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                    >
+                      {[0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25].map(v => (
+                        <option key={v} value={v}>{Math.round(v * 100)}%</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Step
+                    <select
+                      value={rampStep}
+                      onChange={e => { setRampStep(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                    >
+                      <option value={0.01}>1%</option>
+                      <option value={0.02}>2%</option>
+                      <option value={0.05}>5%</option>
+                      <option value={0.1}>10%</option>
+                    </select>
+                  </label>
+                </div>
+                {rampReachedMax && (
+                  <span className="ramp-done">Reached {Math.round(rampEnd * 100)}%!</span>
+                )}
+                <button className="btn-ghost btn-sm" onClick={() => setRampEnabled(false)}>Off</button>
+              </div>
+            )}
           </div>
         )}
       </div>

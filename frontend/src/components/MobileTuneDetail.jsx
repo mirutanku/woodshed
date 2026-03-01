@@ -24,6 +24,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   const [speed, setSpeed] = useState(1.0)
   const [loopSegment, setLoopSegment] = useState(null)
 
+  // Auto-ramp state
+  const [rampEnabled, setRampEnabled] = useState(false)
+  const [rampEnd, setRampEnd] = useState(1.0)
+  const [rampStep, setRampStep] = useState(0.05)
+  const [rampReachedMax, setRampReachedMax] = useState(false)
+  // Ref so the tick callback always sees current speed without re-creating
+  const speedRef = useRef(1.0)
+  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05 })
+
   // Quick mark state
   const [marking, setMarking] = useState(false)
   const [markStart, setMarkStart] = useState(null)
@@ -81,6 +90,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     setCurrentTime(time)
 
     if (loopSegment && time >= loopSegment.end_time) {
+      // Auto-ramp: bump speed before looping back
+      const ramp = rampRef.current
+      if (ramp.enabled) {
+        const currentSpeed = speedRef.current
+        if (currentSpeed < ramp.end) {
+          const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
+          const rounded = Math.round(newSpeed * 100) / 100
+          setSpeed(rounded)
+          speedRef.current = rounded
+          audio.playbackRate = rounded
+          if (rounded >= ramp.end) {
+            setRampReachedMax(true)
+          }
+        }
+      }
       audio.currentTime = loopSegment.start_time
     }
 
@@ -110,9 +134,16 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   }
 
   function setPlaybackSpeed(newSpeed) {
-    setSpeed(newSpeed)
-    if (audioRef.current) audioRef.current.playbackRate = newSpeed
+    const clamped = Math.round(newSpeed * 100) / 100
+    setSpeed(clamped)
+    speedRef.current = clamped
+    if (audioRef.current) audioRef.current.playbackRate = clamped
   }
+
+  // Keep ramp ref in sync
+  useEffect(() => {
+    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep }
+  }, [rampEnabled, rampEnd, rampStep])
 
   function handleSegmentTap(segment) {
     const audio = audioRef.current
@@ -120,8 +151,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
 
     if (loopSegment && loopSegment.id === segment.id) {
       setLoopSegment(null)
+      setRampReachedMax(false)
     } else {
       setLoopSegment(segment)
+      setRampReachedMax(false)
       audio.currentTime = segment.start_time
       setCurrentTime(segment.start_time)
       if (!isPlaying) {
@@ -324,13 +357,66 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
             </div>
           )}
 
-          {/* Loop indicator */}
+          {/* Loop indicator + auto-ramp */}
           {loopSegment && !marking && (
-            <div className="shed-loop-indicator">
-              Looping: {loopSegment.label}
-              <button className="shed-loop-clear" onClick={() => setLoopSegment(null)}>
-                Clear
-              </button>
+            <div className="shed-ramp-panel">
+              <div className="shed-loop-indicator">
+                Looping: {loopSegment.label} at {Math.round(speed * 100)}%
+                <button className="shed-loop-clear" onClick={() => { setLoopSegment(null); setRampReachedMax(false) }}>
+                  Clear
+                </button>
+              </div>
+
+              {!rampEnabled ? (
+                <button
+                  className="shed-ramp-toggle"
+                  onClick={() => {
+                    setRampEnd(1.0)
+                    setRampStep(0.05)
+                    setRampReachedMax(false)
+                    setRampEnabled(true)
+                  }}
+                >
+                  Auto-Ramp ↗
+                </button>
+              ) : (
+                <div className="shed-ramp-controls">
+                  <div className="shed-ramp-header">
+                    <span className="shed-mark-title">Auto-Ramp</span>
+                    <button className="btn-ghost btn-sm" onClick={() => setRampEnabled(false)}>Off</button>
+                  </div>
+                  <div className="shed-ramp-fields">
+                    <div className="shed-ramp-field">
+                      <label>Target</label>
+                      <select
+                        value={rampEnd}
+                        onChange={e => { setRampEnd(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                      >
+                        {[0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25].map(v => (
+                          <option key={v} value={v}>{Math.round(v * 100)}%</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="shed-ramp-field">
+                      <label>Step</label>
+                      <select
+                        value={rampStep}
+                        onChange={e => { setRampStep(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                      >
+                        <option value={0.01}>1%</option>
+                        <option value={0.02}>2%</option>
+                        <option value={0.05}>5%</option>
+                        <option value={0.1}>10%</option>
+                      </select>
+                    </div>
+                  </div>
+                  {rampReachedMax && (
+                    <div className="shed-ramp-done">
+                      Reached {Math.round(rampEnd * 100)}%!
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
