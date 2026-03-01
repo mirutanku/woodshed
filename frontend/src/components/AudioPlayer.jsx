@@ -145,7 +145,11 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
       audio.currentTime = segment.start_time
       setCurrentTime(segment.start_time)
       if (!isPlaying) {
-        audio.play().then(() => setIsPlaying(true)).catch(() => {})
+        function onSeeked() {
+          audio.removeEventListener('seeked', onSeeked)
+          audio.play().then(() => setIsPlaying(true)).catch(() => {})
+        }
+        audio.addEventListener('seeked', onSeeked)
       }
     }
   }
@@ -204,7 +208,7 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
       <audio
         ref={audioRef}
         src={audioUrl}
-        preload="metadata"
+        preload="auto"
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
         onError={handleError}

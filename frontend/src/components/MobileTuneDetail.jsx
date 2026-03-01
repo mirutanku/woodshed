@@ -125,7 +125,12 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
       audio.currentTime = segment.start_time
       setCurrentTime(segment.start_time)
       if (!isPlaying) {
-        audio.play().then(() => setIsPlaying(true)).catch(() => {})
+        // Wait for the seek to finish before playing
+        function onSeeked() {
+          audio.removeEventListener('seeked', onSeeked)
+          audio.play().then(() => setIsPlaying(true)).catch(() => {})
+        }
+        audio.addEventListener('seeked', onSeeked)
       }
     }
   }
@@ -234,7 +239,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
           <audio
             ref={audioRef}
             src={`/uploads/${selectedRecording.filename}`}
-            preload="metadata"
+            preload="auto"
             onLoadedMetadata={() => {
               if (audioRef.current) {
                 setDuration(audioRef.current.duration)
