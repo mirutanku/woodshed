@@ -1789,6 +1789,28 @@
   transform: scale(0.95);
 }
 
+.shed-speed-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0 var(--space-sm);
+}
+
+.shed-speed-slider input[type="range"] {
+  flex: 1;
+  height: 36px;
+  cursor: pointer;
+  accent-color: var(--color-amber);
+}
+
+.shed-speed-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--color-text-dim);
+  min-width: 3.5rem;
+  text-align: right;
+}
+
 /* Segments */
 
 .shed-segments {

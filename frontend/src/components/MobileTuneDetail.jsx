@@ -365,6 +365,17 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
               </button>
             ))}
           </div>
+          <div className="shed-speed-slider">
+            <input
+              type="range"
+              min="0.25"
+              max="1.5"
+              step="0.05"
+              value={speed}
+              onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+            />
+            <span className="shed-speed-value">{speed.toFixed(2)}×</span>
+          </div>
 
           {/* Segments */}
           {segments.length > 0 && (
