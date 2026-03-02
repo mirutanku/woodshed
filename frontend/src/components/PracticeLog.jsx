@@ -431,6 +431,10 @@ function PracticeLog() {
   const [editEntryForm, setEditEntryForm] = useState({})
   const [confirmDeleteSession, setConfirmDeleteSession] = useState(null)
   const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null)
+  const [addingToSessionId, setAddingToSessionId] = useState(null)
+  const [newEntryForm, setNewEntryForm] = useState({
+    tune_id: '', focus: '', tempo_practiced: '', duration_minutes: '', notes: '', rating: 0,
+  })
 
   useEffect(() => {
     fetchSessions()
@@ -573,6 +577,26 @@ function PracticeLog() {
       fetchSessions()
     } catch (err) {
       toast('Failed to delete entry', 'error')
+    }
+  }
+
+  async function handleAddEntryToSession(sessionId) {
+    if (!newEntryForm.tune_id) return
+    try {
+      await api.post(`/sessions/${sessionId}/entries`, {
+        tune_id: parseInt(newEntryForm.tune_id, 10),
+        focus: newEntryForm.focus || null,
+        tempo_practiced: newEntryForm.tempo_practiced ? parseInt(newEntryForm.tempo_practiced, 10) : null,
+        duration_minutes: newEntryForm.duration_minutes ? parseInt(newEntryForm.duration_minutes, 10) : null,
+        notes: newEntryForm.notes.trim() || null,
+        rating: newEntryForm.rating || null,
+      })
+      toast('Entry added')
+      setAddingToSessionId(null)
+      setNewEntryForm({ tune_id: '', focus: '', tempo_practiced: '', duration_minutes: '', notes: '', rating: 0 })
+      fetchSessions()
+    } catch (err) {
+      toast('Failed to add entry', 'error')
     }
   }
 
@@ -1044,6 +1068,88 @@ function PracticeLog() {
                       </div>
                     )
                   ))}
+
+                  {/* Add entry to existing session */}
+                  {addingToSessionId === session.id ? (
+                    <div className="entry-edit-form">
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Tune *</label>
+                          <select
+                            value={newEntryForm.tune_id}
+                            onChange={e => setNewEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
+                            autoFocus
+                          >
+                            <option value="">Select a tune...</option>
+                            {tunes.map(t => (
+                              <option key={t.id} value={t.id}>
+                                {t.title}{t.composer ? ` (${t.composer})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Focus</label>
+                          <select
+                            value={newEntryForm.focus}
+                            onChange={e => setNewEntryForm(prev => ({ ...prev, focus: e.target.value }))}
+                          >
+                            <option value="">Select focus...</option>
+                            {FOCUS_OPTIONS.map(f => (
+                              <option key={f} value={f}>
+                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Tempo (BPM)</label>
+                          <input
+                            type="number"
+                            value={newEntryForm.tempo_practiced}
+                            onChange={e => setNewEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Duration (min)</label>
+                          <input
+                            type="number"
+                            value={newEntryForm.duration_minutes}
+                            onChange={e => setNewEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Notes</label>
+                        <input
+                          type="text"
+                          value={newEntryForm.notes}
+                          onChange={e => setNewEntryForm(prev => ({ ...prev, notes: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Rating</label>
+                        <StarRating
+                          value={newEntryForm.rating}
+                          onChange={val => setNewEntryForm(prev => ({ ...prev, rating: val }))}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                        <button className="btn-primary btn-sm" onClick={() => handleAddEntryToSession(session.id)}>Add</button>
+                        <button className="btn-ghost btn-sm" onClick={() => setAddingToSessionId(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{ marginTop: 'var(--space-sm)', fontSize: '0.8rem' }}
+                      onClick={() => setAddingToSessionId(session.id)}
+                    >
+                      + Add Entry
+                    </button>
+                  )}
                 </div>
               )}
             </div>

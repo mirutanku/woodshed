@@ -466,6 +466,32 @@ def update_entry(
     db.commit()
     return {"ok": True}
 
+@app.post("/api/sessions/{session_id}/entries", status_code=201)
+def add_entry_to_session(
+    session_id: int,
+    entry: PracticeEntryCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id,
+        PracticeSession.user_id == current_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    tune = db.query(Tune).filter(
+        Tune.id == entry.tune_id, Tune.user_id == current_user.id
+    ).first()
+    if not tune:
+        raise HTTPException(status_code=400, detail=f"Tune {entry.tune_id} not found")
+    db_entry = PracticeEntry(
+        session_id=session_id,
+        **entry.model_dump(),
+    )
+    db.add(db_entry)
+    db.commit()
+    return {"ok": True}
+
 @app.delete("/api/sessions/{session_id}", status_code=204)
 def delete_session(
     session_id: int,
