@@ -16,7 +16,7 @@ from schemas import (
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
-    PracticeEntryCreate, PracticeEntryResponse, PerformanceCreate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse
+    PracticeEntryCreate, PracticeEntryResponse, PracticeSessionUpdate, PracticeEntryUpdate, PerformanceCreate, PerformanceUpdate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 from fastapi.security import HTTPBearer
@@ -416,6 +416,93 @@ def create_session(
         })
     return {**db_session.__dict__, "entries": entry_responses}
 
+@app.patch("/api/sessions/{session_id}", response_model=PracticeSessionResponse)
+def update_session(
+    session_id: int,
+    updates: PracticeSessionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id,
+        PracticeSession.user_id == current_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    for field, value in updates.model_dump(exclude_unset=True).items():
+        setattr(session, field, value)
+    db.commit()
+    db.refresh(session)
+    entry_responses = []
+    for entry in session.entries:
+        entry_responses.append({
+            **entry.__dict__,
+            "tune_title": entry.tune.title if entry.tune else "",
+        })
+    return {**session.__dict__, "entries": entry_responses}
+
+@app.patch("/api/sessions/{session_id}/entries/{entry_id}")
+def update_entry(
+    session_id: int,
+    entry_id: int,
+    updates: PracticeEntryUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id,
+        PracticeSession.user_id == current_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    entry = db.query(PracticeEntry).filter(
+        PracticeEntry.id == entry_id,
+        PracticeEntry.session_id == session_id,
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    for field, value in updates.model_dump(exclude_unset=True).items():
+        setattr(entry, field, value)
+    db.commit()
+    return {"ok": True}
+
+@app.delete("/api/sessions/{session_id}", status_code=204)
+def delete_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id,
+        PracticeSession.user_id == current_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    db.delete(session)
+    db.commit()
+
+@app.delete("/api/sessions/{session_id}/entries/{entry_id}", status_code=204)
+def delete_entry(
+    session_id: int,
+    entry_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id,
+        PracticeSession.user_id == current_user.id,
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    entry = db.query(PracticeEntry).filter(
+        PracticeEntry.id == entry_id,
+        PracticeEntry.session_id == session_id,
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(entry)
+    db.commit()
+
 
 # --- Performances ---
 
@@ -437,6 +524,24 @@ def create_performance(
     db.commit()
     db.refresh(db_performance)
     return db_performance
+
+@app.patch("/api/performances/{performance_id}", response_model=PerformanceResponse)
+def update_performance(
+    performance_id: int,
+    updates: PerformanceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    performance = db.query(Performance).filter(
+        Performance.id == performance_id, Performance.user_id == current_user.id
+    ).first()
+    if not performance:
+        raise HTTPException(status_code=404, detail="Performance not found")
+    for key, value in updates.model_dump(exclude_unset=True).items():
+        setattr(performance, key, value)
+    db.commit()
+    db.refresh(performance)
+    return performance
 
 @app.delete("/api/performances/{performance_id}", status_code=204)
 def delete_performance(

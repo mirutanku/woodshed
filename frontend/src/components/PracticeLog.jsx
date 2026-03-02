@@ -33,7 +33,7 @@ function StarDisplay({ value }) {
 
 const FOCUS_OPTIONS = ['transcription', 'technique', 'memorization', 'tempo', 'ear training', 'reading']
 
-function UpcomingPerformances({ performances, onAdd, onDelete }) {
+function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -41,6 +41,8 @@ function UpcomingPerformances({ performances, onAdd, onDelete }) {
   const [time, setTime] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
 
   // Filter to upcoming (today or later) and sort soonest first
   const upcoming = useMemo(() => {
@@ -71,6 +73,43 @@ function UpcomingPerformances({ performances, onAdd, onDelete }) {
       setShowForm(false)
     } catch (err) {
       console.error('Failed to add performance:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function startEdit(p) {
+    setEditingId(p.id)
+    setEditForm({
+      title: p.title,
+      date: p.date,
+      time: p.time || '',
+      venue: p.venue || '',
+      notes: p.notes || '',
+    })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditForm({})
+  }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault()
+    if (!editForm.title.trim() || !editForm.date) return
+
+    setSaving(true)
+    try {
+      await onEdit(editingId, {
+        title: editForm.title.trim(),
+        date: editForm.date,
+        time: editForm.time.trim() || null,
+        venue: editForm.venue.trim() || null,
+        notes: editForm.notes.trim() || null,
+      })
+      cancelEdit()
+    } catch (err) {
+      console.error('Failed to edit performance:', err)
     } finally {
       setSaving(false)
     }
@@ -147,24 +186,66 @@ function UpcomingPerformances({ performances, onAdd, onDelete }) {
       ) : (
         <div className="perf-list">
           {upcoming.map(p => (
-            <div key={p.id} className="perf-item">
-              <div className="perf-info">
-                <span className="perf-title">{p.title}</span>
-                <span className="perf-meta">
-                  {formatPerformanceDate(p.date)}
-                  {p.time && ` at ${p.time}`}
-                  {p.venue && ` · ${p.venue}`}
-                  <span className="perf-countdown">{daysUntil(p.date)}</span>
-                </span>
+            editingId === p.id ? (
+              <form key={p.id} className="perf-form" onSubmit={handleSaveEdit}>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Gig name"
+                  autoFocus
+                />
+                <input
+                  type="date"
+                  value={editForm.date}
+                  onChange={e => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                />
+                <input
+                  type="time"
+                  value={editForm.time}
+                  onChange={e => setEditForm(prev => ({ ...prev, time: e.target.value }))}
+                />
+                <input
+                  type="text"
+                  value={editForm.venue}
+                  onChange={e => setEditForm(prev => ({ ...prev, venue: e.target.value }))}
+                  placeholder="Venue"
+                />
+                <input
+                  type="text"
+                  value={editForm.notes}
+                  onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Notes"
+                />
+                <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+                  <button type="submit" className="btn-primary btn-sm" disabled={saving}>
+                    {saving ? '...' : 'Save'}
+                  </button>
+                  <button type="button" className="btn-ghost btn-sm" onClick={cancelEdit}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div key={p.id} className="perf-item">
+                <div className="perf-info" onClick={() => startEdit(p)} style={{ cursor: 'pointer' }}>
+                  <span className="perf-title">{p.title}</span>
+                  <span className="perf-meta">
+                    {formatPerformanceDate(p.date)}
+                    {p.time && ` at ${p.time}`}
+                    {p.venue && ` · ${p.venue}`}
+                    <span className="perf-countdown">{daysUntil(p.date)}</span>
+                  </span>
+                </div>
+                <button
+                  className="btn-ghost btn-sm"
+                  style={{ color: 'var(--color-danger)', padding: '0.1rem 0.4rem', fontSize: '0.75rem' }}
+                  onClick={() => onDelete(p.id)}
+                >
+                  ×
+                </button>
               </div>
-              <button
-                className="btn-ghost btn-sm"
-                style={{ color: 'var(--color-danger)', padding: '0.1rem 0.4rem', fontSize: '0.75rem' }}
-                onClick={() => onDelete(p.id)}
-              >
-                ×
-              </button>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -173,7 +254,7 @@ function UpcomingPerformances({ performances, onAdd, onDelete }) {
 }
 
 
-function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance }) {
+function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance, onEditPerformance }) {
   const stats = useMemo(() => {
     if (sessions.length === 0) return null
 
@@ -294,6 +375,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
           performances={performances}
           onAdd={onAddPerformance}
           onDelete={onDeletePerformance}
+          onEdit={onEditPerformance}
         />
 
         {stats.tempoProgress.length > 0 && (
@@ -342,6 +424,14 @@ function PracticeLog() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Edit state
+  const [editingSessionId, setEditingSessionId] = useState(null)
+  const [editSessionForm, setEditSessionForm] = useState({})
+  const [editingEntryId, setEditingEntryId] = useState(null)
+  const [editEntryForm, setEditEntryForm] = useState({})
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState(null)
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null)
+
   useEffect(() => {
     fetchSessions()
     fetchTunes()
@@ -387,6 +477,103 @@ function PracticeLog() {
     await api.delete(`/performances/${id}`)
     setPerformances(prev => prev.filter(p => p.id !== id))
     toast('Performance removed')
+  }
+
+  async function handleEditPerformance(id, data) {
+    await api.patch(`/performances/${id}`, data)
+    toast('Performance updated')
+    fetchPerformances()
+  }
+
+  // --- Session editing ---
+
+  function startEditSession(session) {
+    setEditingSessionId(session.id)
+    setEditSessionForm({
+      date: session.date,
+      duration_minutes: session.duration_minutes || '',
+      notes: session.notes || '',
+    })
+  }
+
+  function cancelEditSession() {
+    setEditingSessionId(null)
+    setEditSessionForm({})
+  }
+
+  async function handleSaveSession(e) {
+    e.preventDefault()
+    try {
+      await api.patch(`/sessions/${editingSessionId}`, {
+        date: editSessionForm.date,
+        duration_minutes: editSessionForm.duration_minutes ? parseInt(editSessionForm.duration_minutes, 10) : null,
+        notes: editSessionForm.notes.trim() || null,
+      })
+      toast('Session updated')
+      cancelEditSession()
+      fetchSessions()
+    } catch (err) {
+      toast('Failed to update session', 'error')
+    }
+  }
+
+  async function handleDeleteSession(id) {
+    try {
+      await api.delete(`/sessions/${id}`)
+      setSessions(prev => prev.filter(s => s.id !== id))
+      setConfirmDeleteSession(null)
+      toast('Session deleted')
+    } catch (err) {
+      toast('Failed to delete session', 'error')
+    }
+  }
+
+  // --- Entry editing ---
+
+  function startEditEntry(entry) {
+    setEditingEntryId(entry.id)
+    setEditEntryForm({
+      tune_id: entry.tune_id,
+      focus: entry.focus || '',
+      tempo_practiced: entry.tempo_practiced || '',
+      duration_minutes: entry.duration_minutes || '',
+      notes: entry.notes || '',
+      rating: entry.rating || 0,
+    })
+  }
+
+  function cancelEditEntry() {
+    setEditingEntryId(null)
+    setEditEntryForm({})
+  }
+
+  async function handleSaveEntry(sessionId, entryId) {
+    try {
+      await api.patch(`/sessions/${sessionId}/entries/${entryId}`, {
+        tune_id: parseInt(editEntryForm.tune_id, 10),
+        focus: editEntryForm.focus || null,
+        tempo_practiced: editEntryForm.tempo_practiced ? parseInt(editEntryForm.tempo_practiced, 10) : null,
+        duration_minutes: editEntryForm.duration_minutes ? parseInt(editEntryForm.duration_minutes, 10) : null,
+        notes: editEntryForm.notes.trim() || null,
+        rating: editEntryForm.rating || null,
+      })
+      toast('Entry updated')
+      cancelEditEntry()
+      fetchSessions()
+    } catch (err) {
+      toast('Failed to update entry', 'error')
+    }
+  }
+
+  async function handleDeleteEntry(sessionId, entryId) {
+    try {
+      await api.delete(`/sessions/${sessionId}/entries/${entryId}`)
+      setConfirmDeleteEntry(null)
+      toast('Entry removed')
+      fetchSessions()
+    } catch (err) {
+      toast('Failed to delete entry', 'error')
+    }
   }
 
   function addEntry() {
@@ -496,6 +683,7 @@ function PracticeLog() {
           performances={performances}
           onAddPerformance={handleAddPerformance}
           onDeletePerformance={handleDeletePerformance}
+          onEditPerformance={handleEditPerformance}
         />
       )}
 
@@ -563,7 +751,9 @@ function PracticeLog() {
                     >
                       <option value="">Select a tune...</option>
                       {tunes.map(t => (
-                        <option key={t.id} value={t.id}>{t.title}</option>
+                        <option key={t.id} value={t.id}>
+                          {t.title}{t.composer ? ` (${t.composer})` : ''}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -653,40 +843,206 @@ function PracticeLog() {
         <div className="session-list">
           {sessions.map(session => (
             <div key={session.id} className="session-card slide-up">
-              <div
-                className="session-card-header"
-                onClick={() =>
-                  setExpandedSession(expandedSession === session.id ? null : session.id)
-                }
-              >
-                <div>
-                  <span className="session-date">{formatSessionDate(session.date)}</span>
-                  {session.notes && (
-                    <p className="text-sm text-dim mt-sm">{session.notes}</p>
-                  )}
+              {editingSessionId === session.id ? (
+                <form className="session-edit-form" onSubmit={handleSaveSession}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Date</label>
+                      <input
+                        type="date"
+                        value={editSessionForm.date}
+                        onChange={e => setEditSessionForm(prev => ({ ...prev, date: e.target.value }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Duration (min)</label>
+                      <input
+                        type="number"
+                        value={editSessionForm.duration_minutes}
+                        onChange={e => setEditSessionForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Notes</label>
+                    <input
+                      type="text"
+                      value={editSessionForm.notes}
+                      onChange={e => setEditSessionForm(prev => ({ ...prev, notes: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                    <button type="submit" className="btn-primary btn-sm">Save</button>
+                    <button type="button" className="btn-ghost btn-sm" onClick={cancelEditSession}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <div className="session-card-header">
+                  <div
+                    style={{ flex: 1, cursor: 'pointer' }}
+                    onClick={() =>
+                      setExpandedSession(expandedSession === session.id ? null : session.id)
+                    }
+                  >
+                    <span className="session-date">{formatSessionDate(session.date)}</span>
+                    {session.notes && (
+                      <p className="text-sm text-dim mt-sm">{session.notes}</p>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                    <span className="text-sm text-dim">
+                      {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
+                    </span>
+                    {session.duration_minutes && (
+                      <span className="session-duration">{session.duration_minutes} min</span>
+                    )}
+                    <button
+                      className="btn-ghost btn-sm"
+                      style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                      onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
+                      title="Edit session"
+                    >
+                      ✎
+                    </button>
+                    {confirmDeleteSession === session.id ? (
+                      <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                        <span className="text-sm text-dim">Delete?</span>
+                        <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                          onClick={() => handleDeleteSession(session.id)}>Yes</button>
+                        <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                          onClick={() => setConfirmDeleteSession(null)}>No</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn-ghost btn-sm"
+                        style={{ color: 'var(--color-danger)', fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
+                        title="Delete session"
+                      >
+                        ×
+                      </button>
+                    )}
+                    <span
+                      className="text-dim"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() =>
+                        setExpandedSession(expandedSession === session.id ? null : session.id)
+                      }
+                    >
+                      {expandedSession === session.id ? '▾' : '▸'}
+                    </span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                  <span className="text-sm text-dim">
-                    {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
-                  </span>
-                  {session.duration_minutes && (
-                    <span className="session-duration">{session.duration_minutes} min</span>
-                  )}
-                  <span className="text-dim">{expandedSession === session.id ? '▾' : '▸'}</span>
-                </div>
-              </div>
+              )}
 
-              {expandedSession === session.id && session.entries.length > 0 && (
+              {expandedSession === session.id && session.entries.length > 0 && editingSessionId !== session.id && (
                 <div className="session-entries fade-in">
                   {session.entries.map(entry => (
-                    <div key={entry.id} className="entry-row">
-                      <span className="entry-tune">{entry.tune_title}</span>
-                      <span className="entry-focus">{entry.focus || ''}</span>
-                      <span className="entry-tempo">
-                        {entry.tempo_practiced ? `${entry.tempo_practiced} bpm` : ''}
-                      </span>
-                      <StarDisplay value={entry.rating} />
-                    </div>
+                    editingEntryId === entry.id ? (
+                      <div key={entry.id} className="entry-edit-form">
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label>Tune</label>
+                            <select
+                              value={editEntryForm.tune_id}
+                              onChange={e => setEditEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
+                            >
+                              <option value="">Select a tune...</option>
+                              {tunes.map(t => (
+                                <option key={t.id} value={t.id}>
+                                  {t.title}{t.composer ? ` (${t.composer})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>Focus</label>
+                            <select
+                              value={editEntryForm.focus}
+                              onChange={e => setEditEntryForm(prev => ({ ...prev, focus: e.target.value }))}
+                            >
+                              <option value="">Select focus...</option>
+                              {FOCUS_OPTIONS.map(f => (
+                                <option key={f} value={f}>
+                                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label>Tempo (BPM)</label>
+                            <input
+                              type="number"
+                              value={editEntryForm.tempo_practiced}
+                              onChange={e => setEditEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Duration (min)</label>
+                            <input
+                              type="number"
+                              value={editEntryForm.duration_minutes}
+                              onChange={e => setEditEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Notes</label>
+                          <input
+                            type="text"
+                            value={editEntryForm.notes}
+                            onChange={e => setEditEntryForm(prev => ({ ...prev, notes: e.target.value }))}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Rating</label>
+                          <StarRating
+                            value={editEntryForm.rating}
+                            onChange={val => setEditEntryForm(prev => ({ ...prev, rating: val }))}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                          <button className="btn-primary btn-sm" onClick={() => handleSaveEntry(session.id, entry.id)}>Save</button>
+                          <button className="btn-ghost btn-sm" onClick={cancelEditEntry}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={entry.id} className="entry-row">
+                        <span className="entry-tune">{entry.tune_title}</span>
+                        <span className="entry-focus">{entry.focus || ''}</span>
+                        <span className="entry-tempo">
+                          {entry.tempo_practiced ? `${entry.tempo_practiced} bpm` : ''}
+                        </span>
+                        <StarDisplay value={entry.rating} />
+                        <button
+                          className="btn-ghost btn-sm"
+                          style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                          onClick={() => startEditEntry(entry)}
+                          title="Edit entry"
+                        >
+                          ✎
+                        </button>
+                        {confirmDeleteEntry === entry.id ? (
+                          <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                            <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                              onClick={() => handleDeleteEntry(session.id, entry.id)}>Yes</button>
+                            <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                              onClick={() => setConfirmDeleteEntry(null)}>No</button>
+                          </div>
+                        ) : (
+                          <button
+                            className="btn-ghost btn-sm"
+                            style={{ color: 'var(--color-danger)', fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                            onClick={() => setConfirmDeleteEntry(entry.id)}
+                            title="Delete entry"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    )
                   ))}
                 </div>
               )}

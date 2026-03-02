@@ -1,14 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
-const STATUS_FILTERS = ['all', 'learning','transcribing','playable', 'polished', 'retired']
+const STATUS_FILTERS = ['all', 'learning', 'playable', 'polished', 'retired']
+
+const SORT_OPTIONS = [
+  { value: 'title-asc', label: 'Title A → Z' },
+  { value: 'title-desc', label: 'Title Z → A' },
+  { value: 'composer-asc', label: 'Composer A → Z' },
+  { value: 'composer-desc', label: 'Composer Z → A' },
+  { value: 'status', label: 'Status' },
+]
+
+const STATUS_ORDER = ['learning', 'transcribing', 'playable', 'polished', 'retired']
 
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])
   const [filter, setFilter] = useState('all')
+  const [sort, setSort] = useState('title-asc')
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
 
@@ -34,6 +45,27 @@ function TuneList({ onSelectTune }) {
     fetchTunes()
   }
 
+  const sortedTunes = useMemo(() => {
+    const sorted = [...tunes]
+    switch (sort) {
+      case 'title-asc':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title))
+      case 'title-desc':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title))
+      case 'composer-asc':
+        return sorted.sort((a, b) => (a.composer || '').localeCompare(b.composer || ''))
+      case 'composer-desc':
+        return sorted.sort((a, b) => (b.composer || '').localeCompare(a.composer || ''))
+      case 'status':
+        return sorted.sort((a, b) =>
+          STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
+          || a.title.localeCompare(b.title)
+        )
+      default:
+        return sorted
+    }
+  }, [tunes, sort])
+
   return (
     <div className="fade-in">
       <div className="tune-list-header">
@@ -50,6 +82,15 @@ function TuneList({ onSelectTune }) {
               </button>
             ))}
           </div>
+          <select
+            className="sort-select"
+            value={sort}
+            onChange={e => setSort(e.target.value)}
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
           <button
             className="btn-primary btn-sm"
             onClick={() => setShowAddForm(!showAddForm)}
@@ -78,7 +119,7 @@ function TuneList({ onSelectTune }) {
         </div>
       ) : (
         <div className="tune-grid stagger">
-          {tunes.map(tune => (
+          {sortedTunes.map(tune => (
             <div
               key={tune.id}
               className="tune-row slide-up"

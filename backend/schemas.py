@@ -174,6 +174,26 @@ class PerformanceCreate(BaseModel):
     venue: str | None = None
     notes: str | None = None
 
+class PerformanceUpdate(BaseModel):
+    title: str | None = None
+    date: str | None = None
+    time: str | None = None
+    venue: str | None = None
+    notes: str | None = None
+
+class PracticeSessionUpdate(BaseModel):
+    date: str | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+
+class PracticeEntryUpdate(BaseModel):
+    tune_id: int | None = None
+    focus: str | None = None
+    tempo_practiced: int | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    rating: int | None = None
+
 class PerformanceResponse(BaseModel):
     id: int
     title: str
