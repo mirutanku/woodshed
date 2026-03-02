@@ -1789,6 +1789,40 @@
   transform: scale(0.95);
 }
 
+.shed-segment-edit {
+  padding: var(--space-md);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shed-segment-edit-times {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.shed-segment-edit-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.shed-segment-edit-field label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.shed-segment-edit-field input {
+  font-size: 1rem;
+}
+
 .shed-speed-slider {
   display: flex;
   align-items: center;

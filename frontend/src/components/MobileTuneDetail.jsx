@@ -40,6 +40,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   const [markEnd, setMarkEnd] = useState(null)
   const [markLabel, setMarkLabel] = useState('')
   const [markSaving, setMarkSaving] = useState(false)
+  
+  const [editingSegment, setEditingSegment] = useState(null)
+  const [editSegForm, setEditSegForm] = useState({})
+  const longPressTimer = useRef(null)
 
   // Auto-select first recording
   useEffect(() => {
@@ -152,6 +156,40 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     audio.addEventListener('timeupdate', handleTimeUpdate)
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate)
   }, [loopSegment])
+
+  function handleSegmentPressStart(segment) {
+    longPressTimer.current = setTimeout(() => {
+      setEditingSegment(segment.id)
+      setEditSegForm({
+        label: segment.label,
+        start_time: segment.start_time,
+        end_time: segment.end_time,
+      })
+    }, 500)
+  }
+
+  function handleSegmentPressEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  async function handleSaveSegment(segmentId) {
+    if (!selectedRecording) return
+    try {
+      await api.patch(`/recordings/${selectedRecording.id}/segments/${segmentId}`, {
+        label: editSegForm.label.trim(),
+        start_time: parseFloat(editSegForm.start_time),
+        end_time: parseFloat(editSegForm.end_time),
+      })
+      toast('Segment updated')
+      setEditingSegment(null)
+      fetchSegments()
+    } catch (err) {
+      toast('Failed to update segment', 'error')
+    }
+  }
 
   function togglePlay() {
     const audio = audioRef.current
@@ -381,20 +419,70 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
           {segments.length > 0 && (
             <div className="shed-segments">
               {segments.map(seg => (
-                <button
-                  key={seg.id}
-                  className={`shed-segment-btn ${loopSegment?.id === seg.id ? 'active' : ''}`}
-                  onClick={() => handleSegmentTap(seg)}
-                >
-                  <span
-                    className="shed-segment-dot"
-                    style={{ background: seg.color || 'var(--color-amber)' }}
-                  />
-                  <span className="shed-segment-label">{seg.label}</span>
-                  <span className="shed-segment-time">
-                    {formatTime(seg.start_time)}–{formatTime(seg.end_time)}
-                  </span>
-                </button>
+                editingSegment === seg.id ? (
+                  <div key={seg.id} className="shed-segment-edit">
+                    <input
+                      type="text"
+                      value={editSegForm.label}
+                      onChange={e => setEditSegForm(prev => ({ ...prev, label: e.target.value }))}
+                      placeholder="Label"
+                    />
+                    <div className="shed-segment-edit-times">
+                      <div className="shed-segment-edit-field">
+                        <label>Start (sec)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editSegForm.start_time}
+                          onChange={e => setEditSegForm(prev => ({ ...prev, start_time: e.target.value }))}
+                        />
+                        <button
+                          className="btn-ghost btn-action"
+                          onClick={() => setEditSegForm(prev => ({ ...prev, start_time: Math.round(currentTime * 10) / 10 }))}
+                        >
+                          Now
+                        </button>
+                      </div>
+                      <div className="shed-segment-edit-field">
+                        <label>End (sec)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editSegForm.end_time}
+                          onChange={e => setEditSegForm(prev => ({ ...prev, end_time: e.target.value }))}
+                        />
+                        <button
+                          className="btn-ghost btn-action"
+                          onClick={() => setEditSegForm(prev => ({ ...prev, end_time: Math.round(currentTime * 10) / 10 }))}
+                        >
+                          Now
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                      <button className="btn-primary btn-sm" onClick={() => handleSaveSegment(seg.id)}>Save</button>
+                      <button className="btn-ghost btn-sm" onClick={() => setEditingSegment(null)}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    key={seg.id}
+                    className={`shed-segment-btn ${loopSegment?.id === seg.id ? 'active' : ''}`}
+                    onClick={() => handleSegmentTap(seg)}
+                    onTouchStart={() => handleSegmentPressStart(seg)}
+                    onTouchEnd={handleSegmentPressEnd}
+                    onTouchCancel={handleSegmentPressEnd}
+                  >
+                    <span
+                      className="shed-segment-dot"
+                      style={{ background: seg.color || 'var(--color-amber)' }}
+                    />
+                    <span className="shed-segment-label">{seg.label}</span>
+                    <span className="shed-segment-time">
+                      {formatTime(seg.start_time)}–{formatTime(seg.end_time)}
+                    </span>
+                  </button>
+                )
               ))}
             </div>
           )}
