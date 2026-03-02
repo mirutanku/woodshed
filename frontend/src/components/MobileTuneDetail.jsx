@@ -123,6 +123,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     }
   }, [isPlaying, tick])
 
+  // Fallback loop enforcement for mobile background playback
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !loopSegment) return
+
+    function handleTimeUpdate() {
+      if (loopSegment && audio.currentTime >= loopSegment.end_time) {
+        audio.currentTime = loopSegment.start_time
+      }
+    }
+
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    return () => audio.removeEventListener('timeupdate', handleTimeUpdate)
+  }, [loopSegment])
+
   function togglePlay() {
     const audio = audioRef.current
     if (!audio) return
