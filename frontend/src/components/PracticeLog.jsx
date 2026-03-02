@@ -137,9 +137,8 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
       <div className="summary-section-header">
         <h3>Upcoming</h3>
         <button
-          className="btn-ghost btn-sm"
+          className="btn-ghost btn-action"
           onClick={() => setShowForm(!showForm)}
-          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
         >
           {showForm ? '×' : '+'}
         </button>
@@ -238,8 +237,8 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
                   </span>
                 </div>
                 <button
-                  className="btn-ghost btn-sm"
-                  style={{ color: 'var(--color-danger)', padding: '0.1rem 0.4rem', fontSize: '0.75rem' }}
+                  className="btn-ghost btn-action"
+                  style={{ color: 'var(--color-danger)' }}
                   onClick={() => onDelete(p.id)}
                 >
                   ×
@@ -921,8 +920,7 @@ function PracticeLog() {
                       <span className="session-duration">{session.duration_minutes} min</span>
                     )}
                     <button
-                      className="btn-ghost btn-sm"
-                      style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                      className="btn-ghost btn-action"
                       onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
                       title="Edit session"
                     >
@@ -938,8 +936,7 @@ function PracticeLog() {
                       </div>
                     ) : (
                       <button
-                        className="btn-ghost btn-sm"
-                        style={{ color: 'var(--color-danger)', fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                        className="btn-ghost btn-action"
                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
                         title="Delete session"
                       >
@@ -1039,8 +1036,7 @@ function PracticeLog() {
                           {entry.duration_minutes ? `${entry.duration_minutes} min` : ''}
                         </span>
                         <button
-                          className="btn-ghost btn-sm"
-                          style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                          className="btn-ghost btn-action"
                           onClick={() => startEditEntry(entry)}
                           title="Edit entry"
                         >
@@ -1055,8 +1051,7 @@ function PracticeLog() {
                           </div>
                         ) : (
                           <button
-                            className="btn-ghost btn-sm"
-                            style={{ color: 'var(--color-danger)', fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                            className="btn-ghost btn-action"
                             onClick={() => setConfirmDeleteEntry(entry.id)}
                             title="Delete entry"
                           >

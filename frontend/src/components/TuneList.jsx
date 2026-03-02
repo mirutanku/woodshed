@@ -92,7 +92,7 @@ function TuneList({ onSelectTune }) {
             ))}
           </select>
           <button
-            className="btn-primary btn-sm"
+            className="btn-primary"
             onClick={() => setShowAddForm(!showAddForm)}
           >
             {showAddForm ? 'Cancel' : '+ Add Tune'}

@@ -194,6 +194,16 @@ button:disabled {
   padding: 0.4rem 0.8rem;
 }
 
+.btn-action {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* --- Inputs --- */
 
 input, textarea, select {

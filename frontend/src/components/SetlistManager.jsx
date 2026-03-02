@@ -284,21 +284,21 @@ function SetlistManager({onSelectTune}) {
                 <div className="setlist-item-actions">
                   <button
                     type="button"
-                    className="btn-ghost btn-sm"
+                    className="btn-ghost btn-action"
                     onClick={() => moveItem(idx, -1)}
                     disabled={idx === 0}
                     title="Move up"
                   >↑</button>
                   <button
                     type="button"
-                    className="btn-ghost btn-sm"
+                    className="btn-ghost btn-action"
                     onClick={() => moveItem(idx, 1)}
                     disabled={idx === items.length - 1}
                     title="Move down"
                   >↓</button>
                   <button
                     type="button"
-                    className="btn-ghost btn-sm"
+                    className="btn-ghost btn-action"
                     style={{ color: 'var(--color-danger)' }}
                     onClick={() => removeItem(item.localId)}
                   >×</button>
@@ -369,7 +369,7 @@ function SetlistManager({onSelectTune}) {
                       Edit
                     </button>
                     <button
-                      className="btn-ghost btn-sm"
+                      className="btn-ghost btn-action"
                       style={{ color: 'var(--color-danger)' }}
                       onClick={e => { e.stopPropagation(); handleDelete(setlist.id) }}
                     >

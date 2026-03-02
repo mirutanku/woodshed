@@ -139,7 +139,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
                   Edit
                 </button>
                 <button
-                  className="btn-ghost btn-sm"
+                  className="btn-ghost btn-action"
                   style={{ color: 'var(--color-danger)' }}
                   onClick={() => handleDelete(seg.id)}
                 >
