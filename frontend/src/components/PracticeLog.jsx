@@ -1035,11 +1035,9 @@ function PracticeLog() {
                     ) : (
                       <div key={entry.id} className="entry-row">
                         <span className="entry-tune">{entry.tune_title}</span>
-                        <span className="entry-focus">{entry.focus || ''}</span>
-                        <span className="entry-tempo">
-                          {entry.tempo_practiced ? `${entry.tempo_practiced} bpm` : ''}
+                        <span className="entry-duration">
+                          {entry.duration_minutes ? `${entry.duration_minutes} min` : ''}
                         </span>
-                        <StarDisplay value={entry.rating} />
                         <button
                           className="btn-ghost btn-sm"
                           style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}

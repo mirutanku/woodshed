@@ -1249,6 +1249,12 @@
   color: var(--color-text-muted);
 }
 
+.entry-duration {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
 /* Practice Form */
 
 .practice-form {
@@ -1289,7 +1295,7 @@
 
 /* --- Responsive --- */
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .main-content {
     padding: var(--space-md);
   }
@@ -1345,10 +1351,26 @@
     grid-template-columns: 1fr;
   }
 
-  /* Practice log */
+/* Practice log */
   .entry-row {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: var(--space-xs);
+  }
+
+  .entry-row .entry-tune {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .entry-row .entry-focus,
+  .entry-row .entry-tempo,
+  .entry-row .star-rating {
+    display: none;
   }
 
   .segment-form {
