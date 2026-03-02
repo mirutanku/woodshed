@@ -123,13 +123,28 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     }
   }, [isPlaying, tick])
 
-  // Fallback loop enforcement for mobile background playback
+  // Fallback loop enforcement for background playback
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !loopSegment) return
 
     function handleTimeUpdate() {
       if (loopSegment && audio.currentTime >= loopSegment.end_time) {
+        // Auto-ramp in background
+        const ramp = rampRef.current
+        if (ramp.enabled) {
+          const currentSpeed = speedRef.current
+          if (currentSpeed < ramp.end) {
+            const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
+            const rounded = Math.round(newSpeed * 100) / 100
+            setSpeed(rounded)
+            speedRef.current = rounded
+            audio.playbackRate = rounded
+            if (rounded >= ramp.end) {
+              setRampReachedMax(true)
+            }
+          }
+        }
         audio.currentTime = loopSegment.start_time
       }
     }
