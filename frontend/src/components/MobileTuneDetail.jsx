@@ -45,6 +45,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   const [editSegForm, setEditSegForm] = useState({})
   const longPressTimer = useRef(null)
 
+  const [confirmDeleteSegment, setConfirmDeleteSegment] = useState(false)
+
   // Auto-select first recording
   useEffect(() => {
     if (recordings.length > 0 && !selectedRecording) {
@@ -189,6 +191,19 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     toast('Failed to update segment', 'error')
   }
 }
+
+  async function handleDeleteSegment(segmentId) {
+    try {
+      await api.delete(`/segments/${segmentId}`)
+      toast('Segment deleted')
+      if (loopSegment?.id === segmentId)
+      setLoopSegment(null)
+      setEditingSegment(null)
+      fetchSegments()
+    } catch (err) {
+      toast('Failed to delete segment', 'error')
+    }
+  }
 
   function togglePlay() {
     const audio = audioRef.current
@@ -461,6 +476,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
                     <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
                       <button className="btn-primary btn-sm" onClick={() => handleSaveSegment(seg.id)}>Save</button>
                       <button className="btn-ghost btn-sm" onClick={() => setEditingSegment(null)}>Cancel</button>
+                      {confirmDeleteSegment ? (
+                        <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                          <span className="text-sm text-dim">Sure?</span>
+                          <button className="btn-danger btn-sm" onClick={() => handleDeleteSegment(seg.id)}>Yes, Delete</button>
+                          <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteSegment(false)}>No</button>
+                        </div>
+                      ) : (
+                        <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteSegment(true)}>Delete</button>
+                      )}
                     </div>
                   </div>
                 ) : (
