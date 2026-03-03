@@ -1643,6 +1643,16 @@
   margin-bottom: var(--space-sm);
 }
 
+.shed-tune-edit {
+  padding: var(--space-md);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
 .shed-key-badge {
   display: inline-block;
   font-size: 0.8rem;

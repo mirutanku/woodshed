@@ -170,6 +170,8 @@ function TuneDetail({ tuneId, onBack }) {
         recordings={recordings}
         onBack={onBack}
         onRecordingsChanged={fetchRecordings}
+        onTuneChanged={fetchTune}
+        onTuneDeleted={onBack}
       />
     )
   }

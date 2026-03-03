@@ -10,7 +10,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
+function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTuneChanged, onTuneDeleted }) {
   const toast = useToast()
   const audioRef = useRef(null)
   const animFrameRef = useRef(null)
@@ -24,6 +24,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   const [duration, setDuration] = useState(0)
   const [speed, setSpeed] = useState(1.0)
   const [loopSegment, setLoopSegment] = useState(null)
+  const [editingSegment, setEditingSegment] = useState(null)
+  const [confirmDeleteSegment, setConfirmDeleteSegment] = useState(false)
+  const [editSegForm, setEditSegForm] = useState({})
+  const [editingTune, setEditingTune] = useState(false)
+  const [tuneForm, setTuneForm] = useState({})
+  const [confirmDeleteTune, setConfirmDeleteTune] = useState(false)
+  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const longPressTimer = useRef(null)
 
   // Auto-ramp state
   const [rampEnabled, setRampEnabled] = useState(false)
@@ -40,12 +49,6 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   const [markEnd, setMarkEnd] = useState(null)
   const [markLabel, setMarkLabel] = useState('')
   const [markSaving, setMarkSaving] = useState(false)
-  
-  const [editingSegment, setEditingSegment] = useState(null)
-  const [editSegForm, setEditSegForm] = useState({})
-  const longPressTimer = useRef(null)
-
-  const [confirmDeleteSegment, setConfirmDeleteSegment] = useState(false)
 
   // Auto-select first recording
   useEffect(() => {
@@ -207,6 +210,67 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
     }
   }
 
+  function startEditTune() {
+    setEditingTune(true)
+    setTuneForm({
+      title: tune.title || '',
+      composer: tune.composer || '',
+      key: tune.key || '',
+      tempo: tune.tempo || '',
+      form: tune.form || '',
+      status: tune.status || 'learning',
+      notes: tune.notes || '',
+    })
+  }
+
+  async function handleSaveTune() {
+    if (!tuneForm.title.trim()) return
+    try {
+      await api.patch(`/tunes/${tune.id}`, {
+        title: tuneForm.title.trim(),
+        composer: tuneForm.composer.trim() || null,
+        key: tuneForm.key.trim() || null,
+        tempo: tuneForm.tempo ? parseInt(tuneForm.tempo, 10) : null,
+        form: tuneForm.form.trim() || null,
+        status: tuneForm.status,
+        notes: tuneForm.notes.trim() || null,
+      })
+      toast('Tune updated')
+      setEditingTune(false)
+      if (onTuneChanged) onTuneChanged()
+    } catch (err) {
+      toast('Failed to update tune', 'error')
+    }
+  }
+
+  async function handleDeleteTune() {
+    try {
+      await api.delete(`/tunes/${tune.id}`)
+      toast('Tune deleted')
+      if (onTuneDeleted) onTuneDeleted()
+    } catch (err) {
+      toast('Failed to delete tune', 'error')
+    } finally {
+      setConfirmDeleteTune(false)
+    }
+  }
+
+  async function handleDeleteRecording(recId) {
+    try {
+      await api.delete(`/recordings/${recId}`)
+      toast('Recording deleted')
+      setConfirmDeleteRecording(null)
+      if (selectedRecording?.id === recId) {
+        stopPlayback()
+        setSelectedRecording(null)
+        setSegments([])
+      }
+      onRecordingsChanged()
+    } catch (err) {
+      toast('Failed to delete recording', 'error')
+    }
+  }
+
   function togglePlay() {
     const audio = audioRef.current
     if (!audio) return
@@ -327,18 +391,122 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
         ← Back
       </button>
 
-      <div className="shed-now-playing">
-        <h1 className="shed-tune-now">{tune.title}</h1>
-        {tune.composer && (
-          <span className="shed-composer-now">{tune.composer}</span>
-        )}
-        {tune.key && (
-          <span className="shed-key-badge">{tune.key}</span>
-        )}
-      </div>
+      {editingTune ? (
+        <div className="shed-tune-edit">
+          <div className="form-group">
+            <label>Title *</label>
+            <input
+              type="text"
+              value={tuneForm.title}
+              onChange={e => setTuneForm(prev => ({ ...prev, title: e.target.value }))}
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <label>Composer</label>
+            <input
+              type="text"
+              value={tuneForm.composer}
+              onChange={e => setTuneForm(prev => ({ ...prev, composer: e.target.value }))}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Key</label>
+              <input
+                type="text"
+                value={tuneForm.key}
+                onChange={e => setTuneForm(prev => ({ ...prev, key: e.target.value }))}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Tempo</label>
+              <input
+                type="number"
+                value={tuneForm.tempo}
+                onChange={e => setTuneForm(prev => ({ ...prev, tempo: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Form</label>
+              <input
+                type="text"
+                value={tuneForm.form}
+                onChange={e => setTuneForm(prev => ({ ...prev, form: e.target.value }))}
+              />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Status</label>
+              <select
+                value={tuneForm.status}
+                onChange={e => setTuneForm(prev => ({ ...prev, status: e.target.value }))}
+              >
+                <option value="learning">Learning</option>
+                <option value="transcribing">Transcribing</option>
+                <option value="playable">Playable</option>
+                <option value="polished">Polished</option>
+                <option value="retired">Retired</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Notes</label>
+            <textarea
+              value={tuneForm.notes}
+              onChange={e => setTuneForm(prev => ({ ...prev, notes: e.target.value }))}
+              rows={2}
+            />
+          </div>
+          {/* Recordings management */}
+          {recordings.length > 0 && (
+            <div className="form-group">
+              <label>Recordings</label>
+              {recordings.map(rec => (
+                <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-xs) 0' }}>
+                  <span className="text-sm">{rec.artist || rec.original_name}</span>
+                  {confirmDeleteRecording === rec.id ? (
+                    <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                      <span className="text-sm text-dim">You sure?</span>
+                      <button className="btn-danger btn-sm" onClick={() => handleDeleteRecording(rec.id)}>Yes</button>
+                      <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteRecording(null)}>No</button>
+                    </div>
+                  ) : (
+                    <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete Recording</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="btn-primary btn-sm" onClick={handleSaveTune}>Save</button>
+            <button className="btn-ghost btn-sm" onClick={() => setEditingTune(false)}>Cancel</button>
+            {confirmDeleteTune ? (
+              <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center', marginLeft: 'auto' }}>
+                <span className="text-sm text-dim">You sure?</span>
+                <button className="btn-danger btn-sm" onClick={handleDeleteTune}>Yes</button>
+                <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteTune(false)}>No</button>
+              </div>
+            ) : (
+              <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteTune(true)} style={{ marginLeft: 'auto' }}>Delete Tune</button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="shed-now-playing" onClick={startEditTune} style={{ cursor: 'pointer' }}>
+          <h1 className="shed-tune-now">{tune.title}</h1>
+          {tune.composer && (
+            <span className="shed-composer-now">{tune.composer}</span>
+          )}
+          {tune.key && (
+            <span className="shed-key-badge">{tune.key}</span>
+          )}
+        </div>
+      )}
 
       {/* Recording selector (if multiple) */}
-      {recordings.length > 1 && (
+      {recordings.length > 0 && !editingTune && (
         <div className="shed-recording-picker">
           {recordings.map(rec => (
             <button
@@ -351,6 +519,19 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
           ))}
         </div>
       )}
+
+      {!editingTune && (showUpload ? (
+        <div>
+          <RecordingUpload tuneId={tune.id} onUploaded={() => { onRecordingsChanged(); setShowUpload(false) }} />
+          <button className="btn-ghost btn-sm" onClick={() => setShowUpload(false)} style={{ marginTop: 'var(--space-xs)' }}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button className="shed-mark-trigger" onClick={() => setShowUpload(true)} style={{ marginBottom: 'var(--space-sm)' }}>
+          + Add Recording
+        </button>
+      ))}
 
       {selectedRecording && (
         <>
@@ -627,9 +808,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
       )}
 
       {recordings.length === 0 && (
-        <div>
-          <RecordingUpload tuneId={tune.id} onUploaded={onRecordingsChanged} />
-        </div>
+        <RecordingUpload tuneId={tune.id} onUploaded={onRecordingsChanged} />
       )}
     </div>
   )
