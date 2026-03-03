@@ -202,6 +202,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
       fetchSegments()
     } catch (err) {
       toast('Failed to delete segment', 'error')
+    } finally {
+      setConfirmDeleteSegment(false)
     }
   }
 
