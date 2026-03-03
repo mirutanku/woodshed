@@ -176,20 +176,19 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged }) {
   }
 
   async function handleSaveSegment(segmentId) {
-    if (!selectedRecording) return
-    try {
-      await api.patch(`/recordings/${selectedRecording.id}/segments/${segmentId}`, {
-        label: editSegForm.label.trim(),
-        start_time: parseFloat(editSegForm.start_time),
-        end_time: parseFloat(editSegForm.end_time),
-      })
-      toast('Segment updated')
-      setEditingSegment(null)
-      fetchSegments()
-    } catch (err) {
-      toast('Failed to update segment', 'error')
-    }
+  try {
+    await api.patch(`/segments/${segmentId}`, {
+      label: editSegForm.label.trim(),
+      start_time: parseFloat(editSegForm.start_time),
+      end_time: parseFloat(editSegForm.end_time),
+    })
+    toast('Segment updated')
+    setEditingSegment(null)
+    fetchSegments()
+  } catch (err) {
+    toast('Failed to update segment', 'error')
   }
+}
 
   function togglePlay() {
     const audio = audioRef.current
