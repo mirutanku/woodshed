@@ -1680,6 +1680,9 @@
   color: var(--color-text-dim);
   cursor: pointer;
   transition: all 0.15s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shed-recording-btn.active {
