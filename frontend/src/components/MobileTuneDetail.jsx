@@ -199,8 +199,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     try {
       await api.delete(`/segments/${segmentId}`)
       toast('Segment deleted')
-      if (loopSegment?.id === segmentId)
-      setLoopSegment(null)
+      if (loopSegment?.id === segmentId) {
+        setLoopSegment(null)
+      }
       setEditingSegment(null)
       fetchSegments()
     } catch (err) {
