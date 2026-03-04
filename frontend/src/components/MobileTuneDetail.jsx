@@ -92,6 +92,19 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
   }
 
+  function applyRamp(audio) {
+    const ramp = rampRef.current
+    if (!ramp.enabled) return
+    const currentSpeed = speedRef.current
+    if (currentSpeed >= ramp.end) return
+    const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
+    const rounded = Math.round(newSpeed * 100) / 100
+    setSpeed(rounded)
+    speedRef.current = rounded
+    audio.playbackRate = rounded
+    if (rounded >= ramp.end) setRampReachedMax(true)
+  }
+
   // rAF loop
   const tick = useCallback(() => {
     const audio = audioRef.current
@@ -99,23 +112,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     const time = audio.currentTime
     setCurrentTime(time)
 
-    if (loopSegment && time >= loopSegment.end_time) {
-      // Auto-ramp: bump speed before looping back
-      const ramp = rampRef.current
-      if (ramp.enabled) {
-        const currentSpeed = speedRef.current
-        if (currentSpeed < ramp.end) {
-          const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
-          const rounded = Math.round(newSpeed * 100) / 100
-          setSpeed(rounded)
-          speedRef.current = rounded
-          audio.playbackRate = rounded
-          if (rounded >= ramp.end) {
-            setRampReachedMax(true)
-          }
-        }
-      }
-      audio.currentTime = loopSegment.start_time
+    if (loopSegment && audio.currentTime >= loopSegment.end_time) {
+        applyRamp(audio)
+        audio.currentTime = loopSegment.start_time
+        setCurrentTime(loopSegment.start_time)
     }
 
     animFrameRef.current = requestAnimationFrame(tick)
@@ -139,22 +139,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
     function handleTimeUpdate() {
       if (loopSegment && audio.currentTime >= loopSegment.end_time) {
-        // Auto-ramp in background
-        const ramp = rampRef.current
-        if (ramp.enabled) {
-          const currentSpeed = speedRef.current
-          if (currentSpeed < ramp.end) {
-            const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
-            const rounded = Math.round(newSpeed * 100) / 100
-            setSpeed(rounded)
-            speedRef.current = rounded
-            audio.playbackRate = rounded
-            if (rounded >= ramp.end) {
-              setRampReachedMax(true)
-            }
-          }
-        }
+        applyRamp(audio)
         audio.currentTime = loopSegment.start_time
+        setCurrentTime(loopSegment.start_time)
       }
     }
 
