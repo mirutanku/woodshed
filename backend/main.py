@@ -220,15 +220,15 @@ async def upload_recording(
     filepath = os.path.join(UPLOAD_DIR, stored_filename)
 
     # Write the file to disk
-    contents = await file.read()
-    file_size = len(contents)
-
-    # Enforce size limit (50MB)
-    if file_size > 50 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 50MB)")
-
     with open(filepath, "wb") as f:
-        f.write(contents)
+        file_size = 0
+        while chunk := await file.read(8192):
+            file_size += len(chunk)
+            if file_size > 50 * 1024 * 1024:
+                f.close()
+                os.remove(filepath)
+                raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+            f.write(chunk)
 
     db_recording = Recording(
         tune_id=tune_id,
