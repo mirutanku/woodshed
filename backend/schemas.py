@@ -68,6 +68,7 @@ class TuneResponse(BaseModel):
     form: str | None
     status: str
     notes: str | None
+    created_at: datetime
     recording_count: int = 0
 
     class Config:
