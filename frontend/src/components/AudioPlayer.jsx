@@ -36,9 +36,25 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
 
   const audioUrl = `/uploads/${filename}`
 
+  // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
+
+  function applyRamp(audio) {
+    const ramp = rampRef.current
+    if (!ramp.enabled) return
+    const currentSpeed = speedRef.current
+    if (currentSpeed >= ramp.end) return
+    const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
+    const rounded = Math.round(newSpeed * 100) / 100
+    setSpeed(rounded)
+    speedRef.current = rounded
+    audio.playbackRate = rounded
+    if (rounded >= ramp.end) setRampReachedMax(true)
+  }
+
+
   // --- Animation frame loop for smooth progress updates ---
 
-  const updateProgress = useCallback(() => {
+  const tick = useCallback(() => {
     const audio = audioRef.current
     if (audio && !audio.paused) {
       setCurrentTime(audio.currentTime)
@@ -46,36 +62,22 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
 
       // Loop enforcement — if we're looping a segment and we've passed the end, jump back
       if (loopSegment && audio.currentTime >= loopSegment.end_time) {
-        // Auto-ramp: bump speed before looping back
-        const ramp = rampRef.current
-        if (ramp.enabled) {
-          const currentSpeed = speedRef.current
-          if (currentSpeed < ramp.end) {
-            const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
-            const rounded = Math.round(newSpeed * 100) / 100
-            setSpeed(rounded)
-            speedRef.current = rounded
-            audio.playbackRate = rounded
-            if (rounded >= ramp.end) {
-              setRampReachedMax(true)
-            }
-          }
-        }
+        applyRamp(audio)
         audio.currentTime = loopSegment.start_time
       }
 
-      animFrameRef.current = requestAnimationFrame(updateProgress)
+      animFrameRef.current = requestAnimationFrame(tick)
     }
   }, [loopSegment, onTimeUpdate])
 
   useEffect(() => {
     if (isPlaying) {
-      animFrameRef.current = requestAnimationFrame(updateProgress)
+      animFrameRef.current = requestAnimationFrame(tick)
     }
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     }
-  }, [isPlaying, updateProgress])
+  }, [isPlaying, tick])
 
   // --- Audio event handlers ---
 
