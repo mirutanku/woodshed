@@ -61,6 +61,11 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
+def get_user_tune(tune_id: int, user_id: int, db: Session) -> Tune:
+    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == user_id).first()
+    if not tune:
+        raise HTTPException(status_code=404, detail="Tune not found")
+    return tune
 
 @app.post("/api/register", response_model=UserResponse, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -137,9 +142,7 @@ def get_tune(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == current_user.id).first()
-    if not tune:
-        raise HTTPException(status_code=404, detail="Tune not found")
+    tune = get_user_tune(tune_id, current_user.id, db)
     return {**tune.__dict__, "recording_count": len(tune.recordings)}
 
 @app.patch("/api/tunes/{tune_id}", response_model=TuneResponse)
@@ -149,9 +152,7 @@ def update_tune(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == current_user.id).first()
-    if not tune:
-        raise HTTPException(status_code=404, detail="Tune not found")
+    tune = get_user_tune(tune_id, current_user.id, db)
     for key, value in updates.model_dump(exclude_unset=True).items():
         setattr(tune, key, value)
     db.commit()
@@ -164,9 +165,7 @@ def delete_tune(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == current_user.id).first()
-    if not tune:
-        raise HTTPException(status_code=404, detail="Tune not found")
+    tune = get_user_tune(tune_id, current_user.id, db)
 
     # Prevent deletion if there's practice history
     if tune.practice_entries:
@@ -187,9 +186,7 @@ def get_recordings(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == current_user.id).first()
-    if not tune:
-        raise HTTPException(status_code=404, detail="Tune not found")
+    tune = get_user_tune(tune_id, current_user.id, db)
     return tune.recordings
 
 @app.post("/api/tunes/{tune_id}/recordings", response_model=RecordingResponse, status_code=201)
@@ -202,9 +199,7 @@ async def upload_recording(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    tune = db.query(Tune).filter(Tune.id == tune_id, Tune.user_id == current_user.id).first()
-    if not tune:
-        raise HTTPException(status_code=404, detail="Tune not found")
+    tune = get_user_tune(tune_id, current_user.id, db)
 
     # Validate file type
     allowed_types = {
