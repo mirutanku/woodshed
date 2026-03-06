@@ -18,6 +18,9 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
   const audioRef = useRef(null)
   const progressRef = useRef(null)
   const animFrameRef = useRef(null)
+  const speedRef = useRef(1.0)
+  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
+  const rampLoopCount = useRef(0)
 
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -30,9 +33,8 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
   const [rampEnabled, setRampEnabled] = useState(false)
   const [rampEnd, setRampEnd] = useState(1.0)
   const [rampStep, setRampStep] = useState(0.05)
+  const [rampLoopsPerStep, setRampLoopsPerStep] = useState(1)
   const [rampReachedMax, setRampReachedMax] = useState(false)
-  const speedRef = useRef(1.0)
-  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05 })
 
   const audioUrl = `/uploads/${filename}`
 
@@ -43,6 +45,11 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     if (!ramp.enabled) return
     const currentSpeed = speedRef.current
     if (currentSpeed >= ramp.end) return
+
+    rampLoopCount.current += 1
+    if (rampLoopCount.current < ramp.loopsPerStep) return
+
+    rampLoopCount.current = 0
     const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
     const rounded = Math.round(newSpeed * 100) / 100
     setSpeed(rounded)
@@ -146,8 +153,8 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
 
   // Keep ramp ref in sync
   useEffect(() => {
-    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep }
-  }, [rampEnabled, rampEnd, rampStep])
+    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep, loopsPerStep: rampLoopsPerStep }
+  }, [rampEnabled, rampEnd, rampStep, rampLoopsPerStep])
 
   // --- Progress bar interaction ---
 
@@ -341,6 +348,8 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
                   setRampStep(0.05)
                   setRampReachedMax(false)
                   setRampEnabled(true)
+                  rampLoopCount.current = 0
+                  setRampEnabled(true)
                 }}
               >
                 Auto-Ramp ↗
@@ -370,6 +379,18 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
                       <option value={0.02}>2%</option>
                       <option value={0.05}>5%</option>
                       <option value={0.1}>10%</option>
+                    </select>
+                  </label>
+                  <label>
+                    Reps
+                    <select
+                      value={rampLoopsPerStep}
+                      onChange={e => { setRampLoopsPerStep(parseInt(e.target.value, 10)); setRampReachedMax(false), ramp }}
+                    >
+                      <option value={1}>1x</option>
+                      <option value={2}>2x</option>
+                      <option value={5}>5x</option>
+                      <option value={10}>10x</option>
                     </select>
                   </label>
                 </div>
