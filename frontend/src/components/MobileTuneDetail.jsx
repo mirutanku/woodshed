@@ -20,7 +20,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const audioRef = useRef(null)
   const animFrameRef = useRef(null)
   const speedRef = useRef(1.0)
-  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05 })
+  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
+  const rampLoopCount = useRef(0)
 
   // Playback
   const [isPlaying, setIsPlaying] = useState(false)
@@ -37,6 +38,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const [rampEnabled, setRampEnabled] = useState(false)
   const [rampEnd, setRampEnd] = useState(1.0)
   const [rampStep, setRampStep] = useState(0.05)
+  const [rampLoopsPerStep, setRampLoopsPerStep] = useState(1)
   const [rampReachedMax, setRampReachedMax] = useState(false)
 
   // UI modes — only one active at a time
@@ -93,6 +95,11 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     if (!ramp.enabled) return
     const currentSpeed = speedRef.current
     if (currentSpeed >= ramp.end) return
+
+    rampLoopCount.current += 1
+    if (rampLoopCount.current < ramp.loopsPerStep) return
+
+    rampLoopCount.current = 0
     const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
     const rounded = Math.round(newSpeed * 100) / 100
     setSpeed(rounded)
@@ -178,8 +185,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
   // Keep ramp ref in sync
   useEffect(() => {
-    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep }
-  }, [rampEnabled, rampEnd, rampStep])
+    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep, loopsPerStep: rampLoopsPerStep }
+  }, [rampEnabled, rampEnd, rampStep, rampLoopsPerStep])
 
   function handleSegmentTap(segment) {
     const audio = audioRef.current
@@ -422,6 +429,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                     setRampStep(0.05)
                     setRampReachedMax(false)
                     setRampEnabled(true)
+                    rampLoopCount.current = 0
+                    setRampEnabled
                   }}
                 >
                   Auto-Ramp ↗
@@ -454,6 +463,18 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                         <option value={0.02}>2%</option>
                         <option value={0.05}>5%</option>
                         <option value={0.1}>10%</option>
+                      </select>
+                    </div>
+                    <div className="shed-ramp-field">
+                      <label>Reps</label>
+                      <select
+                        value={rampLoopsPerStep}
+                        onChange={e => { setRampLoopsPerStep(parseInt(e.target.value)); setRampReachedMax(false) }}
+                      >
+                        <option value={1}>1x</option>
+                        <option value={2}>2x</option>
+                        <option value={3}>3x</option>
+                        <option value={5}>5x</option>
                       </select>
                     </div>
                   </div>

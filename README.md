@@ -110,5 +110,4 @@ The frontend proxies API requests to the backend via Vite's dev server config.
 - Cloud storage integration (Google Drive Picker) for importing audio
 - Sort tunes by last practiced date
 - User profiles with instrument field
-- Finer control of auto-ramp incrementation
 - S3 storage for multi-device audio access
