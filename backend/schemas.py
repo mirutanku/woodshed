@@ -41,7 +41,18 @@ class TokenResponse(BaseModel):
 
 # --- Tunes ---
 
-class TuneCreate(BaseModel):
+class TuneValidators(BaseModel):
+    @field_validator("status", check_fields=False)
+    @classmethod
+    def validate_status(cls, v):
+        if v is None:
+            return v
+        allowed = { "learning", "transcribing", "playable", "polished", "retired" }
+        if v not in allowed:
+            raise ValueError(f"Status must be one of: {', '.join(allowed)}")
+        return v
+
+class TuneCreate(TuneValidators):
     title: str
     composer: str | None = None
     key: str | None = None
@@ -50,7 +61,7 @@ class TuneCreate(BaseModel):
     status: str = "learning"
     notes: str | None = None
 
-class TuneUpdate(BaseModel):
+class TuneUpdate(TuneValidators):
     title: str | None = None
     composer: str | None = None
     key: str | None = None
@@ -125,7 +136,18 @@ class SegmentResponse(BaseModel):
 
 # --- Practice Sessions ---
 
-class PracticeEntryCreate(BaseModel):
+class PracticeEntryValidators(BaseModel):
+    @field_validator("focus", check_fields=False)
+    @classmethod
+    def validate_focus(cls, v):
+        if v is None:
+            return v
+        allowed = { "transcription", "technique", "memorization", "tempo", "ear training", "reading" }
+        if v is not None and v not in allowed:
+            raise ValueError(f"Focus must be one of: {', '.join(allowed)}")
+        return v
+
+class PracticeEntryCreate(PracticeEntryValidators):
     tune_id: int    # entries are necessarily associated with a tune, not a recording nor necessarily a segment
     segment_id: int | None = None
     focus: str | None = None
@@ -133,6 +155,14 @@ class PracticeEntryCreate(BaseModel):
     notes: str | None = None
     rating: int | None = None  # e.g. 1-5 stars
     duration_minutes: int | None = None
+
+class PracticeEntryUpdate(PracticeEntryValidators):
+    tune_id: int | None = None
+    focus: str | None = None
+    tempo_practiced: int | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    rating: int | None = None
 
 class PracticeEntryResponse(BaseModel):
     id: int
@@ -153,6 +183,11 @@ class PracticeSessionCreate(BaseModel):
     duration_minutes: int | None = None
     notes: str | None = None
     entries: list[PracticeEntryCreate] = [] # a practice session is comprised of practice entries
+
+class PracticeSessionUpdate(BaseModel):
+    date: str | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
 
 class PracticeSessionResponse(BaseModel):
     id: int
@@ -181,19 +216,6 @@ class PerformanceUpdate(BaseModel):
     time: str | None = None
     venue: str | None = None
     notes: str | None = None
-
-class PracticeSessionUpdate(BaseModel):
-    date: str | None = None
-    duration_minutes: int | None = None
-    notes: str | None = None
-
-class PracticeEntryUpdate(BaseModel):
-    tune_id: int | None = None
-    focus: str | None = None
-    tempo_practiced: int | None = None
-    duration_minutes: int | None = None
-    notes: str | None = None
-    rating: int | None = None
 
 class PerformanceResponse(BaseModel):
     id: int
