@@ -279,7 +279,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         </div>
       )}
 
-      {!editingTune && (showUpload ? (
+      {!editingTune && recordings.length > 0 && (showUpload ? (
         <div>
           <RecordingUpload tuneId={tune.id} onUploaded={() => { onRecordingsChanged(); setShowUpload(false) }} />
           <button className="btn-ghost btn-sm" onClick={() => setShowUpload(false)} style={{ marginTop: 'var(--space-xs)' }}>
