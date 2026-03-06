@@ -25,13 +25,12 @@ function TuneList({ onSelectTune }) {
 
   useEffect(() => {
     fetchTunes()
-  }, [filter])
+  }, [])
 
   async function fetchTunes() {
     setLoading(true)
     try {
-      const params = filter !== 'all' ? { status: filter } : {}
-      const res = await api.get('/tunes', { params })
+      const res = await api.get('/tunes')
       setTunes(res.data)
     } catch (err) {
       console.error('Failed to fetch tunes:', err)
@@ -46,7 +45,14 @@ function TuneList({ onSelectTune }) {
   }
 
   const sortedTunes = useMemo(() => {
-    const sorted = [...tunes]
+    let filtered = tunes
+    if (filter === 'all') {
+      filtered = tunes.filter(t => t.status !== 'retired')
+    } else {
+      filtered = tunes.filter(t => t.status === filter)
+    }
+    
+    const sorted = [...filtered]
     switch (sort) {
       case 'title-asc':
         return sorted.sort((a, b) => a.title.localeCompare(b.title))
@@ -64,7 +70,7 @@ function TuneList({ onSelectTune }) {
       default:
         return sorted
     }
-  }, [tunes, sort])
+  }, [tunes, filter, sort])
 
   return (
     <div className="fade-in">
