@@ -72,6 +72,14 @@ function TuneList({ onSelectTune }) {
     }
   }, [tunes, filter, sort])
 
+  const statusCounts = useMemo(() => {
+    const counts = {}
+    tunes.forEach(t => {
+      counts[t.status] = (counts[t.status] || 0) + 1
+    })
+    return counts
+  }, [tunes])
+
   return (
     <div className="fade-in">
       <div className="tune-list-header">
@@ -84,7 +92,10 @@ function TuneList({ onSelectTune }) {
                 className={`filter-btn ${filter === s ? 'active' : ''}`}
                 onClick={() => setFilter(s)}
               >
-                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === 'all'
+                  ? `All (${tunes.filter(t => t.status !== 'retired').length})` // Exclude "Retired" count from "All" count
+                  : `${s.charAt(0).toUpperCase() + s.slice(1)} (${statusCounts[s] || 0})`
+                }
               </button>
             ))}
           </div>
