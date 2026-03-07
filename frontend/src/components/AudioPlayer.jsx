@@ -14,7 +14,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
+function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
   const audioRef = useRef(null)
   const progressRef = useRef(null)
   const animFrameRef = useRef(null)
@@ -36,7 +36,7 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
   const [rampLoopsPerStep, setRampLoopsPerStep] = useState(1)
   const [rampReachedMax, setRampReachedMax] = useState(false)
 
-  const audioUrl = `/uploads/${filename}`
+  const audioUrl = `/api/recordings/${recordingId}/stream?token=${localStorage.getItem('token')}`
 
   // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
 
@@ -215,7 +215,7 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     }
   }, [])
 
-  // Reset player state when filename changes
+  // Reset player state when recordingId changes
   useEffect(() => {
     setIsPlaying(false)
     setCurrentTime(0)
@@ -229,7 +229,7 @@ function AudioPlayer({ filename, segments = [], onTimeUpdate }) {
     if (audioRef.current) {
       audioRef.current.playbackRate = 1.0
     }
-  }, [filename])
+  }, [recordingId])
 
   // Spacebar to toggle play/pause
   useEffect(() => {

@@ -296,7 +296,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         <>
           <audio
             ref={audioRef}
-            src={`/uploads/${selectedRecording.filename}`}
+            src={`/api/recordings/${selectedRecording.id}/stream?token=${localStorage.getItem('token')}`}
             preload="auto"
             onLoadedMetadata={() => {
               if (audioRef.current) {

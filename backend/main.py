@@ -2,6 +2,7 @@ import os
 import uuid
 import pathlib
 from datetime import date
+import mimetypes
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,9 +49,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Serve uploaded files as static files
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 # --- Auth ---
@@ -243,6 +241,33 @@ async def upload_recording(
     db.commit()
     db.refresh(db_recording)
     return db_recording
+
+@app.get("/api/recordings/{recording_id}/stream")
+def stream_recording(
+    recording_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    recording = (
+        db.query(Recording)
+        .join(Tune)
+        .filter(Recording.id == recording_id, Tune.user_id == current_user.id)
+        .first()
+    )
+    if not recording:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    
+    filepath = os.path.join(UPLOAD_DIR, recording.filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    content_type = mimetypes.guess_type(filepath)[0] or "application/octet-stream"
+
+    return FileResponse(
+        filepath, 
+        media_type=content_type, 
+        filename=recording.original_name,
+    )
 
 @app.delete("/api/recordings/{recording_id}", status_code=204)
 def delete_recording(
