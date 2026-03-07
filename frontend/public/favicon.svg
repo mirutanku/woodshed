@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#1a1410"/>
+  <g fill="#d4a04a">
+    <!-- Left repeat bar -->
+    <rect x="14" y="14" width="4" height="36" rx="1"/>
+    <rect x="21" y="14" width="2" height="36" rx="0.5"/>
+    <!-- Dots -->
+    <circle cx="28" cy="27" r="3"/>
+    <circle cx="28" cy="41" r="3"/>
+    <!-- Right repeat bar -->
+    <rect x="46" y="14" width="4" height="36" rx="1"/>
+    <rect x="41" y="14" width="2" height="36" rx="0.5"/>
+    <!-- Dots -->
+    <circle cx="36" cy="27" r="3"/>
+    <circle cx="36" cy="41" r="3"/>
+  </g>
+</svg>
