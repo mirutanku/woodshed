@@ -245,27 +245,37 @@ async def upload_recording(
 @app.get("/api/recordings/{recording_id}/stream")
 def stream_recording(
     recording_id: int,
-    current_user: User = Depends(get_current_user),
+    token: str = None,
     db: Session = Depends(get_db),
 ):
+    # Auth from query param since <audio> can't set headers
+    if not token:
+        raise HTTPException(status_code=401, detail="Token required")
+    user_id = decode_access_token(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
     recording = (
         db.query(Recording)
         .join(Tune)
-        .filter(Recording.id == recording_id, Tune.user_id == current_user.id)
+        .filter(Recording.id == recording_id, Tune.user_id == user.id)
         .first()
     )
     if not recording:
         raise HTTPException(status_code=404, detail="Recording not found")
-    
+
     filepath = os.path.join(UPLOAD_DIR, recording.filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="File not found")
-    
+
     content_type = mimetypes.guess_type(filepath)[0] or "application/octet-stream"
 
     return FileResponse(
-        filepath, 
-        media_type=content_type, 
+        filepath,
+        media_type=content_type,
         filename=recording.original_name,
     )
 
