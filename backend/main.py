@@ -28,6 +28,13 @@ Base.metadata.create_all(bind=engine)
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".ogg", ".aac", ".m4a", ".mp4", ".wma", ".aiff", ".opus"}
+ALLOWED_MIME_TYPES = {
+    "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav",
+    "audio/flac", "audio/ogg", "audio/aac", "audio/m4a",
+    "audio/mp4", "video/mp4", "audio/x-m4a",
+}
+
 app = FastAPI()
 security = HTTPBearer()
 
@@ -201,16 +208,14 @@ async def upload_recording(
 ):
     tune = get_user_tune(tune_id, current_user.id, db)
 
-    # Validate file type
-    allowed_types = {
-        "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav",
-        "audio/flac", "audio/ogg", "audio/aac", "audio/m4a", "audio/mp4",
-    }
-    if file.content_type and file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="File must be an audio file")
+    # Validate file type, extension, and size before writing to disk
+    ext = os.path.splitext(file.filename)[1].lower() if file.filename else ""
+    mime_ok = not file.content_type or file.content_type in ALLOWED_MIME_TYPES
+    ext_ok = ext in ALLOWED_EXTENSIONS
 
-    # Generate a unique filename to avoid collisions
-    ext = os.path.splitext(file.filename)[1] or ".mp3"
+    if not (mime_ok or ext_ok):
+        raise HTTPException(status_code=400, detail="File must be an audio file")
+    
     stored_filename = f"{uuid.uuid4().hex}{ext}"
     filepath = os.path.join(UPLOAD_DIR, stored_filename)
 
