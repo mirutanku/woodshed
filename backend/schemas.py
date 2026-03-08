@@ -108,6 +108,7 @@ class TuneResponse(BaseModel):
     notes: str | None
     created_at: datetime
     recording_count: int = 0
+    last_practiced: str | None = None
 
     class Config:
         from_attributes = True

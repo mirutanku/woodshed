@@ -8,6 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func as sql_func
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist
@@ -148,7 +149,13 @@ def get_tunes(
 
     results = []
     for tune in tunes:
-        tune_dict = {
+        last_practiced = (
+            db.query(sql_func.max(PracticeSession.date))
+            .join(PracticeEntry, PracticeEntry.session_id == PracticeSession.id)
+            .filter(PracticeEntry.tune_id == tune.id)
+            .scalar()
+        )
+        results.append({
             "id": tune.id,
             "title": tune.title,
             "composer": tune.composer,
@@ -159,8 +166,8 @@ def get_tunes(
             "notes": tune.notes,
             "created_at": tune.created_at,
             "recording_count": len(tune.recordings),
-        }
-        results.append(tune_dict)
+            "last_practiced": last_practiced.isoformat() if last_practiced else None,
+        })
     return results
 
 @app.post("/api/tunes", response_model=TuneResponse, status_code=201)

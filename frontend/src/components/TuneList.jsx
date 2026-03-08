@@ -12,6 +12,7 @@ const SORT_OPTIONS = [
   { value: 'composer-asc', label: 'Composer A → Z' },
   { value: 'composer-desc', label: 'Composer Z → A' },
   { value: 'status', label: 'Status' },
+  { value: 'last-practiced', label: 'Last Practiced' },
 ]
 
 const STATUS_ORDER = ['learning', 'transcribing', 'playable', 'polished', 'retired']
@@ -65,8 +66,14 @@ function TuneList({ onSelectTune }) {
       case 'status':
         return sorted.sort((a, b) =>
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
-          || a.title.localeCompare(b.title)
-        )
+          || a.title.localeCompare(b.title))
+      case 'last-practiced':
+        return sorted.sort((a, b) => {
+          if (!a.last_practiced && !b.last_practiced) return a.title.localeCompare(b.title) // If neither has a date, sort by title
+          if (!a.last_practiced) return 1
+          if (!b.last_practiced) return -1
+          return b.last_practiced.localeCompare(a.last_practiced) // Sort by last practiced date, most recent first
+        })
       default:
         return sorted
     }
