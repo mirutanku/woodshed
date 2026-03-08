@@ -22,6 +22,12 @@ function Nav({ currentView, onNavigate, onLogout }) {
           Practice
         </button>
         <div className="nav-divider" />
+        <button
+          className={`nav-link ${currentView === 'settings' ? 'active' : ''}`}
+          onClick={() => onNavigate('settings')}
+>
+          Settings
+        </button>
         <button className="nav-link" onClick={onLogout}>
           Log Out
         </button>

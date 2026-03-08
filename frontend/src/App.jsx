@@ -3,6 +3,7 @@ import './App.css'
 import { setOnUnauthorized } from './api'
 import { ToastProvider } from './components/Toast'
 import LoginForm from './components/LoginForm'
+import Settings from './components/Settings'
 import Nav from './components/Nav'
 import TuneList from './components/TuneList'
 import TuneDetail from './components/TuneDetail'
@@ -68,6 +69,9 @@ function App() {
           )}
           {currentView === 'practice' && (
             <PracticeLog />
+          )}
+          {currentView === 'settings' && (
+            <Settings />
           )}
           {currentView === 'setlists' && (
             <SetlistManager onSelectTune={handleSelectTune} />

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist
 from schemas import (
-    UserCreate, UserResponse, TokenResponse,
+    UserCreate, UserResponse, TokenResponse, UserUpdate, PasswordChange,
     TuneCreate, TuneUpdate, TuneResponse,
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
@@ -72,6 +72,12 @@ def get_user_tune(tune_id: int, user_id: int, db: Session) -> Tune:
         raise HTTPException(status_code=404, detail="Tune not found")
     return tune
 
+@app.get("/api/users/me", response_model=UserResponse)
+def get_current_user_info(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user
+
 @app.post("/api/register", response_model=UserResponse, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.username == user.username).first()
@@ -91,6 +97,34 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     token = create_access_token(db_user.id)
     return {"access_token": token, "token_type": "bearer"}
 
+@app.patch("/api/users/me", response_model=UserResponse)
+def update_user(
+    updates: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if updates.username:
+        existing = db.query(User).filter(
+            User.username == updates.username, User.id != current_user.id
+        ).first()
+        if existing and existing.id != current_user.id:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        current_user.username = updates.username
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@app.post("/api/users/me/password", status_code=204)
+def change_password(
+    data: PasswordChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(data.new_password)
+    db.commit()
+    return
 
 # --- Health check ---
 

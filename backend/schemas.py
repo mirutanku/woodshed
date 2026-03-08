@@ -38,6 +38,33 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class UserUpdate(BaseModel):
+    username: str | None = None
+
+    @field_validator("username")
+    @classmethod
+    def username_rules(cls, v):
+        if v is None:
+            return v
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        if len(v) > 50:
+            raise ValueError("Username must be 50 characters or fewer")
+        return v
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_rules(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password must be 72 bytes or fewer")
+        return v
+
 
 # --- Tunes ---
 
