@@ -8,9 +8,7 @@ const STATUS_FILTERS = ['all', 'learning', 'transcribing', 'playable', 'polished
 
 const SORT_OPTIONS = [
   { value: 'title-asc', label: 'Title A → Z' },
-  { value: 'title-desc', label: 'Title Z → A' },
   { value: 'composer-asc', label: 'Composer A → Z' },
-  { value: 'composer-desc', label: 'Composer Z → A' },
   { value: 'status', label: 'Status' },
   { value: 'last-practiced', label: 'Last Practiced' },
 ]
@@ -57,12 +55,8 @@ function TuneList({ onSelectTune }) {
     switch (sort) {
       case 'title-asc':
         return sorted.sort((a, b) => a.title.localeCompare(b.title))
-      case 'title-desc':
-        return sorted.sort((a, b) => b.title.localeCompare(a.title))
       case 'composer-asc':
         return sorted.sort((a, b) => (a.composer || '').localeCompare(b.composer || ''))
-      case 'composer-desc':
-        return sorted.sort((a, b) => (b.composer || '').localeCompare(a.composer || ''))
       case 'status':
         return sorted.sort((a, b) =>
           STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
