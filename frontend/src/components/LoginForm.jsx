@@ -36,6 +36,28 @@ function LoginForm({ onLogin }) {
         }
     }
 
+    function handleGoogleLogin() {
+      window.google.accounts.id.initialize({
+        client_id: '208976121237-r7hlmq8a42rvcvcsgj7v8cd4ohocg28d.apps.googleusercontent.com',
+        callback: async (response) => {
+          setError('')
+          setLoading(true)
+          try {
+            const res = await api.post('/auth/google', {
+              credential: response.credential,
+            })
+            localStorage.setItem('token', res.data.access_token)
+            onLogin()
+          } catch (err) {
+            setError(err.response?.data?.detail || 'Google sign-in failed')
+          } finally {
+            setLoading(false)
+          }
+        },
+      })
+      window.google.accounts.id.prompt()
+    }
+
     return (
     <div className="login-page">
       <div className="login-container">
@@ -75,6 +97,19 @@ function LoginForm({ onLogin }) {
 
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? '...' : isRegister ? 'Create Account' : 'Sign In'}
+          </button>
+
+          <div className="login-divider">
+            <span>or</span>
+          </div>
+
+          <button
+            type="button"
+            className="btn-google"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
+            Sign in with Google
           </button>
         </form>
 

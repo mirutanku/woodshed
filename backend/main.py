@@ -11,9 +11,11 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func as sql_func
 from sqlalchemy.orm import Session
 from database import engine, get_db, Base
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist
 from schemas import (
-    UserCreate, UserResponse, TokenResponse, UserUpdate, PasswordChange,
+    UserCreate, GoogleLogin, UserResponse, TokenResponse, UserUpdate, PasswordChange,
     TuneCreate, TuneUpdate, TuneResponse,
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
@@ -36,6 +38,8 @@ ALLOWED_MIME_TYPES = {
     "audio/flac", "audio/ogg", "audio/aac", "audio/m4a",
     "audio/mp4", "video/mp4", "audio/x-m4a",
 }
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 app = FastAPI()
 security = HTTPBearer()
@@ -97,6 +101,46 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = create_access_token(db_user.id)
     return {"access_token": token, "token_type": "bearer"}
+
+@app.post("/api/auth/google", response_model=TokenResponse)
+def google_login(
+    data: GoogleLogin,
+    db: Session = Depends(get_db),
+):
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            data.credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+    
+    google_id = idinfo["sub"]
+    email = idinfo.get("email")
+    name = idinfo.get("name", "")
+
+    user = db.query(User).filter(User.google_id == google_id).first()
+    if not user:
+        base_username = name.lower().replace(" ", "") or "user"
+        username = base_username
+        counter = 1
+        while db.query(User).filter(User.username == username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user = User(
+            username=username,
+            email=email,
+            google_id=google_id,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    
+    token = create_access_token(user.id)
+    return {"access_token": token, "token_type": "bearer"}
+
 
 @app.patch("/api/users/me", response_model=UserResponse)
 def update_user(
