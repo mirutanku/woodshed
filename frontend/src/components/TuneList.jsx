@@ -18,7 +18,7 @@ const STATUS_ORDER = ['learning', 'transcribing', 'playable', 'polished', 'retir
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])
   const [filter, setFilter] = useState('all')
-  const [sort, setSort] = useState('title-asc')
+  const [sort, setSort] = useState(sessionStorage.getItem('tuneSort') || 'title-asc')
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
 
@@ -37,6 +37,10 @@ function TuneList({ onSelectTune }) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    sessionStorage.setItem('tuneSort', sort)
+  }, [sort])
 
   function handleTuneAdded() {
     setShowAddForm(false)
