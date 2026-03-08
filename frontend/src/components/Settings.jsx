@@ -53,8 +53,8 @@ function Settings({ onLogout }) {
       toast('New passwords do not match', 'error')
       return
     }
-    if (newPassword.length < 8) {
-      toast('Password must be at least 8 characters', 'error')
+    if (newPassword.length < 12) {
+      toast('Password must be at least 12 characters', 'error')
       return
     }
     setSaving(true)
