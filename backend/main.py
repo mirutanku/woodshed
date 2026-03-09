@@ -48,6 +48,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",      # Vite dev server
+        "http://woodshed.fm",       # Production URL
         os.getenv("FRONTEND_URL", ""),  # Custom domain if needed
     ],
     allow_credentials=True,
