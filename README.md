@@ -8,7 +8,7 @@ Built to replace the workflow of juggling YouTube at 0.75x, a notes app, a calen
 
 Woodshed also offers you much better tools than YouTube, VLC, and other apps for adjusting playback as you hone your technique.
 
-<img width="2516" height="2172" alt="woodshed_collage_gold" src="https://github.com/user-attachments/assets/daac326d-6def-472b-ac13-50b21e085a5f" />
+<img width="1142" height="984" alt="woodshed_collage_simple" src="https://github.com/user-attachments/assets/ada835e6-4e64-4798-919f-99b5e3313927" />
 
 ## What it does
 
