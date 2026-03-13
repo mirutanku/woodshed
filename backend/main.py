@@ -334,6 +334,16 @@ def forgot_password(
 
     return {"message": "If an account with that email exists, a reset link has been sent."}
 
+@app.get("/api/auth/reset-token-info", status_code=200)
+def reset_token_info(token: str):
+    user_id = decode_reset_token(token)
+    if user_id is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    db = next(get_db())
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    return {"username": user.username}
 
 @app.post("/api/auth/reset-password", status_code=200)
 def reset_password(

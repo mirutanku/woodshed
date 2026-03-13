@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../api'
 
 function ResetPassword({ token, onBackToLogin }) {
@@ -7,6 +7,13 @@ function ResetPassword({ token, onBackToLogin }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [username, setUsername] = useState(null)
+
+  useEffect(() => {
+    api.get(`/auth/reset-token-info?token=${token}`)
+      .then(res => setUsername(res.data.username))
+      .catch(() => {})
+  }, [token])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -60,7 +67,9 @@ function ResetPassword({ token, onBackToLogin }) {
       <div className="login-card">
         <h2 style={{ marginBottom: 'var(--space-md)' }}>Set new password</h2>
         <p className="text-dim" style={{ marginBottom: 'var(--space-lg)' }}>
-          Choose a new password for your account.
+          {username
+            ? <>Choose a new password for <strong>{username}</strong>.</>
+            : 'Choose a new password for your account.'}
         </p>
 
         {error && <div className="login-error mb-md">{error}</div>}
