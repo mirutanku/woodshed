@@ -38,7 +38,7 @@ function LoginForm({ onLogin, onForgotPassword }) {
 
     function handleGoogleLogin() {
       window.google.accounts.id.initialize({
-        client_id: '208976121237-r7hlmq8a42rvcvcsgj7v8cd4ohocg28d.apps.googleusercontent.com',
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: async (response) => {
           setError('')
           setLoading(true)
