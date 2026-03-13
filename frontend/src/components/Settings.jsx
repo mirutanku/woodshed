@@ -25,6 +25,8 @@ function Settings({ onLogout }) {
 
   const [saving, setSaving] = useState(false)
 
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
   // Fetch current user on mount
   useEffect(() => {
     api.get('/users/me').then(res => {
@@ -167,6 +169,21 @@ function Settings({ onLogout }) {
       setConfirmPassword('')
     } catch (err) {
       toast(err.response?.data?.detail || 'Failed to change password', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // --- Delete Account ---
+
+  async function handleDeleteAccount() {
+    setSaving(true)
+    try {
+      await api.delete('/users/me')
+      localStorage.removeItem('token')
+      window.location.reload()
+    } catch (err) {
+      toast(err.response?.data?.detail || 'Failed to delete account', 'error')
     } finally {
       setSaving(false)
     }
@@ -337,6 +354,37 @@ function Settings({ onLogout }) {
               {saving ? '...' : 'Link Google Account'}
             </button>
           </div>
+        )}
+      </div>
+      {/* Delete Account */}
+      <div className="card mb-lg">
+        <h3 style={{ marginBottom: 'var(--space-md)', color: 'var(--color-danger)' }}>Delete Account</h3>
+        {confirmDelete ? (
+          <div>
+            <p className="text-sm" style={{ marginBottom: 'var(--space-md)', lineHeight: 1.6 }}>
+              This will permanently delete your account and all your data — tunes, recordings, practice history, everything. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+              <button
+                className="btn-danger btn-sm"
+                onClick={handleDeleteAccount}
+                disabled={saving}
+              >
+                {saving ? '...' : 'Yes, delete my account'}
+              </button>
+              <button className="btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="btn-ghost btn-sm"
+            style={{ color: 'var(--color-danger)' }}
+            onClick={() => setConfirmDelete(true)}
+          >
+            Delete my account
+          </button>
         )}
       </div>
     </div>

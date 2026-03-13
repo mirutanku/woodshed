@@ -276,6 +276,43 @@ def unlink_google(
     return {"message": "Google account unlinked", "has_google": False}
 
 
+# --- Delete account ---
+
+@app.delete("/api/users/me", status_code=204)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Delete all user data in order (respecting foreign keys)
+    db.query(CheckIn).filter(CheckIn.user_id == current_user.id).delete()
+    db.query(SetlistEntry).filter(
+        SetlistEntry.setlist_id.in_(
+            db.query(Setlist.id).filter(Setlist.user_id == current_user.id)
+        )
+    ).delete(synchronize_session=False)
+    db.query(Setlist).filter(Setlist.user_id == current_user.id).delete()
+    db.query(Performance).filter(Performance.user_id == current_user.id).delete()
+    db.query(PracticeEntry).filter(
+        PracticeEntry.session_id.in_(
+            db.query(PracticeSession.id).filter(PracticeSession.user_id == current_user.id)
+        )
+    ).delete(synchronize_session=False)
+    db.query(PracticeSession).filter(PracticeSession.user_id == current_user.id).delete()
+    db.query(Segment).filter(
+        Segment.recording_id.in_(
+            db.query(Recording.id).join(Tune).filter(Tune.user_id == current_user.id)
+        )
+    ).delete(synchronize_session=False)
+    db.query(Recording).filter(
+        Recording.tune_id.in_(
+            db.query(Tune.id).filter(Tune.user_id == current_user.id)
+        )
+    ).delete(synchronize_session=False)
+    db.query(Tune).filter(Tune.user_id == current_user.id).delete()
+    db.delete(current_user)
+    db.commit()
+
+
 # --- Password reset ---
 
 @app.post("/api/auth/forgot-password", status_code=200)
