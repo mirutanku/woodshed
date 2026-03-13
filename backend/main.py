@@ -20,9 +20,11 @@ from schemas import (
     RecordingResponse,
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
-    PracticeEntryCreate, PracticeEntryResponse, PracticeSessionUpdate, PracticeEntryUpdate, PerformanceCreate, PerformanceUpdate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse
+    PracticeEntryCreate, PracticeEntryResponse, PracticeSessionUpdate, PracticeEntryUpdate, PerformanceCreate, PerformanceUpdate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse,
+    EmailUpdate, ForgotPassword, ResetPassword, LinkGoogle,
 )
-from auth import hash_password, verify_password, create_access_token, decode_access_token
+from auth import hash_password, verify_password, create_access_token, decode_access_token, create_reset_token, decode_reset_token
+from email_service import send_password_reset_email
 from fastapi.security import HTTPBearer
 
 load_dotenv()
@@ -78,11 +80,18 @@ def get_user_tune(tune_id: int, user_id: int, db: Session) -> Tune:
         raise HTTPException(status_code=404, detail="Tune not found")
     return tune
 
-@app.get("/api/users/me", response_model=UserResponse)
+@app.get("/api/users/me")
 def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
-    return current_user
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "has_password": current_user.password_hash is not None,
+        "has_google": current_user.google_id is not None,
+        "created_at": current_user.created_at,
+    }
 
 @app.post("/api/register", response_model=UserResponse, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -98,7 +107,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/api/login", response_model=TokenResponse)
 def login(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user or not verify_password(user.password, db_user.password_hash):
+    if not db_user or not db_user.password_hash or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = create_access_token(db_user.id)
     return {"access_token": token, "token_type": "bearer"}
@@ -166,11 +175,134 @@ def change_password(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if not current_user.password_hash:
+        raise HTTPException(status_code=400, detail="No password set. Use Google login or set a password first.")
     if not verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     current_user.password_hash = hash_password(data.new_password)
     db.commit()
     return
+
+
+# --- Email update ---
+
+@app.patch("/api/users/me/email", status_code=200)
+def update_email(
+    data: EmailUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Check if email is already taken by another user
+    existing = db.query(User).filter(
+        User.email == data.email, User.id != current_user.id
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already in use by another account")
+
+    current_user.email = data.email
+    db.commit()
+    return {"email": current_user.email}
+
+
+# --- Link Google account ---
+
+@app.post("/api/users/me/link-google", status_code=200)
+def link_google(
+    data: LinkGoogle,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            data.credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID,
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    google_id = idinfo["sub"]
+    email = idinfo.get("email")
+
+    # Check if this Google account is already linked to a different user
+    existing = db.query(User).filter(
+        User.google_id == google_id, User.id != current_user.id
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="This Google account is already linked to a different Woodshed account"
+        )
+
+    current_user.google_id = google_id
+    # Also set email if user doesn't have one yet
+    if not current_user.email and email:
+        current_user.email = email
+
+    db.commit()
+    return {
+        "message": "Google account linked",
+        "email": current_user.email,
+        "has_google": True,
+    }
+
+
+# --- Unlink Google account ---
+
+@app.post("/api/users/me/unlink-google", status_code=200)
+def unlink_google(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.password_hash:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot unlink Google — you have no password set. Set a password first."
+        )
+    current_user.google_id = None
+    db.commit()
+    return {"message": "Google account unlinked", "has_google": False}
+
+
+# --- Password reset ---
+
+@app.post("/api/auth/forgot-password", status_code=200)
+def forgot_password(
+    data: ForgotPassword,
+    db: Session = Depends(get_db),
+):
+    # Always return success to prevent email enumeration
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
+        token = create_reset_token(user.id)
+        frontend_url = os.getenv("FRONTEND_URL", "https://woodshed.fm")
+        reset_link = f"{frontend_url}/reset-password?token={token}"
+        try:
+            send_password_reset_email(user.email, reset_link)
+        except Exception as e:
+            # Log the error but don't expose it to the user
+            print(f"Failed to send reset email: {e}")
+
+    return {"message": "If an account with that email exists, a reset link has been sent."}
+
+
+@app.post("/api/auth/reset-password", status_code=200)
+def reset_password(
+    data: ResetPassword,
+    db: Session = Depends(get_db),
+):
+    user_id = decode_reset_token(data.token)
+    if user_id is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    user.password_hash = hash_password(data.new_password)
+    db.commit()
+    return {"message": "Password has been reset. You can now log in."}
+
 
 # --- Health check ---
 
@@ -545,15 +677,15 @@ def update_session(
     db: Session = Depends(get_db),
 ):
     session = db.query(PracticeSession).filter(
-        PracticeSession.id == session_id,
-        PracticeSession.user_id == current_user.id,
+        PracticeSession.id == session_id, PracticeSession.user_id == current_user.id
     ).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    for field, value in updates.model_dump(exclude_unset=True).items():
-        setattr(session, field, value)
+    for key, value in updates.model_dump(exclude_unset=True).items():
+        setattr(session, key, value)
     db.commit()
     db.refresh(session)
+
     entry_responses = []
     for entry in session.entries:
         entry_responses.append({
@@ -562,57 +694,6 @@ def update_session(
         })
     return {**session.__dict__, "entries": entry_responses}
 
-@app.patch("/api/sessions/{session_id}/entries/{entry_id}")
-def update_entry(
-    session_id: int,
-    entry_id: int,
-    updates: PracticeEntryUpdate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    session = db.query(PracticeSession).filter(
-        PracticeSession.id == session_id,
-        PracticeSession.user_id == current_user.id,
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    entry = db.query(PracticeEntry).filter(
-        PracticeEntry.id == entry_id,
-        PracticeEntry.session_id == session_id,
-    ).first()
-    if not entry:
-        raise HTTPException(status_code=404, detail="Entry not found")
-    for field, value in updates.model_dump(exclude_unset=True).items():
-        setattr(entry, field, value)
-    db.commit()
-    return {"ok": True}
-
-@app.post("/api/sessions/{session_id}/entries", status_code=201)
-def add_entry_to_session(
-    session_id: int,
-    entry: PracticeEntryCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    session = db.query(PracticeSession).filter(
-        PracticeSession.id == session_id,
-        PracticeSession.user_id == current_user.id,
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    tune = db.query(Tune).filter(
-        Tune.id == entry.tune_id, Tune.user_id == current_user.id
-    ).first()
-    if not tune:
-        raise HTTPException(status_code=400, detail=f"Tune {entry.tune_id} not found")
-    db_entry = PracticeEntry(
-        session_id=session_id,
-        **entry.model_dump(),
-    )
-    db.add(db_entry)
-    db.commit()
-    return {"ok": True}
-
 @app.delete("/api/sessions/{session_id}", status_code=204)
 def delete_session(
     session_id: int,
@@ -620,13 +701,63 @@ def delete_session(
     db: Session = Depends(get_db),
 ):
     session = db.query(PracticeSession).filter(
-        PracticeSession.id == session_id,
-        PracticeSession.user_id == current_user.id,
+        PracticeSession.id == session_id, PracticeSession.user_id == current_user.id
     ).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     db.delete(session)
     db.commit()
+
+@app.post("/api/sessions/{session_id}/entries", response_model=PracticeEntryResponse, status_code=201)
+def add_entry_to_session(
+    session_id: int,
+    entry: PracticeEntryCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = db.query(PracticeSession).filter(
+        PracticeSession.id == session_id, PracticeSession.user_id == current_user.id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    tune = db.query(Tune).filter(
+        Tune.id == entry.tune_id, Tune.user_id == current_user.id
+    ).first()
+    if not tune:
+        raise HTTPException(status_code=400, detail="Tune not found")
+
+    db_entry = PracticeEntry(session_id=session_id, **entry.model_dump())
+    db.add(db_entry)
+    db.commit()
+    db.refresh(db_entry)
+    return {**db_entry.__dict__, "tune_title": tune.title}
+
+@app.patch("/api/sessions/{session_id}/entries/{entry_id}", response_model=PracticeEntryResponse)
+def update_entry(
+    session_id: int,
+    entry_id: int,
+    updates: PracticeEntryUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = (
+        db.query(PracticeEntry)
+        .join(PracticeSession)
+        .filter(
+            PracticeEntry.id == entry_id,
+            PracticeSession.id == session_id,
+            PracticeSession.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    for key, value in updates.model_dump(exclude_unset=True).items():
+        setattr(entry, key, value)
+    db.commit()
+    db.refresh(entry)
+    return {**entry.__dict__, "tune_title": entry.tune.title if entry.tune else ""}
 
 @app.delete("/api/sessions/{session_id}/entries/{entry_id}", status_code=204)
 def delete_entry(
@@ -635,16 +766,16 @@ def delete_entry(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    session = db.query(PracticeSession).filter(
-        PracticeSession.id == session_id,
-        PracticeSession.user_id == current_user.id,
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    entry = db.query(PracticeEntry).filter(
-        PracticeEntry.id == entry_id,
-        PracticeEntry.session_id == session_id,
-    ).first()
+    entry = (
+        db.query(PracticeEntry)
+        .join(PracticeSession)
+        .filter(
+            PracticeEntry.id == entry_id,
+            PracticeSession.id == session_id,
+            PracticeSession.user_id == current_user.id,
+        )
+        .first()
+    )
     if not entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     db.delete(entry)
@@ -658,7 +789,12 @@ def get_performances(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return db.query(Performance).filter(Performance.user_id == current_user.id).all()
+    return (
+        db.query(Performance)
+        .filter(Performance.user_id == current_user.id)
+        .order_by(Performance.date)
+        .all()
+    )
 
 @app.post("/api/performances", response_model=PerformanceResponse, status_code=201)
 def create_performance(
@@ -743,7 +879,6 @@ def create_setlist(
     db.flush()
 
     for entry_data in setlist.entries:
-        # Verify the tune belongs to this user
         tune = db.query(Tune).filter(
             Tune.id == entry_data.tune_id, Tune.user_id == current_user.id
         ).first()

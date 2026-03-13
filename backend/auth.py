@@ -27,3 +27,22 @@ def decode_access_token(token: str) -> int | None:
         return int(payload.get("sub"))
     except (jwt.PyJWTError, ValueError, TypeError):
         return None
+
+def create_reset_token(user_id: int) -> str:
+    """Create a short-lived token for password reset (1 hour expiry)."""
+    payload = {
+        "sub": str(user_id),
+        "purpose": "password_reset",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+def decode_reset_token(token: str) -> int | None:
+    """Decode a password reset token. Returns user_id or None if invalid/expired."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        if payload.get("purpose") != "password_reset":
+            return None
+        return int(payload.get("sub"))
+    except (jwt.PyJWTError, ValueError, TypeError):
+        return None

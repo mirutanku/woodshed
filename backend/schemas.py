@@ -29,6 +29,9 @@ class UserCreate(BaseModel):
 class GoogleLogin(BaseModel):
     credential: str
 
+class LinkGoogle(BaseModel):
+    credential: str
+
 class UserResponse(BaseModel):
     id: int
     username: str
@@ -57,6 +60,32 @@ class UserUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_rules(cls, v):
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters")
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password must be 72 bytes or fewer")
+        return v
+
+class EmailUpdate(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def email_rules(cls, v):
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Invalid email address")
+        return v.lower().strip()
+
+class ForgotPassword(BaseModel):
+    email: str
+
+class ResetPassword(BaseModel):
+    token: str
     new_password: str
 
     @field_validator("new_password")

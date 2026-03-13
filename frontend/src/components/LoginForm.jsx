@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import api from '../api'
 
-function LoginForm({ onLogin }) {
+function LoginForm({ onLogin, onForgotPassword }) {
     const [isRegister, setIsRegister] = useState(false)
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
@@ -112,7 +112,13 @@ function LoginForm({ onLogin }) {
             Sign in with Google
           </button>
         </form>
-
+        {!isRegister && onForgotPassword && (
+          <div className="login-toggle" style={{ marginBottom: 0 }}>
+            <button onClick={onForgotPassword}>
+              Forgot password?
+            </button>
+          </div>
+        )}
         <div className="login-toggle">
           {isRegister ? (
             <>

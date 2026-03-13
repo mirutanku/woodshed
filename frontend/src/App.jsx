@@ -3,6 +3,8 @@ import './App.css'
 import { setOnUnauthorized } from './api'
 import { ToastProvider } from './components/Toast'
 import LoginForm from './components/LoginForm'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 import Settings from './components/Settings'
 import Nav from './components/Nav'
 import TuneList from './components/TuneList'
@@ -14,6 +16,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'))
   const [currentView, setCurrentView] = useState('tunes')
   const [selectedTuneId, setSelectedTuneId] = useState(null)
+  const [authView, setAuthView] = useState('login') // 'login', 'forgot-password', 'reset-password'
+  const [resetToken, setResetToken] = useState(null)
 
   function handleLogin() {
     setIsLoggedIn(true)
@@ -31,6 +35,19 @@ function App() {
     setOnUnauthorized(handleLogout)
   }, [])
 
+  // Check URL for password reset token
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const path = window.location.pathname
+    if (path === '/reset-password' && token) {
+      setResetToken(token)
+      setAuthView('reset-password')
+      // Clean up the URL
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
   function handleSelectTune(tuneId) {
     setSelectedTuneId(tuneId)
     setCurrentView('tune-detail')
@@ -44,7 +61,24 @@ function App() {
   if (!isLoggedIn) {
     return (
       <ToastProvider>
-        <LoginForm onLogin={handleLogin} />
+        {authView === 'forgot-password' && (
+          <ForgotPassword onBack={() => setAuthView('login')} />
+        )}
+        {authView === 'reset-password' && resetToken && (
+          <ResetPassword
+            token={resetToken}
+            onBackToLogin={() => {
+              setResetToken(null)
+              setAuthView('login')
+            }}
+          />
+        )}
+        {authView === 'login' && (
+          <LoginForm
+            onLogin={handleLogin}
+            onForgotPassword={() => setAuthView('forgot-password')}
+          />
+        )}
       </ToastProvider>
     )
   }
