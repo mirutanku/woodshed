@@ -9,4 +9,4 @@ bcrypt==4.0.1
 PyJWT==2.11.0
 google-auth==2.14.0
 requests==2.31.0
-resend==2.5.0
+resend==2.23.0
