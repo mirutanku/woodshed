@@ -37,6 +37,11 @@ function LoginForm({ onLogin, onForgotPassword }) {
     }
 
     function handleGoogleLogin() {
+      console.log('GOOGLE_CLIENT_ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID)
+      if (!window.google?.accounts?.id) {
+        setError('Google Sign-In not loaded yet — try again in a moment')
+        return
+      }
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: async (response) => {

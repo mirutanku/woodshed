@@ -41,6 +41,9 @@ function App() {
     const token = params.get('token')
     const path = window.location.pathname
     if (path === '/reset-password' && token) {
+      // Log out any existing session so the reset form shows
+      localStorage.removeItem('token')
+      setIsLoggedIn(false)
       setResetToken(token)
       setAuthView('reset-password')
       // Clean up the URL
