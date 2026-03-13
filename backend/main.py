@@ -21,7 +21,7 @@ from schemas import (
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
     PracticeEntryCreate, PracticeEntryResponse, PracticeSessionUpdate, PracticeEntryUpdate, PerformanceCreate, PerformanceUpdate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse,
-    EmailUpdate, ForgotPassword, ResetPassword, LinkGoogle,
+    EmailUpdate, ForgotPassword, ResetPassword, SetPassword, LinkGoogle,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token, create_reset_token, decode_reset_token
 from email_service import send_password_reset_email
@@ -179,6 +179,18 @@ def change_password(
         raise HTTPException(status_code=400, detail="No password set. Use Google login or set a password first.")
     if not verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(data.new_password)
+    db.commit()
+    return
+
+@app.post("/api/users/me/set-password", status_code=204)
+def set_password(
+    data: SetPassword,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.password_hash:
+        raise HTTPException(status_code=400, detail="Password already set. Use the change password flow.")
     current_user.password_hash = hash_password(data.new_password)
     db.commit()
     return

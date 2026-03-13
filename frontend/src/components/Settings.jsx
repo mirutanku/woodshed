@@ -131,8 +131,12 @@ function Settings({ onLogout }) {
   // --- Password ---
 
   async function handleChangePassword() {
-    if (!currentPassword || !newPassword) {
-      toast('Please fill in both fields', 'error')
+    if (user?.has_password && !currentPassword) {
+      toast('Please enter your current password', 'error')
+      return
+    }
+    if (!newPassword) {
+      toast('Please enter a new password', 'error')
       return
     }
     if (newPassword !== confirmPassword) {
@@ -145,10 +149,17 @@ function Settings({ onLogout }) {
     }
     setSaving(true)
     try {
-      await api.post('/users/me/password', {
-        current_password: currentPassword,
-        new_password: newPassword,
-      })
+      if (user?.has_password) {
+        await api.post('/users/me/password', {
+          current_password: currentPassword,
+          new_password: newPassword,
+        })
+      } else {
+        await api.post('/users/me/set-password', {
+          new_password: newPassword,
+        })
+        setUser(prev => ({ ...prev, has_password: true }))
+      }
       toast('Password changed')
       setShowPasswordForm(false)
       setCurrentPassword('')
