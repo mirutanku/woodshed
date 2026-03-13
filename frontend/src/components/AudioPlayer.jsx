@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import api from '../api'
+import { useToast } from './Toast'
 
 const SPEED_PRESETS = [
   { label: '50%', value: 0.5 },
@@ -37,6 +39,11 @@ function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
   const [rampReachedMax, setRampReachedMax] = useState(false)
 
   const audioUrl = `/api/recordings/${recordingId}/stream?token=${localStorage.getItem('token')}`
+
+  // User check-in
+  const hasCheckedIn = useRef(false)
+
+  const toast = useToast()
 
   // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
 
@@ -118,9 +125,18 @@ function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
   function togglePlay() {
     const audio = audioRef.current
     if (!audio) return
-
     if (audio.paused) {
-      audio.play().then(() => setIsPlaying(true)).catch(() => setError('Playback failed'))
+      audio.play().then(() => {
+        setIsPlaying(true)
+        if (!hasCheckedIn.current) {
+          hasCheckedIn.current = true
+          api.post('/checkin').then(res => {
+            if (!res.data.already_checked_in) {
+              toast('Practice streak updated ✓')
+            }
+          }).catch(() => {})
+        }
+      }).catch(() => setError('Playback failed'))
     } else {
       audio.pause()
       setIsPlaying(false)

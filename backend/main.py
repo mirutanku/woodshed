@@ -1,7 +1,7 @@
 import os
 import uuid
 import pathlib
-from datetime import date
+from datetime import date, timedelta
 import mimetypes
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Form
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist
+from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist, CheckIn
 from schemas import (
     UserCreate, GoogleLogin, UserResponse, TokenResponse, UserUpdate, PasswordChange,
     TuneCreate, TuneUpdate, TuneResponse,
@@ -264,7 +264,7 @@ def delete_tune(
             status_code=400,
             detail="Cannot delete a tune with practice history. Set its status to 'retired' instead.",
         )
-
+    db.query(SetlistEntry).filter(SetlistEntry.tune_id == tune_id).delete()
     db.delete(tune)
     db.commit()
 
@@ -882,3 +882,49 @@ if STATIC_DIR.exists():
             return FileResponse(file_path)
         else:
             return FileResponse(STATIC_DIR / "index.html")
+        
+
+# --- Check-ins ---
+
+@app.post("/api/checkin")
+def checkin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    today = date.today()
+    existing = db.query(CheckIn).filter(
+        CheckIn.user_id == current_user.id,
+        CheckIn.date == today,
+    ).first()
+
+    if existing:
+        return {"already_checked_in": True}
+
+    db.add(CheckIn(user_id=current_user.id, date=today))
+    db.commit()
+    return {"already_checked_in": False}
+
+@app.get("/api/streak")
+def get_streak(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dates = (
+        db.query(CheckIn.date)
+        .filter(CheckIn.user_id == current_user.id)
+        .order_by(CheckIn.date.desc())
+        .all()
+    )
+    if not dates:
+        return {"streak": 0}
+
+    streak = 0
+    expected = date.today()
+    for (d,) in dates:
+        if d == expected:
+            streak += 1
+            expected -= timedelta(days=1)
+        elif d < expected:
+            break
+
+    return {"streak": streak}

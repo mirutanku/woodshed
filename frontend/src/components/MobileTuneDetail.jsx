@@ -48,6 +48,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const [showUpload, setShowUpload] = useState(false)
   const longPressTimer = useRef(null)
 
+  // User check-in
+  const hasCheckedIn = useRef(false)
+
   // Auto-select first recording
   useEffect(() => {
     if (recordings.length > 0 && !selectedRecording) {
@@ -172,7 +175,17 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       audio.pause()
       setIsPlaying(false)
     } else {
-      audio.play().then(() => setIsPlaying(true)).catch(() => {})
+      audio.play().then(() => {
+        setIsPlaying(true)
+        if (!hasCheckedIn.current) {
+          hasCheckedIn.current = true
+          api.post('/checkin').then(res => {
+            if (!res.data.already_checked_in) {
+              toast('Practice streak updated ✓')
+            }
+          }).catch(() => {})
+        }
+      }).catch(() => {})
     }
   }
 

@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Float, Text, DateTime, ForeignKey, Date
+    Column, Integer, String, Float, Text, DateTime, ForeignKey, Date, UniqueConstraint
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -20,6 +20,7 @@ class User(Base):
     sessions = relationship("PracticeSession", back_populates="user")
     performances = relationship("Performance", back_populates="user")
     setlists = relationship("Setlist", back_populates="user")
+    checkins = relationship("CheckIn", back_populates="user")
 
 
 class Tune(Base):
@@ -142,3 +143,17 @@ class SetlistEntry(Base):
 
     setlist = relationship("Setlist", back_populates="entries")
     tune = relationship("Tune")
+
+class CheckIn(Base):
+    __tablename__ = "checkins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+
+    user = relationship("User", back_populates="checkins")
+
+    __table_args__ = (
+        # Ensure a user can only check in once per day
+        UniqueConstraint('user_id', 'date', name='unique_user_date'),
+    )
