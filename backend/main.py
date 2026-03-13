@@ -21,7 +21,7 @@ from schemas import (
     SegmentCreate, SegmentUpdate, SegmentResponse,
     PracticeSessionCreate, PracticeSessionResponse,
     PracticeEntryCreate, PracticeEntryResponse, PracticeSessionUpdate, PracticeEntryUpdate, PerformanceCreate, PerformanceUpdate, PerformanceResponse, SetlistCreate, SetlistResponse, SetlistUpdate, SetlistEntryCreate, SetlistEntryResponse,
-    EmailUpdate, ForgotPassword, ResetPassword, SetPassword, LinkGoogle,
+    EmailUpdate, ForgotPassword, ResetPassword, SetPassword, LinkGoogle, DeleteAccount
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token, create_reset_token, decode_reset_token
 from email_service import send_password_reset_email
@@ -280,9 +280,16 @@ def unlink_google(
 
 @app.delete("/api/users/me", status_code=204)
 def delete_account(
+    data: DeleteAccount,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user.password_hash:
+        if not data.password:
+            raise HTTPException(status_code=400, detail="Password required to delete account")
+        if not verify_password(data.password, current_user.password_hash):
+            raise HTTPException(status_code=400, detail="Incorrect password")
+        
     # Delete all user data in order (respecting foreign keys)
     db.query(CheckIn).filter(CheckIn.user_id == current_user.id).delete()
     db.query(SetlistEntry).filter(

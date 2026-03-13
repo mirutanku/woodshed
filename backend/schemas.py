@@ -338,3 +338,9 @@ class SetlistResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Account deletion ---
+
+class DeleteAccount(BaseModel):
+    password: str | None = None

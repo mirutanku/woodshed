@@ -26,6 +26,7 @@ function Settings({ onLogout }) {
   const [saving, setSaving] = useState(false)
 
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
 
   // Fetch current user on mount
   useEffect(() => {
@@ -179,7 +180,7 @@ function Settings({ onLogout }) {
   async function handleDeleteAccount() {
     setSaving(true)
     try {
-      await api.delete('/users/me')
+      await api.delete('/users/me', { data: { password: deletePassword || null } })
       localStorage.removeItem('token')
       window.location.reload()
     } catch (err) {
@@ -364,15 +365,30 @@ function Settings({ onLogout }) {
             <p className="text-sm" style={{ marginBottom: 'var(--space-md)', lineHeight: 1.6 }}>
               This will permanently delete your account and all your data — tunes, recordings, practice history, everything. This cannot be undone.
             </p>
+            {user?.has_password && (
+              <div className="form-group mb-md">
+                <label>Enter your password to confirm</label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={e => setDeletePassword(e.target.value)}
+                  placeholder="Your password"
+                  autoFocus
+                />
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
               <button
                 className="btn-danger btn-sm"
                 onClick={handleDeleteAccount}
-                disabled={saving}
+                disabled={saving || (user?.has_password && !deletePassword)}
               >
                 {saving ? '...' : 'Yes, delete my account'}
               </button>
-              <button className="btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>
+              <button className="btn-ghost btn-sm" onClick={() => {
+                setConfirmDelete(false)
+                setDeletePassword('')
+              }}>
                 Cancel
               </button>
             </div>
