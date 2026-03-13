@@ -867,22 +867,6 @@ def update_setlist_entries(
         })
     return {**setlist.__dict__, "entries": entry_responses}
 
-    
-# --- Server built frontend ---
-
-STATIC_DIR = pathlib.Path(__file__).parent / "static"
-
-if STATIC_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="frontend-assets")
-
-    @app.get("/{path:path}")
-    async def serve_frontend(path: str):
-        file_path = STATIC_DIR / path
-        if file_path.is_file():
-            return FileResponse(file_path)
-        else:
-            return FileResponse(STATIC_DIR / "index.html")
-        
 
 # --- Check-ins ---
 
@@ -928,3 +912,19 @@ def get_streak(
             break
 
     return {"streak": streak}
+
+
+# --- Server built frontend ---
+
+STATIC_DIR = pathlib.Path(__file__).parent / "static"
+
+if STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="frontend-assets")
+
+    @app.get("/{path:path}")
+    async def serve_frontend(path: str):
+        file_path = STATIC_DIR / path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        else:
+            return FileResponse(STATIC_DIR / "index.html")
