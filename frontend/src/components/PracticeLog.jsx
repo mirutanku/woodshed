@@ -254,6 +254,12 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
 
 
 function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance, onEditPerformance }) {
+  const [streak, setStreak] = useState(0)
+
+  useEffect(() => {
+    api.get('/streak').then(res => setStreak(res.data.streak)).catch(() => {})
+  }, [])
+  
   const stats = useMemo(() => {
     if (sessions.length === 0) return null
 
@@ -269,24 +275,6 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
 
     const weekMinutes = thisWeek.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
     const weekSessions = thisWeek.length
-
-    // Streak
-    const sessionDates = new Set(sessions.map(s => s.date))
-    let streak = 0
-    const checkDate = new Date(now)
-    const todayStr = checkDate.toISOString().split('T')[0]
-    if (!sessionDates.has(todayStr)) {
-      checkDate.setDate(checkDate.getDate() - 1)
-    }
-    while (true) {
-      const dateStr = checkDate.toISOString().split('T')[0]
-      if (sessionDates.has(dateStr)) {
-        streak++
-        checkDate.setDate(checkDate.getDate() - 1)
-      } else {
-        break
-      }
-    }
 
     // Most practiced tunes
     const tuneCounts = {}
@@ -329,7 +317,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
       .sort((a, b) => b.sessions - a.sessions)
       .slice(0, 5)
 
-    return { weekSessions, weekMinutes, streak, topTunes, tempoProgress }
+    return { weekSessions, weekMinutes, topTunes, tempoProgress }
   }, [sessions])
 
   if (!stats) return null
@@ -348,7 +336,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
           <span className="summary-label">Hours</span>
         </div>
         <div className="summary-stat">
-          <span className="summary-number">{stats.streak > 0 ? `${stats.streak}d` : '—'}</span>
+          <span className="summary-number">{streak > 0 ? `${streak}d` : '—'}</span>
           <span className="summary-label">Streak</span>
         </div>
       </div>
