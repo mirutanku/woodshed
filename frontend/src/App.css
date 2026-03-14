@@ -1400,6 +1400,10 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .status-badge {
+    min-width: 0;
+  }
+
   /* Forms */
   .form-row {
     grid-template-columns: 1fr;
