@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Float, Text, DateTime, ForeignKey, Date, UniqueConstraint
+    Column, Integer, String, Float, Text, DateTime, ForeignKey, Date, UniqueConstraint, Boolean
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -34,6 +34,8 @@ class Tune(Base):
     tempo = Column(Integer, nullable=True)
     form = Column(String, nullable=True)
     status = Column(String, default="learning")
+    starred = Column(Boolean, default=False, nullable=False, server_default="false")
+    archived = Column(Boolean, default=False, nullable=False, server_default="false") 
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

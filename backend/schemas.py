@@ -118,7 +118,7 @@ class TuneValidators(BaseModel):
     def validate_status(cls, v):
         if v is None:
             return v
-        allowed = { "learning", "transcribing", "playable", "polished", "retired" }
+        allowed = { "learning", "polishing", "mastering" }
         if v not in allowed:
             raise ValueError(f"Status must be one of: {', '.join(allowed)}")
         return v
@@ -130,6 +130,8 @@ class TuneCreate(TuneValidators):
     tempo: int | None = None
     form: str | None = None
     status: str = "learning"
+    starred: bool = False
+    archived: bool = False
     notes: str | None = None
 
 class TuneUpdate(TuneValidators):
@@ -139,6 +141,8 @@ class TuneUpdate(TuneValidators):
     tempo: int | None = None
     form: str | None = None
     status: str | None = None
+    starred: bool | None = None
+    archived: bool | None = None
     notes: str | None = None
 
 class TuneResponse(BaseModel):
@@ -149,6 +153,8 @@ class TuneResponse(BaseModel):
     tempo: int | None
     form: str | None
     status: str
+    starred: bool
+    archived: bool
     notes: str | None
     created_at: datetime
     recording_count: int = 0

@@ -382,12 +382,16 @@ def health_check():
 @app.get("/api/tunes", response_model=list[TuneResponse])
 def get_tunes(
     status: str | None = None,
+    starred: bool | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     query = db.query(Tune).filter(Tune.user_id == current_user.id)
+    query = query.filter(Tune.archived == False)    # Show only active tunes
     if status:
         query = query.filter(Tune.status == status)
+    if starred is not None:
+        query = query.filter(Tune.starred == starred)
     tunes = query.order_by(Tune.title).all()
 
     results = []
@@ -406,6 +410,8 @@ def get_tunes(
             "tempo": tune.tempo,
             "form": tune.form,
             "status": tune.status,
+            "starred": tune.starred,
+            "archived": tune.archived,
             "notes": tune.notes,
             "created_at": tune.created_at,
             "recording_count": len(tune.recordings),
@@ -448,6 +454,17 @@ def update_tune(
     db.refresh(tune)
     return {**tune.__dict__, "recording_count": len(tune.recordings)}
 
+@app.post("/api/tunes/{tune_id}/star", status_code=200)
+def toggle_star(
+    tune_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    tune = get_user_tune(tune_id, current_user.id, db)
+    tune.starred = not tune.starred
+    db.commit()
+    return {"starred": tune.starred}
+
 @app.delete("/api/tunes/{tune_id}", status_code=204)
 def delete_tune(
     tune_id: int,
@@ -456,12 +473,10 @@ def delete_tune(
 ):
     tune = get_user_tune(tune_id, current_user.id, db)
 
-    # Prevent deletion if there's practice history
     if tune.practice_entries:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot delete a tune with practice history. Set its status to 'retired' instead.",
-        )
+        tune.archived = True # Soft delete if there are associated practice entries
+        db.commit()
+        return
     db.query(SetlistEntry).filter(SetlistEntry.tune_id == tune_id).delete()
     db.delete(tune)
     db.commit()

@@ -111,10 +111,8 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
             onChange={e => setTuneForm(prev => ({ ...prev, status: e.target.value }))}
           >
             <option value="learning">Learning</option>
-            <option value="transcribing">Transcribing</option>
-            <option value="playable">Playable</option>
-            <option value="polished">Polished</option>
-            <option value="retired">Retired</option>
+            <option value="polishing">Polishing</option>
+            <option value="mastering">Mastering</option>
           </select>
         </div>
       </div>

@@ -30,10 +30,8 @@
 
   /* Status colors */
   --status-learning:   #d4a04a;
-  --status-transcribing: #b85e2e;
-  --status-playable:   #5a9e6f;
-  --status-polished:   #6b8ec4;
-  --status-retired:    #7a6e62;
+  --status-polishing:  #5a9e6f;
+  --status-mastering:  #6b8ec4;
 
   /* --- Typography --- */
   --font-display: 'DM Serif Display', Georgia, serif;
@@ -297,21 +295,29 @@ label {
   background: rgba(212, 160, 74, 0.15);
   color: var(--status-learning);
 }
-.status-badge.transcribing {
-  background: rgba(184, 94, 46, 0.15);
-  color: var(--status-transcribing);
-}
-.status-badge.playable {
+.status-badge.polishing {
   background: rgba(90, 158, 111, 0.15);
-  color: var(--status-playable);
+  color: var(--status-polishing);
 }
-.status-badge.polished {
+.status-badge.mastering {
   background: rgba(107, 142, 196, 0.15);
-  color: var(--status-polished);
+  color: var(--status-mastering);
 }
-.status-badge.retired {
-  background: rgba(122, 110, 98, 0.15);
-  color: var(--status-retired);
+
+/* --- Star Toggle --- */
+
+.star-toggle {
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+  padding: 0.2rem;
+}
+.star-toggle:hover {
+  color: var(--color-gold);
+}
+.star-toggle.starred {
+  color: var(--color-amber);
 }
 
 /* --- Star Rating --- */

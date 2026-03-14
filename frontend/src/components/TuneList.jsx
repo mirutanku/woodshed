@@ -4,7 +4,7 @@ import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
 
-const STATUS_FILTERS = ['all', 'learning', 'transcribing', 'playable', 'polished', 'retired']
+const STATUS_FILTERS = ['all', 'starred', 'learning', 'polishing', 'mastering']
 
 const SORT_OPTIONS = [
   { value: 'title-asc', label: 'Title A → Z' },
@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
   { value: 'last-practiced', label: 'Last Practiced' },
 ]
 
-const STATUS_ORDER = ['learning', 'transcribing', 'playable', 'polished', 'retired']
+const STATUS_ORDER = ['learning', 'polishing', 'mastering']
 
 function TuneList({ onSelectTune }) {
   const [tunes, setTunes] = useState([])
@@ -47,10 +47,24 @@ function TuneList({ onSelectTune }) {
     fetchTunes()
   }
 
+  async function handleToggleStar(e, tuneId) {
+    e.stopPropagation()
+    try {
+      const res = await api.post(`/tunes/${tuneId}/star`)
+      setTunes(prev => prev.map(t =>
+        t.id === tuneId ? { ...t, starred: res.data.starred } : t
+      ))
+    } catch (err) {
+      console.error('Failed to toggle star:', err)
+    }
+  }
+
   const sortedTunes = useMemo(() => {
     let filtered = tunes
     if (filter === 'all') {
-      filtered = tunes.filter(t => t.status !== 'retired')
+      filtered = tunes
+    } else if (filter === 'starred') {
+      filtered = tunes.filter(t => t.starred)
     } else {
       filtered = tunes.filter(t => t.status === filter)
     }
@@ -82,6 +96,7 @@ function TuneList({ onSelectTune }) {
     tunes.forEach(t => {
       counts[t.status] = (counts[t.status] || 0) + 1
     })
+    counts.starred = tunes.filter(t => t.starred).length
     return counts
   }, [tunes])
 
@@ -98,8 +113,10 @@ function TuneList({ onSelectTune }) {
                 onClick={() => setFilter(s)}
               >
                 {s === 'all'
-                  ? `All (${tunes.filter(t => t.status !== 'retired').length})` // Exclude "Retired" count from "All" count
-                  : `${s.charAt(0).toUpperCase() + s.slice(1)} (${statusCounts[s] || 0})`
+                  ? `All (${tunes.length})`
+                  : s === 'starred'
+                    ? `★ (${statusCounts.starred || 0})`
+                    : `${s.charAt(0).toUpperCase() + s.slice(1)} (${statusCounts[s] || 0})`
                 }
               </button>
             ))}
@@ -153,12 +170,19 @@ function TuneList({ onSelectTune }) {
                   {tune.composer && <span>{tune.composer}</span>}
                   {tune.key && <span>{tune.key}</span>}
                   {tune.tempo && <span>{tune.tempo} bpm</span>}
+                  {tune.recording_count > 0 && (
+                    <span>{tune.recording_count} rec{tune.recording_count !== 1 ? 's' : ''}</span>
+                  )}
                 </div>
               </div>
-              <span className={`status-badge ${tune.status}`}>{tune.status}</span>
-              <span className="tune-recording-count">
-                {tune.recording_count} rec{tune.recording_count !== 1 ? 's' : ''}
+              <span
+                className={`star-toggle ${tune.starred ? 'starred' : ''}`}
+                onClick={e => handleToggleStar(e, tune.id)}
+                title={tune.starred ? 'Unstar' : 'Star'}
+              >
+                {tune.starred ? '★' : '☆'}
               </span>
+              <span className={`status-badge ${tune.status}`}>{tune.status}</span>
             </div>
           ))}
         </div>
@@ -286,10 +310,8 @@ function AddTuneForm({ onCancel, onAdded }) {
             onChange={e => handleChange('status', e.target.value)}
           >
             <option value="learning">Learning</option>
-            <option value="transcribing">Transcribing</option>
-            <option value="playable">Playable</option>
-            <option value="polished">Polished</option>
-            <option value="retired">Retired</option>
+            <option value="polishing">Polishing</option>
+            <option value="mastering">Mastering</option>
           </select>
         </div>
 
