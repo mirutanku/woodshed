@@ -1392,6 +1392,11 @@
     padding: var(--space-md);
   }
 
+.tune-row .status-badge {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .tune-recording-count {
     display: none;
   }
