@@ -292,6 +292,7 @@ def delete_account(
         
     # Delete all user data in order (respecting foreign keys)
     db.query(CheckIn).filter(CheckIn.user_id == current_user.id).delete()
+    db.query(TunePlayback).filter(TunePlayback.user_id == current_user.id).delete()
     db.query(SetlistEntry).filter(
         SetlistEntry.setlist_id.in_(
             db.query(Setlist.id).filter(Setlist.user_id == current_user.id)
