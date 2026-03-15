@@ -229,6 +229,7 @@ function SetlistManager({onSelectTune}) {
             {!editingId && setlists.length > 0 && (
               <div className="form-group mb-md">
                 <label>Start from existing</label>
+              
                 <select
                   onChange={e => {
                     const id = parseInt(e.target.value, 10)
@@ -255,6 +256,33 @@ function SetlistManager({onSelectTune}) {
                 </select>
               </div>
             )}
+
+            <div className="form-row mb-md">
+              <div className="form-group">
+                <label>Title *</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="e.g. Blue Note Tuesday"
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label>Performance</label>
+                <select
+                  value={performanceId}
+                  onChange={e => setPerformanceId(e.target.value)}
+                >
+                  <option value="">No linked performance</option>
+                  {upcomingPerformances.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.title} — {formatDate(p.date)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <div className="form-group mb-md">
               <label>Notes</label>
