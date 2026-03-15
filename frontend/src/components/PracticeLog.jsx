@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import SessionForm from './SessionForm'
 
 function StarRating({ value, onChange }) {
   return (
@@ -307,21 +308,25 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
     return { weekSessions, weekMinutes, tempoProgress }
   }, [sessions])
 
-  if (!stats) return null
+  const hasStats = !!stats
 
   return (
     <div className="practice-summary fade-in">
       <div className="summary-stats">
-        <div className="summary-stat">
-          <span className="summary-number">{stats.weekSessions}</span>
-          <span className="summary-label">This Week</span>
-        </div>
-        <div className="summary-stat">
-          <span className="summary-number">
-            {stats.weekMinutes > 0 ? `${Math.round(stats.weekMinutes / 60 * 10) / 10}h` : '—'}
-          </span>
-          <span className="summary-label">Hours</span>
-        </div>
+        {hasStats && (
+          <>
+            <div className="summary-stat">
+              <span className="summary-number">{stats.weekSessions}</span>
+              <span className="summary-label">This Week</span>
+            </div>
+            <div className="summary-stat">
+              <span className="summary-number">
+                {stats.weekMinutes > 0 ? `${Math.round(stats.weekMinutes / 60 * 10) / 10}h` : '—'}
+              </span>
+              <span className="summary-label">Hours</span>
+            </div>
+          </>
+        )}
         <div className="summary-stat">
           <span className="summary-number">{streak > 0 ? `${streak}d` : '—'}</span>
           <span className="summary-label">Streak</span>
@@ -352,7 +357,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
           onEdit={onEditPerformance}
         />
 
-        {stats.tempoProgress.length > 0 && (
+        {hasStats && stats.tempoProgress.length > 0 && (
           <div className="summary-section">
             <h3>Tempo Progress</h3>
             <div className="summary-tune-list">
@@ -391,10 +396,6 @@ function PracticeLog() {
   const [expandedSession, setExpandedSession] = useState(null)
 
   // Form state
-  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0])
-  const [sessionDuration, setSessionDuration] = useState('')
-  const [sessionNotes, setSessionNotes] = useState('')
-  const [entries, setEntries] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -574,69 +575,12 @@ function PracticeLog() {
     }
   }
 
-  function addEntry() {
-    setEntries(prev => [
-      ...prev,
-      {
-        id: Date.now(),
-        tune_id: '',
-        focus: '',
-        tempo_practiced: '',
-        notes: '',
-        rating: 0,
-        duration_minutes: '',
-      },
-    ])
-  }
-
-  function updateEntry(localId, field, value) {
-    setEntries(prev =>
-      prev.map(e => (e.id === localId ? { ...e, [field]: value } : e))
-    )
-  }
-
-  function removeEntry(localId) {
-    setEntries(prev => prev.filter(e => e.id !== localId))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(payload) {
     setError('')
-
-    if (entries.length === 0) {
-      setError('Add at least one practice entry')
-      return
-    }
-
-    const invalidEntry = entries.find(ent => !ent.tune_id)
-    if (invalidEntry) {
-      setError('Each entry needs a tune selected')
-      return
-    }
-
     setSaving(true)
     try {
-      const payload = {
-        date: sessionDate,
-        duration_minutes: sessionDuration ? parseInt(sessionDuration, 10) : null,
-        notes: sessionNotes.trim() || null,
-        entries: entries.map(ent => ({
-          tune_id: parseInt(ent.tune_id, 10),
-          segment_id: null,
-          focus: ent.focus || null,
-          tempo_practiced: ent.tempo_practiced ? parseInt(ent.tempo_practiced, 10) : null,
-          notes: ent.notes.trim() || null,
-          rating: ent.rating || null,
-          duration_minutes: ent.duration_minutes ? parseInt(ent.duration_minutes, 10) : null,
-        })),
-      }
       await api.post('/sessions', payload)
-
       setShowForm(false)
-      setSessionDate(new Date().toISOString().split('T')[0])
-      setSessionDuration('')
-      setSessionNotes('')
-      setEntries([])
       toast('Session logged')
       fetchSessions()
     } catch (err) {
@@ -665,17 +609,14 @@ function PracticeLog() {
         <h1>Practice Log</h1>
         <button
           className="btn-primary"
-          onClick={() => {
-            setShowForm(!showForm)
-            if (!showForm && entries.length === 0) addEntry()
-          }}
+          onClick={() => setShowForm(!showForm)}
         >
           {showForm ? 'Cancel' : '+ Log Session'}
         </button>
       </div>
 
       {/* Summary dashboard */}
-      {!showForm && (sessions.length > 0 || performances.length > 0) && (
+      {!showForm && (
         <PracticeSummary
           sessions={sessions}
           performances={performances}
@@ -687,145 +628,13 @@ function PracticeLog() {
 
       {/* New session form */}
       {showForm && (
-        <div className="card mb-lg slide-up">
-          <h2 style={{ marginBottom: 'var(--space-lg)' }}>New Practice Session</h2>
-          {error && <div className="login-error mb-md">{error}</div>}
-
-          <form className="practice-form" onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  type="date"
-                  value={sessionDate}
-                  onChange={e => setSessionDate(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Total Duration (min)</label>
-                <input
-                  type="number"
-                  value={sessionDuration}
-                  onChange={e => setSessionDuration(e.target.value)}
-                  placeholder="e.g. 60"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Session Notes</label>
-              <textarea
-                value={sessionNotes}
-                onChange={e => setSessionNotes(e.target.value)}
-                placeholder="How did the session go overall?"
-                rows={2}
-              />
-            </div>
-
-            <hr className="divider" />
-
-            <h3>What did you practice?</h3>
-
-            {entries.map((entry, idx) => (
-              <div key={entry.id} className="practice-entry-card">
-                <div className="practice-entry-header">
-                  <span className="text-sm text-dim">Entry {idx + 1}</span>
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm"
-                    style={{ color: 'var(--color-danger)' }}
-                    onClick={() => removeEntry(entry.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Tune *</label>
-                    <select
-                      value={entry.tune_id}
-                      onChange={e => updateEntry(entry.id, 'tune_id', e.target.value)}
-                    >
-                      <option value="">Select a tune...</option>
-                      {tunes.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {t.title}{t.composer ? ` (${t.composer})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Focus</label>
-                    <select
-                      value={entry.focus}
-                      onChange={e => updateEntry(entry.id, 'focus', e.target.value)}
-                    >
-                      <option value="">Select focus...</option>
-                      {FOCUS_OPTIONS.map(f => (
-                        <option key={f} value={f}>
-                          {f.charAt(0).toUpperCase() + f.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Tempo Practiced (BPM)</label>
-                    <input
-                      type="number"
-                      value={entry.tempo_practiced}
-                      onChange={e => updateEntry(entry.id, 'tempo_practiced', e.target.value)}
-                      placeholder="e.g. 120"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Duration (min)</label>
-                    <input
-                      type="number"
-                      value={entry.duration_minutes}
-                      onChange={e => updateEntry(entry.id, 'duration_minutes', e.target.value)}
-                      placeholder="e.g. 15"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 'var(--space-sm)' }}>
-                  <label>Notes</label>
-                  <input
-                    type="text"
-                    value={entry.notes}
-                    onChange={e => updateEntry(entry.id, 'notes', e.target.value)}
-                    placeholder="What did you work on specifically?"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Rating</label>
-                  <StarRating
-                    value={entry.rating}
-                    onChange={val => updateEntry(entry.id, 'rating', val)}
-                  />
-                </div>
-              </div>
-            ))}
-
-            <button type="button" className="add-entry-btn" onClick={addEntry}>
-              + Add Another Tune
-            </button>
-
-            <div className="modal-actions">
-              <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? 'Saving...' : 'Log Session'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <SessionForm
+          tunes={tunes}
+          onSubmit={handleSubmit}
+          onCancel={() => setShowForm(false)}
+          saving={saving}
+          error={error}
+        />
       )}
 
       {/* Session history */}
