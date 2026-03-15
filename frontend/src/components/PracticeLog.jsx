@@ -32,7 +32,7 @@ function StarDisplay({ value }) {
   )
 }
 
-const FOCUS_OPTIONS = ['transcription', 'technique', 'memorization', 'tempo', 'ear training', 'reading']
+const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'solo break', 'improvisation', 'sight-reading']
 
 function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }) {
   const [showForm, setShowForm] = useState(false)
@@ -705,7 +705,7 @@ function PracticeLog() {
         <div className="empty-state">
           <h3>No sessions logged</h3>
           <p>Log your first practice session to start tracking your progress.</p>
-          <button className="btn-primary" onClick={() => { setShowForm(true); addEntry() }}>
+          <button className="btn-primary" onClick={() => setShowForm(true)}>
             + Log Your First Session
           </button>
         </div>
