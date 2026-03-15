@@ -48,8 +48,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const [showUpload, setShowUpload] = useState(false)
   const longPressTimer = useRef(null)
 
-  // User check-in
+  // Practice tracking
   const hasCheckedIn = useRef(false)
+  const hasTrackedPlayback = useRef(false)
 
   // Auto-select first recording
   useEffect(() => {
@@ -184,6 +185,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               toast('Practice streak updated ✓')
             }
           }).catch(() => {})
+        }
+        if (!hasTrackedPlayback.current) {
+          hasTrackedPlayback.current = true
+          api.post(`/tunes/${tune.id}/playback`).catch(() => {})
         }
       }).catch(() => {})
     }

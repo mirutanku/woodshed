@@ -21,6 +21,7 @@ class User(Base):
     performances = relationship("Performance", back_populates="user")
     setlists = relationship("Setlist", back_populates="user")
     checkins = relationship("CheckIn", back_populates="user")
+    tune_playbacks = relationship("TunePlayback", back_populates="user")
 
 
 class Tune(Base):
@@ -158,4 +159,19 @@ class CheckIn(Base):
     __table_args__ = (
         # Ensure a user can only check in once per day
         UniqueConstraint('user_id', 'date', name='unique_user_date'),
+    )
+
+class TunePlayback(Base):
+    __tablename__ = "tune_playbacks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    tune_id = Column(Integer, ForeignKey("tunes.id"), nullable=False)
+    date = Column(Date, nullable=False)
+
+    user = relationship("User", back_populates="tune_playbacks")
+    tune = relationship("Tune")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'tune_id', 'date', name='unique_user_tune_date'),
     )

@@ -16,7 +16,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
+function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
   const audioRef = useRef(null)
   const progressRef = useRef(null)
   const animFrameRef = useRef(null)
@@ -40,8 +40,9 @@ function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
 
   const audioUrl = `/api/recordings/${recordingId}/stream?token=${localStorage.getItem('token')}`
 
-  // User check-in
+  // Practice tracking
   const hasCheckedIn = useRef(false)
+  const hasTrackedPlayback = useRef(false)
 
   const toast = useToast()
 
@@ -135,6 +136,10 @@ function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
               toast('Practice streak updated ✓')
             }
           }).catch(() => {})
+        }
+        if (!hasTrackedPlayback.current && tuneId) {
+          hasTrackedPlayback.current = true
+          api.post(`/tunes/${tuneId}/playback`).catch(() => {})
         }
       }).catch(() => setError('Playback failed'))
     } else {
@@ -241,6 +246,7 @@ function AudioPlayer({ recordingId, segments = [], onTimeUpdate }) {
     speedRef.current = 1.0
     setRampEnabled(false)
     setRampReachedMax(false)
+    hasTrackedPlayback.current = false
     setError('')
     if (audioRef.current) {
       audioRef.current.playbackRate = 1.0

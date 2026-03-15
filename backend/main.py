@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from database import engine, get_db, Base
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist, CheckIn
+from models import User, Tune, Recording, Segment, PracticeSession, PracticeEntry, Performance, SetlistEntry, Setlist, CheckIn, TunePlayback
 from schemas import (
     UserCreate, GoogleLogin, UserResponse, TokenResponse, UserUpdate, PasswordChange,
     TuneCreate, TuneUpdate, TuneResponse,
@@ -1084,7 +1084,7 @@ def update_setlist_entries(
     return {**setlist.__dict__, "entries": entry_responses}
 
 
-# --- Check-ins ---
+# --- Practice tracking ---
 
 @app.post("/api/checkin")
 def checkin(
@@ -1128,6 +1128,82 @@ def get_streak(
             break
 
     return {"streak": streak}
+
+@app.post("/api/tunes/{tune_id}/playback")
+def record_playback(
+    tune_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    tune = get_user_tune(tune_id, current_user.id, db)
+    today = date.today()
+    existing = db.query(TunePlayback).filter(
+        TunePlayback.user_id == current_user.id,
+        TunePlayback.tune_id == tune.id,
+        TunePlayback.date == today,
+    ).first()
+
+    if existing:
+        return {"already_recorded": True}
+
+    db.add(TunePlayback(user_id=current_user.id, tune_id=tune.id, date=today))
+    db.commit()
+    return {"already_recorded": False}
+
+@app.get("/api/most-practiced")
+def get_most_practiced(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Count practice log entries per tune
+    log_counts = dict(
+        db.query(PracticeEntry.tune_id, sql_func.count(PracticeEntry.id))
+        .join(PracticeSession)
+        .filter(PracticeSession.user_id == current_user.id)
+        .group_by(PracticeEntry.tune_id)
+        .all()
+    )
+
+    # Count playback days per tune (only days not already covered by a log entry)
+    playback_days = (
+        db.query(TunePlayback.tune_id, TunePlayback.date)
+        .filter(TunePlayback.user_id == current_user.id)
+        .all()
+    )
+
+    log_dates_by_tune = {}
+    log_entries = (
+        db.query(PracticeEntry.tune_id, PracticeSession.date)
+        .join(PracticeSession)
+        .filter(PracticeSession.user_id == current_user.id)
+        .all()
+    )
+    for tune_id, d in log_entries:
+        if tune_id not in log_dates_by_tune:
+            log_dates_by_tune[tune_id] = set()
+        log_dates_by_tune[tune_id].add(d)
+
+    # Add playback-only days
+    playback_only_counts = {}
+    for tune_id, d in playback_days:
+        if d not in log_dates_by_tune.get(tune_id, set()):
+            playback_only_counts[tune_id] = playback_only_counts.get(tune_id, 0) + 1
+
+    # Combine
+    all_tune_ids = set(log_counts.keys()) | set(playback_only_counts.keys())
+    combined = []
+    for tune_id in all_tune_ids:
+        total = log_counts.get(tune_id, 0) + playback_only_counts.get(tune_id, 0)
+        tune = db.query(Tune).filter(Tune.id == tune_id).first()
+        if tune:
+            combined.append({
+                "tune_id": tune_id,
+                "title": tune.title,
+                "sessions": total,
+            })
+
+    combined.sort(key=lambda x: x["sessions"], reverse=True)
+    return combined[:5]
 
 
 # --- Server built frontend ---

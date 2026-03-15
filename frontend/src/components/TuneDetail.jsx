@@ -370,6 +370,7 @@ function TuneDetail({ tuneId, onBack }) {
                   <div className="recording-expanded fade-in">
                     <AudioPlayer
                       recordingId={rec.id}
+                      tuneId={tuneId}
                       segments={segments}
                       onTimeUpdate={setPlaybackTime}
                     />

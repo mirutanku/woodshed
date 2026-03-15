@@ -255,9 +255,11 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
 
 function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance, onEditPerformance }) {
   const [streak, setStreak] = useState(0)
+  const [mostPracticed, setMostPracticed] = useState([])
 
   useEffect(() => {
     api.get('/streak').then(res => setStreak(res.data.streak)).catch(() => {})
+    api.get('/most-practiced').then(res => setMostPracticed(res.data)).catch(() => {})
   }, [])
   
   const stats = useMemo(() => {
@@ -275,21 +277,6 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
 
     const weekMinutes = thisWeek.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
     const weekSessions = thisWeek.length
-
-    // Most practiced tunes
-    const tuneCounts = {}
-    sessions.forEach(s => {
-      s.entries.forEach(e => {
-        const title = e.tune_title || 'Unknown'
-        if (!tuneCounts[title]) tuneCounts[title] = { count: 0, totalMinutes: 0 }
-        tuneCounts[title].count++
-        tuneCounts[title].totalMinutes += e.duration_minutes || 0
-      })
-    })
-
-    const topTunes = Object.entries(tuneCounts)
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 5)
 
     // Tempo progress
     const tempoByTune = {}
@@ -317,7 +304,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
       .sort((a, b) => b.sessions - a.sessions)
       .slice(0, 5)
 
-    return { weekSessions, weekMinutes, topTunes, tempoProgress }
+    return { weekSessions, weekMinutes, tempoProgress }
   }, [sessions])
 
   if (!stats) return null
@@ -342,15 +329,15 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
       </div>
 
       <div className="summary-details">
-        {stats.topTunes.length > 0 && (
+        {mostPracticed.length > 0 && (
           <div className="summary-section">
             <h3>Most Practiced</h3>
             <div className="summary-tune-list">
-              {stats.topTunes.map(([title, data]) => (
-                <div key={title} className="summary-tune-row">
-                  <span className="summary-tune-title">{title}</span>
+              {mostPracticed.map(tp => (
+                <div key={tp.tune_id} className="summary-tune-row">
+                  <span className="summary-tune-title">{tp.title}</span>
                   <span className="summary-tune-count">
-                    {data.count} session{data.count !== 1 ? 's' : ''}
+                    {tp.sessions} session{tp.sessions !== 1 ? 's' : ''}
                   </span>
                 </div>
               ))}
