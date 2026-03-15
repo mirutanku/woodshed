@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import SetlistChecklist from './SetlistChecklist'
 
 function SetlistManager({onSelectTune}) {
   const toast = useToast()
@@ -16,7 +17,7 @@ function SetlistManager({onSelectTune}) {
   const [title, setTitle] = useState('')
   const [performanceId, setPerformanceId] = useState('')
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState([]) // { localId, tune_id }
+  const [selectedTuneIds, setSelectedTuneIds] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -59,44 +60,17 @@ function SetlistManager({onSelectTune}) {
     setTitle('')
     setPerformanceId('')
     setNotes('')
-    setItems([])
+    setSelectedTuneIds([])
     setEditingId(null)
     setShowForm(false)
     setError('')
-  }
-
-  function addItem() {
-    setItems(prev => [...prev, { localId: Date.now(), tune_id: '' }])
-  }
-
-  function updateItem(localId, field, value) {
-    setItems(prev => prev.map(i => i.localId === localId ? { ...i, [field]: value } : i))
-  }
-
-  function removeItem(localId) {
-    setItems(prev => prev.filter(i => i.localId !== localId))
-  }
-
-  function moveItem(index, direction) {
-    setItems(prev => {
-      const next = [...prev]
-      const targetIndex = index + direction
-      if (targetIndex < 0 || targetIndex >= next.length) return prev
-      const temp = next[index]
-      next[index] = next[targetIndex]
-      next[targetIndex] = temp
-      return next
-    })
   }
 
   function startEdit(setlist) {
     setTitle(setlist.title)
     setPerformanceId(setlist.performance_id ? setlist.performance_id.toString() : '')
     setNotes(setlist.notes || '')
-    setItems(setlist.entries.map((entry, idx) => ({
-      localId: Date.now() + idx,
-      tune_id: entry.tune_id.toString(),
-    })))
+    setSelectedTuneIds(setlist.entries.map(entry => entry.tune_id))
     setEditingId(setlist.id)
     setShowForm(true)
     setExpandedSetlist(null)
@@ -111,21 +85,15 @@ function SetlistManager({onSelectTune}) {
       return
     }
 
-    if (items.length === 0) {
+    if (selectedTuneIds.length === 0) {
       setError('Add at least one tune')
-      return
-    }
-
-    const invalidItem = items.find(i => !i.tune_id)
-    if (invalidItem) {
-      setError('Each item needs a tune selected')
       return
     }
 
     setSaving(true)
     try {
-      const entriesPayload = items.map((item, idx) => ({
-        tune_id: parseInt(item.tune_id, 10),
+      const entriesPayload = selectedTuneIds.map((tuneId, idx) => ({
+        tune_id: tuneId,
         position: idx,
       }))
 
@@ -208,7 +176,6 @@ function SetlistManager({onSelectTune}) {
             if (showForm) {
               resetForm()
             } else {
-              addItem()
               setShowForm(true)
             }
           }}
@@ -235,10 +202,7 @@ function SetlistManager({onSelectTune}) {
                     const id = parseInt(e.target.value, 10)
                     const source = setlists.find(s => s.id === id)
                     if (source) {
-                      setItems(source.entries.map((entry, idx) => ({
-                        localId: Date.now() + idx,
-                        tune_id: entry.tune_id.toString(),
-                      })))
+                      setSelectedTuneIds(source.entries.map(entry => entry.tune_id))
                       if (!title.trim()) {
                         setTitle(`${source.title} (copy)`)
                       }
@@ -296,50 +260,20 @@ function SetlistManager({onSelectTune}) {
 
             <hr className="divider" />
 
-            <h3 style={{ marginBottom: 'var(--space-md)' }}>Tunes</h3>
+            <h3 style={{ marginBottom: 'var(--space-md)' }}>
+              Tunes
+              {selectedTuneIds.length > 0 && (
+                <span className="text-sm text-dim" style={{ fontFamily: 'var(--font-body)', fontWeight: 400, marginLeft: 'var(--space-sm)' }}>
+                  {selectedTuneIds.length} selected
+                </span>
+              )}
+            </h3>
 
-            {items.map((item, idx) => (
-              <div key={item.localId} className="setlist-item-row">
-                <span className="setlist-item-number">{idx + 1}</span>
-                <div className="setlist-item-fields">
-                  <select
-                    value={item.tune_id}
-                    onChange={e => updateItem(item.localId, 'tune_id', e.target.value)}
-                  >
-                    <option value="">Select a tune...</option>
-                    {tunes.map(t => (
-                      <option key={t.id} value={t.id}>{tuneLabel(t)}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="setlist-item-actions">
-                  <button
-                    type="button"
-                    className="btn-ghost btn-action"
-                    onClick={() => moveItem(idx, -1)}
-                    disabled={idx === 0}
-                    title="Move up"
-                  >↑</button>
-                  <button
-                    type="button"
-                    className="btn-ghost btn-action"
-                    onClick={() => moveItem(idx, 1)}
-                    disabled={idx === items.length - 1}
-                    title="Move down"
-                  >↓</button>
-                  <button
-                    type="button"
-                    className="btn-ghost btn-action"
-                    style={{ color: 'var(--color-danger)' }}
-                    onClick={() => removeItem(item.localId)}
-                  >×</button>
-                </div>
-              </div>
-            ))}
-
-            <button type="button" className="add-entry-btn" onClick={addItem}>
-              + Add Tune
-            </button>
+            <SetlistChecklist
+              tunes={tunes}
+              selectedTuneIds={selectedTuneIds}
+              onSelectionChange={setSelectedTuneIds}
+            />
 
             <div className="modal-actions">
               <button type="button" className="btn-ghost" onClick={resetForm}>
@@ -358,7 +292,7 @@ function SetlistManager({onSelectTune}) {
         <div className="empty-state">
           <h3>No setlists yet</h3>
           <p>Create a setlist to organize tunes for a gig or practice session.</p>
-          <button className="btn-primary" onClick={() => { addItem(); setShowForm(true) }}>
+          <button className="btn-primary" onClick={() => setShowForm(true)}>
             + Create Your First Setlist
           </button>
         </div>

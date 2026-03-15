@@ -2302,6 +2302,30 @@
   font-size: 1rem;
 }
 
+/* --- Setlist Checklist --- */
+
+.setlist-checklist-number {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.setlist-checklist-arrows {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.setlist-checklist-arrows .btn-action {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.35rem;
+  min-width: 24px;
+  min-height: 24px;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .checklist-tune-info {
