@@ -226,32 +226,35 @@ function SetlistManager({onSelectTune}) {
           {error && <div className="login-error mb-md">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-row mb-md">
-              <div className="form-group">
-                <label>Title *</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g. Blue Note Tuesday"
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label>Performance</label>
+            {!editingId && setlists.length > 0 && (
+              <div className="form-group mb-md">
+                <label>Start from existing</label>
                 <select
-                  value={performanceId}
-                  onChange={e => setPerformanceId(e.target.value)}
+                  onChange={e => {
+                    const id = parseInt(e.target.value, 10)
+                    const source = setlists.find(s => s.id === id)
+                    if (source) {
+                      setItems(source.entries.map((entry, idx) => ({
+                        localId: Date.now() + idx,
+                        tune_id: entry.tune_id.toString(),
+                      })))
+                      if (!title.trim()) {
+                        setTitle(`${source.title} (copy)`)
+                      }
+                    }
+                    e.target.value = ''
+                  }}
+                  value=""
                 >
-                  <option value="">No linked performance</option>
-                  {upcomingPerformances.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.title} — {formatDate(p.date)}
+                  <option value="">— Blank setlist —</option>
+                  {setlists.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.title} ({s.entries.length} tunes)
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
+            )}
 
             <div className="form-group mb-md">
               <label>Notes</label>

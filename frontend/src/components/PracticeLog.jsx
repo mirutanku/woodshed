@@ -34,13 +34,15 @@ function StarDisplay({ value }) {
 
 const FOCUS_OPTIONS = ['transcription', 'technique', 'memorization', 'tempo', 'ear training', 'reading']
 
-function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
+function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
   const [venue, setVenue] = useState('')
   const [time, setTime] = useState('')
+
   const [notes, setNotes] = useState('')
+  const [setlistId, setSetlistId] = useState('')
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
@@ -59,18 +61,24 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
 
     setSaving(true)
     try {
-      await onAdd({
+      const perf = await onAdd({
         title: title.trim(),
         date,
         time: time.trim() || null,
         venue: venue.trim() || null,
         notes: notes.trim() || null,
       })
+      // If a setlist was selected, link it to this performance
+      if (setlistId && perf?.id) {
+        await api.patch(`/setlists/${setlistId}`, { performance_id: perf.id })
+        if (onSetlistsChanged) onSetlistsChanged()
+      }
       setTitle('')
       setDate('')
       setTime('')
       setVenue('')
       setNotes('')
+      setSetlistId('')
       setShowForm(false)
     } catch (err) {
       console.error('Failed to add performance:', err)
@@ -81,12 +89,15 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
 
   function startEdit(p) {
     setEditingId(p.id)
+    const linkedSetlist = (setlists || []).find(s => s.performance_id === p.id)
     setEditForm({
       title: p.title,
       date: p.date,
       time: p.time || '',
       venue: p.venue || '',
       notes: p.notes || '',
+      setlistId: linkedSetlist ? linkedSetlist.id.toString() : '',
+      originalSetlistId: linkedSetlist ? linkedSetlist.id.toString() : '',
     })
   }
 
@@ -108,6 +119,22 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
         venue: editForm.venue.trim() || null,
         notes: editForm.notes.trim() || null,
       })
+
+      // Handle setlist link changes
+      const newSetlistId = editForm.setlistId
+      const oldSetlistId = editForm.originalSetlistId
+      if (newSetlistId !== oldSetlistId) {
+        // Unlink old setlist
+        if (oldSetlistId) {
+          await api.patch(`/setlists/${oldSetlistId}`, { performance_id: null })
+        }
+        // Link new setlist
+        if (newSetlistId) {
+          await api.patch(`/setlists/${newSetlistId}`, { performance_id: editingId })
+        }
+        if (onSetlistsChanged) onSetlistsChanged()
+      }
+
       cancelEdit()
     } catch (err) {
       console.error('Failed to edit performance:', err)
@@ -170,6 +197,15 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
             onChange={e => setVenue(e.target.value)}
             placeholder="Venue (optional)"
           />
+          <select
+            value={setlistId}
+            onChange={e => setSetlistId(e.target.value)}
+          >
+            <option value="">Link a setlist (optional)</option>
+            {(setlists || []).filter(s => !s.performance_id).map(s => (
+              <option key={s.id} value={s.id}>{s.title}</option>
+            ))}
+          </select>
           <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
             <button type="submit" className="btn-primary btn-sm" disabled={saving}>
               {saving ? '...' : 'Add'}
@@ -217,6 +253,17 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
                   onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Notes"
                 />
+                <select
+                  value={editForm.setlistId || ''}
+                  onChange={e => setEditForm(prev => ({ ...prev, setlistId: e.target.value }))}
+                >
+                  <option value="">No linked setlist</option>
+                  {(setlists || [])
+                    .filter(s => !s.performance_id || s.id.toString() === editForm.originalSetlistId)
+                    .map(s => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
+                </select>
                 <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
                   <button type="submit" className="btn-primary btn-sm" disabled={saving}>
                     {saving ? '...' : 'Save'}
@@ -254,7 +301,7 @@ function UpcomingPerformances({ performances, onAdd, onDelete, onEdit }) {
 }
 
 
-function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePerformance, onEditPerformance }) {
+function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged }) {
   const [streak, setStreak] = useState(0)
   const [mostPracticed, setMostPracticed] = useState([])
 
@@ -352,9 +399,11 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
 
         <UpcomingPerformances
           performances={performances}
+          setlists={setlists}
           onAdd={onAddPerformance}
           onDelete={onDeletePerformance}
           onEdit={onEditPerformance}
+          onSetlistsChanged={onSetlistsChanged}
         />
 
         {hasStats && stats.tempoProgress.length > 0 && (
@@ -391,6 +440,7 @@ function PracticeLog() {
   const [sessions, setSessions] = useState([])
   const [tunes, setTunes] = useState([])
   const [performances, setPerformances] = useState([])
+  const [setlists, setSetlists] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [expandedSession, setExpandedSession] = useState(null)
@@ -415,6 +465,7 @@ function PracticeLog() {
     fetchSessions()
     fetchTunes()
     fetchPerformances()
+    fetchSetlists()
   }, [])
 
   async function fetchSessions() {
@@ -446,10 +497,20 @@ function PracticeLog() {
     }
   }
 
+  async function fetchSetlists() {
+    try {
+      const res = await api.get('/setlists')
+      setSetlists(res.data)
+    } catch (err) {
+      console.error('Failed to fetch setlists:', err)
+    }
+  }
+
   async function handleAddPerformance(data) {
-    await api.post('/performances', data)
+    const res = await api.post('/performances', data)
     toast(`Added "${data.title}"`)
     fetchPerformances()
+    return res.data
   }
 
   async function handleDeletePerformance(id) {
@@ -620,9 +681,11 @@ function PracticeLog() {
         <PracticeSummary
           sessions={sessions}
           performances={performances}
+          setlists={setlists}
           onAddPerformance={handleAddPerformance}
           onDeletePerformance={handleDeletePerformance}
           onEditPerformance={handleEditPerformance}
+          onSetlistsChanged={fetchSetlists}
         />
       )}
 
