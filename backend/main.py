@@ -132,6 +132,15 @@ def google_login(
 
     user = db.query(User).filter(User.google_id == google_id).first()
     if not user:
+        # Check if email is already taken
+        if email:
+            existing_email = db.query(User).filter(User.email == email).first()
+            if existing_email:
+                raise HTTPException(
+                    status_code=400,
+                    detail="An account with this email already exists. Log in with your username and password, then link Google in Settings."
+                )
+
         base_username = name.lower().replace(" ", "") or "user"
         username = base_username
         counter = 1
@@ -739,6 +748,15 @@ def create_session(
             **entry_data.model_dump(),
         )
         db.add(db_entry)
+
+    # Also record a check-in for the streak
+    session_date = session.date
+    existing_checkin = db.query(CheckIn).filter(
+        CheckIn.user_id == current_user.id,
+        CheckIn.date == session_date,
+    ).first()
+    if not existing_checkin:
+        db.add(CheckIn(user_id=current_user.id, date=session_date))
 
     db.commit()
     db.refresh(db_session)
