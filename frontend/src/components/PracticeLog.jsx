@@ -260,7 +260,7 @@ function PracticeSummary({ sessions, performances, onAddPerformance, onDeletePer
   useEffect(() => {
     api.get('/streak').then(res => setStreak(res.data.streak)).catch(() => {})
     api.get('/most-practiced').then(res => setMostPracticed(res.data)).catch(() => {})
-  }, [])
+  }, [sessions])
   
   const stats = useMemo(() => {
     if (sessions.length === 0) return null
