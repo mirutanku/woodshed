@@ -1387,14 +1387,23 @@
   }
 
   .tune-row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     gap: var(--space-sm);
     padding: var(--space-md);
   }
 
 .tune-row .status-badge {
-    grid-column: 1 / -1;
-    width: 100%;
+    min-width: 5.5rem;
+    width: 5.5rem;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.45rem;
+    text-align: center;
+  }
+
+  .tune-row .status-badge.mobile-only {
+    min-width: 0;
+    width: auto;
+    margin-left: auto;
   }
 
   .tune-recording-count {
@@ -1403,6 +1412,10 @@
 
   .tune-meta-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .tune-row-meta .tune-meta-tempo {
+    display: none;
   }
 
   .status-badge {
