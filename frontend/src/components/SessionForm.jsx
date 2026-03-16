@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { localToday } from './dateUtils'
-import { FOCUS_OPTIONS } from './constants'
+import { FOCUS_OPTIONS } from '../constants'
 
 function StarRating({ value, onChange }) {
   return (
