@@ -33,7 +33,7 @@ function StarDisplay({ value }) {
   )
 }
 
-const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'improvisation', 'sight-reading']
+const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'rhythm', 'memorization', 'transcription', 'improvisation']
 
 function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }) {
   const [showForm, setShowForm] = useState(false)

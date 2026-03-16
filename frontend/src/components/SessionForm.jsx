@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { localToday } from './dateUtils'
 
-const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'improvisation', 'sight-reading']
+const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'rhythm', 'memorization', 'transcription', 'improvisation']
 
 function StarRating({ value, onChange }) {
   return (
