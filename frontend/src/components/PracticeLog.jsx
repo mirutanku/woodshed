@@ -3,6 +3,7 @@ import api from '../api'
 import { useToast } from './Toast'
 import SessionForm from './SessionForm'
 import PracticeProfile from './PracticeProfile'
+import { FOCUS_OPTIONS } from './constants'
 import { localToday } from './dateUtils'
 
 function StarRating({ value, onChange }) {
@@ -33,8 +34,6 @@ function StarDisplay({ value }) {
     </span>
   )
 }
-
-const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'rhythm', 'memorization', 'transcription', 'improvisation']
 
 function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }) {
   const [showForm, setShowForm] = useState(false)
