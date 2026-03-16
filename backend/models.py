@@ -96,7 +96,7 @@ class PracticeEntry(Base):
     session_id = Column(Integer, ForeignKey("practice_sessions.id"), nullable=False)
     tune_id = Column(Integer, ForeignKey("tunes.id"), nullable=False)
     segment_id = Column(Integer, ForeignKey("segments.id", ondelete="SET NULL"), nullable=True)
-    focus = Column(String, nullable=True)  # transcription, technique, memorization, tempo
+    focus = Column(String, nullable=True)
     tempo_practiced = Column(Integer, nullable=True)  # in BPM
     notes = Column(Text, nullable=True)
     rating = Column(Integer, nullable=True)  # e.g. 1-5 stars

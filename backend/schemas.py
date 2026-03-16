@@ -220,7 +220,7 @@ class PracticeEntryValidators(BaseModel):
     def validate_focus(cls, v):
         if v is None:
             return v
-        allowed = { "transcription", "technique", "memorization", "tempo", "ear training", "reading" }
+        allowed = { "technique", "tempo", "tone", "key signature", "memorization", "transcription", "improvisation", "sight-reading" }
         if v is not None and v not in allowed:
             raise ValueError(f"Focus must be one of: {', '.join(allowed)}")
         return v

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 
-const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'solo break', 'improvisation', 'sight-reading']
+const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'improvisation', 'sight-reading']
 
 function StarRating({ value, onChange }) {
   return (
