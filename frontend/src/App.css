@@ -2345,3 +2345,34 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Practice Profile --- */
+
+.practice-profile {
+  margin-bottom: var(--space-lg);
+}
+
+.practice-quote {
+  border-left: 3px solid var(--color-amber);
+  padding: var(--space-md) var(--space-lg);
+  margin: 0;
+  background: var(--color-amber-glow);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.practice-quote-text {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.practice-quote-author {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+  margin-top: var(--space-sm);
+  font-style: normal;
+}

@@ -1225,6 +1225,34 @@ def get_most_practiced(
     return combined[:5]
 
 
+@app.get("/api/practice-profile")
+def get_practice_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Get focus counts from the last 14 days
+    cutoff = date.today() - timedelta(days=14)
+    focus_counts = (
+        db.query(PracticeEntry.focus, sql_func.count(PracticeEntry.id))
+        .join(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date >= cutoff,
+            PracticeEntry.focus.isnot(None),
+        )
+        .group_by(PracticeEntry.focus)
+        .all()
+    )
+
+    if not focus_counts:
+        return {"dominant_focus": None, "counts": {}}
+
+    counts = {focus: count for focus, count in focus_counts}
+    dominant = max(counts, key=counts.get)
+
+    return {"dominant_focus": dominant, "counts": counts}
+
+
 # --- Server built frontend ---
 
 STATIC_DIR = pathlib.Path(__file__).parent / "static"

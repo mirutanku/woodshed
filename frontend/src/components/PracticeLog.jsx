@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SessionForm from './SessionForm'
+import PracticeProfile from './PracticeProfile'
 import { localToday } from './dateUtils'
 
 function StarRating({ value, onChange }) {
@@ -360,6 +361,8 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
 
   return (
     <div className="practice-summary fade-in">
+      <PracticeProfile />
+
       <div className="summary-stats">
         {hasStats && (
           <>
