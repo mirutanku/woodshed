@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SetlistChecklist from './SetlistChecklist'
+import { localToday } from './dateUtils'
 
 function SetlistManager({onSelectTune}) {
   const toast = useToast()
@@ -151,7 +152,7 @@ function SetlistManager({onSelectTune}) {
 
   // Filter to upcoming performances for the dropdown
   const upcomingPerformances = performances.filter(p => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = localToday()
     return p.date >= today
   })
 

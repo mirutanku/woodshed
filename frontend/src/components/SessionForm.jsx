@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { localToday } from './dateUtils'
 
 const FOCUS_OPTIONS = ['technique', 'tempo', 'tone', 'key signature', 'memorization', 'transcription', 'improvisation', 'sight-reading']
 
@@ -19,7 +20,7 @@ function StarRating({ value, onChange }) {
 }
 
 function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
-  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0])
+  const [sessionDate, setSessionDate] = useState(localToday())
   const [sessionDuration, setSessionDuration] = useState('')
   const [sessionNotes, setSessionNotes] = useState('')
 

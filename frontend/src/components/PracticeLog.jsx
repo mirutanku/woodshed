@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SessionForm from './SessionForm'
+import { localToday } from './dateUtils'
 
 function StarRating({ value, onChange }) {
   return (
@@ -49,7 +50,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 
   // Filter to upcoming (today or later) and sort soonest first
   const upcoming = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = localToday()
     return performances
       .filter(p => p.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date))
