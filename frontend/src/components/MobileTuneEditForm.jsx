@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import KeyPicker from './KeyPicker'
+import { parseKey, buildKey } from '../keyConstants'
 
 function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecording, onCancel }) {
   const toast = useToast()
+  const parsed = parseKey(tune.key)
   const [tuneForm, setTuneForm] = useState({
     title: tune.title || '',
     composer: tune.composer || '',
-    key: tune.key || '',
+    keyTonic: parsed.tonic,
+    keyQuality: parsed.quality,
     tempo: tune.tempo || '',
     form: tune.form || '',
     status: tune.status || 'learning',
@@ -22,7 +26,7 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       await api.patch(`/tunes/${tune.id}`, {
         title: tuneForm.title.trim(),
         composer: tuneForm.composer.trim() || null,
-        key: tuneForm.key.trim() || null,
+        key: buildKey(tuneForm.keyTonic, tuneForm.keyQuality),
         tempo: tuneForm.tempo ? parseInt(tuneForm.tempo, 10) : null,
         form: tuneForm.form.trim() || null,
         status: tuneForm.status,
@@ -78,12 +82,12 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
         />
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label>Key</label>
-          <input
-            type="text"
-            value={tuneForm.key}
-            onChange={e => setTuneForm(prev => ({ ...prev, key: e.target.value }))}
+        <div style={{ flex: 1 }}>
+          <KeyPicker
+            tonic={tuneForm.keyTonic}
+            quality={tuneForm.keyQuality}
+            onTonicChange={v => setTuneForm(prev => ({ ...prev, keyTonic: v }))}
+            onQualityChange={v => setTuneForm(prev => ({ ...prev, keyQuality: v }))}
           />
         </div>
         <div className="form-group" style={{ flex: 1 }}>
