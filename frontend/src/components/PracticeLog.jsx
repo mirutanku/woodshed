@@ -787,7 +787,7 @@ function PracticeLog({ onSelectTune}) {
               ) : (
                 <div className="session-card-header">
                   <div
-                    style={{ flex: 1, cursor: 'pointer' }}
+                    style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}
                     onClick={() =>
                       setExpandedSession(expandedSession === session.id ? null : session.id)
                     }
