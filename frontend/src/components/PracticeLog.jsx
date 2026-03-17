@@ -822,6 +822,7 @@ function PracticeLog({ onSelectTune}) {
                     ) : (
                       <button
                         className="btn-ghost btn-action"
+                        style={{ color: 'var(--color-danger)' }}
                         onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
                         title="Delete session"
                       >
