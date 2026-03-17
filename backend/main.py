@@ -1109,8 +1109,9 @@ def update_setlist_entries(
 def checkin(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    client_date: str = None,
 ):
-    today = date.today()
+    today = date.fromisoformat(client_date) if client_date else date.today()
     existing = db.query(CheckIn).filter(
         CheckIn.user_id == current_user.id,
         CheckIn.date == today,
@@ -1127,6 +1128,7 @@ def checkin(
 def get_streak(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    client_date: str = None,
 ):
     dates = (
         db.query(CheckIn.date)
@@ -1138,7 +1140,7 @@ def get_streak(
         return {"streak": 0}
 
     streak = 0
-    expected = date.today()
+    expected = date.fromisoformat(client_date) if client_date else date.today()
     for (d,) in dates:
         if d == expected:
             streak += 1
@@ -1153,9 +1155,10 @@ def record_playback(
     tune_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    client_date: str = None,
 ):
     tune = get_user_tune(tune_id, current_user.id, db)
-    today = date.today()
+    today = date.fromisoformat(client_date) if client_date else date.today()
     existing = db.query(TunePlayback).filter(
         TunePlayback.user_id == current_user.id,
         TunePlayback.tune_id == tune.id,

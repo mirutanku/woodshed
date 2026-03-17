@@ -5,6 +5,7 @@ import MobileTuneEditForm from './MobileTuneEditForm'
 import MobileSegmentEditForm from './MobileSegmentEditForm'
 import MobileQuickMark from './MobileQuickMark'
 import RecordingUpload from './RecordingUpload'
+import { localToday } from '../dateUtils'
 import './ShedMode.css'
 
 function formatTime(seconds) {
@@ -181,7 +182,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         setIsPlaying(true)
         if (!hasCheckedIn.current) {
           hasCheckedIn.current = true
-          api.post('/checkin').then(res => {
+          api.post(`/checkin?client_date=${localToday()}`).then(res => {
             if (!res.data.already_checked_in) {
               toast('Practice streak updated ✓')
             }
@@ -189,7 +190,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         }
         if (!hasTrackedPlayback.current) {
           hasTrackedPlayback.current = true
-          api.post(`/tunes/${tune.id}/playback`).catch(() => {})
+          api.post(`/tunes/${tune.id}/playback?client_date=${localToday()}`).catch(() => {})
         }
       }).catch(() => {})
     }

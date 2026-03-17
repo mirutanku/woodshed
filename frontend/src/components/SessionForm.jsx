@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { localToday } from './dateUtils'
+import { localToday } from '../dateUtils'
 import { FOCUS_OPTIONS } from '../constants'
 import './PracticeLog.css'
 

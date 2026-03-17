@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SetlistChecklist from './SetlistChecklist'
-import { localToday } from './dateUtils'
+import { localToday } from '../dateUtils'
 import './SetlistManager.css'
 
 function SetlistManager({onSelectTune}) {

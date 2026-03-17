@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import './AudioPlayer.css'
+import { localToday } from '../dateUtils'
 
 const SPEED_PRESETS = [
   { label: '50%', value: 0.5 },
@@ -132,7 +133,7 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
         setIsPlaying(true)
         if (!hasCheckedIn.current) {
           hasCheckedIn.current = true
-          api.post('/checkin').then(res => {
+          api.post(`/checkin?client_date=${localToday()}`).then(res => {
             if (!res.data.already_checked_in) {
               toast('Practice streak updated ✓')
             }
@@ -140,7 +141,7 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
         }
         if (!hasTrackedPlayback.current && tuneId) {
           hasTrackedPlayback.current = true
-          api.post(`/tunes/${tuneId}/playback`).catch(() => {})
+          api.post(`/tunes/${tuneId}/playback?client_date=${localToday()}`).catch(() => {})
         }
       }).catch(() => setError('Playback failed'))
     } else {

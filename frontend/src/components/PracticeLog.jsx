@@ -4,7 +4,7 @@ import { useToast } from './Toast'
 import SessionForm from './SessionForm'
 import PracticeProfile from './PracticeProfile'
 import { FOCUS_OPTIONS } from '../constants'
-import { localToday } from './dateUtils'
+import { localToday } from '../dateUtils'
 import './PracticeLog.css'
 
 function StarRating({ value, onChange }) {
@@ -308,7 +308,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [mostPracticed, setMostPracticed] = useState([])
 
   useEffect(() => {
-    api.get('/streak').then(res => setStreak(res.data.streak)).catch(() => {})
+    api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
     api.get('/most-practiced').then(res => setMostPracticed(res.data)).catch(() => {})
   }, [sessions])
   
