@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SetlistChecklist from './SetlistChecklist'
@@ -22,12 +22,17 @@ function SetlistManager({onSelectTune}) {
   const [selectedTuneIds, setSelectedTuneIds] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [sortBy, setSortBy] = useState(sessionStorage.getItem('setlistSort') || 'created')
 
   useEffect(() => {
     fetchSetlists()
     fetchTunes()
     fetchPerformances()
   }, [])
+
+  useEffect(() => {
+    sessionStorage.setItem('setlistSort', sortBy)
+  }, [sortBy])
 
   async function fetchSetlists() {
     try {
@@ -57,6 +62,30 @@ function SetlistManager({onSelectTune}) {
       console.error('Failed to fetch performances:', err)
     }
   }
+
+  const sortedSetlists = useMemo(() => {
+    const sorted = [...setlists]
+    switch (sortBy) {
+      case 'created':
+        return sorted.sort((a, b) => b.created_at.localeCompare(a.created_at))
+      case 'oldest':
+        return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at))
+      case 'performance': {
+        const perfDateMap = {}
+        performances.forEach(p => { perfDateMap[p.id] = p.date })
+        return sorted.sort((a, b) => {
+          const aDate = a.performance_id ? perfDateMap[a.performance_id] : null
+          const bDate = b.performance_id ? perfDateMap[b.performance_id] : null
+          if (!aDate && !bDate) return a.title.localeCompare(b.title)
+          if (!aDate) return 1
+          if (!bDate) return -1
+          return aDate.localeCompare(bDate)
+        })
+      }
+      default:
+        return sorted
+    }
+  }, [setlists, sortBy, performances])
 
   function resetForm() {
     setTitle('')
@@ -172,18 +201,30 @@ function SetlistManager({onSelectTune}) {
     <div className="fade-in">
       <div className="practice-header">
         <h1>Setlists</h1>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            if (showForm) {
-              resetForm()
-            } else {
-              setShowForm(true)
-            }
-          }}
-        >
+        <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+          <select
+            className="sort-select"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+          >
+            <option value="created">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="performance">Performance Date</option>
+          </select>
+          <button
+            className="btn-primary"
+            style={{ whiteSpace: 'nowrap' }}
+            onClick={() => {
+              if (showForm) {
+                resetForm()
+              } else {
+                setShowForm(true)
+              }
+            }}
+          >
           {showForm ? 'Cancel' : '+ New Setlist'}
-        </button>
+          </button>
+        </div>
       </div>
 
       {/* Create / Edit form */}
@@ -300,7 +341,7 @@ function SetlistManager({onSelectTune}) {
         </div>
       ) : (
         <div className="session-list">
-          {setlists.map(setlist => {
+          {sortedSetlists.map(setlist => {
             const isExpanded = expandedSetlist === setlist.id
             const perfLabel = setlist.performance_id
               ? getPerformanceLabel(setlist.performance_id)
