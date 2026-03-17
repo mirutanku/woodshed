@@ -302,7 +302,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 }
 
 
-function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged }) {
+function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged, onSelectTune }) {
   const [streak, setStreak] = useState(0)
   const [mostPracticed, setMostPracticed] = useState([])
 
@@ -389,7 +389,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
             <h3>Most Practiced</h3>
             <div className="summary-tune-list">
               {mostPracticed.map(tp => (
-                <div key={tp.tune_id} className="summary-tune-row">
+                <div key={tp.tune_id} className="summary-tune-row" style={{ cursor: onSelectTune ? 'pointer' : 'default' }} onClick={() => onSelectTune && onSelectTune(tp.tune_id)}>
                   <span className="summary-tune-title">{tp.title}</span>
                   <span className="summary-tune-count">
                     {tp.sessions} session{tp.sessions !== 1 ? 's' : ''}
@@ -438,7 +438,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
 }
 
 
-function PracticeLog() {
+function PracticeLog({ onSelectTune}) {
   const toast = useToast()
   const [sessions, setSessions] = useState([])
   const [tunes, setTunes] = useState([])
@@ -689,6 +689,7 @@ function PracticeLog() {
           onDeletePerformance={handleDeletePerformance}
           onEditPerformance={handleEditPerformance}
           onSetlistsChanged={fetchSetlists}
+          onSelectTune={onSelectTune}
         />
       )}
 

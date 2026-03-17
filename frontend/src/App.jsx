@@ -105,7 +105,7 @@ function App() {
             />
           )}
           {currentView === 'practice' && (
-            <PracticeLog />
+            <PracticeLog onSelectTune={handleSelectTune} />
           )}
           {currentView === 'settings' && (
             <Settings />
