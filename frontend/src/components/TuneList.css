@@ -160,6 +160,10 @@
     display: none;
   }
 
+  .tune-row-meta .tune-meta-key {
+    display: none;
+  }
+  
   .tune-row-meta .tune-meta-tempo {
     display: none;
   }

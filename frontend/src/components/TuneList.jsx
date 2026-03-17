@@ -169,7 +169,7 @@ function TuneList({ onSelectTune }) {
                 <h3>{tune.title}</h3>
                 <div className="tune-row-meta">
                   {tune.composer && <span>{tune.composer}</span>}
-                  {tune.key && <span>{tune.key}</span>}
+                  {tune.key && <span className="tune-meta-key">{tune.key}</span>}
                   {tune.tempo && <span className="tune-meta-tempo">{tune.tempo} bpm</span>}
                   {tune.recording_count > 0 && (
                     <span>{tune.recording_count} rec{tune.recording_count !== 1 ? 's' : ''}</span>
