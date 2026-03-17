@@ -664,6 +664,29 @@ function PracticeLog({ onSelectTune}) {
     })
   }
 
+  function getWeekLabel(dateStr) {
+    const sessionDate = new Date(dateStr + 'T12:00:00')
+    const now = new Date()
+    now.setHours(12, 0, 0, 0)
+
+    // Start of this week (Sunday)
+    const startOfThisWeek = new Date(now)
+    startOfThisWeek.setDate(now.getDate() - now.getDay())
+    startOfThisWeek.setHours(0, 0, 0, 0)
+
+    // Start of last week
+    const startOfLastWeek = new Date(startOfThisWeek)
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7)
+
+    if (sessionDate >= startOfThisWeek) return 'This Week'
+    if (sessionDate >= startOfLastWeek) return 'Last Week'
+
+    // Find the Monday of that session's week
+    const weekStart = new Date(sessionDate)
+    weekStart.setDate(sessionDate.getDate() - sessionDate.getDay() + 1)
+    return `Week of ${weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`
+  }
+
   if (loading) {
     return <div className="empty-state"><p>Loading...</p></div>
   }
@@ -716,8 +739,18 @@ function PracticeLog({ onSelectTune}) {
         </div>
       ) : (
         <div className="session-list">
-          {sessions.map(session => (
-            <div key={session.id} className="session-card slide-up">
+          {(() => {
+            let lastWeekLabel = null
+            return sessions.map(session => {
+              const weekLabel = getWeekLabel(session.date)
+              const showHeader = weekLabel !== lastWeekLabel
+              lastWeekLabel = weekLabel
+              return (
+                <div key={session.id}>
+                  {showHeader && (
+                    <div className="session-week-header">{weekLabel}</div>
+                  )}
+                  <div className="session-card slide-up">
               {editingSessionId === session.id ? (
                 <form className="session-edit-form" onSubmit={handleSaveSession}>
                   <div className="form-row">
@@ -997,8 +1030,11 @@ function PracticeLog({ onSelectTune}) {
                   )}
                 </div>
               )}
-            </div>
-          ))}
+</div>
+                </div>
+              )
+            })
+          })()}
         </div>
       )}
     </div>

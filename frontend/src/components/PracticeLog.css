@@ -477,6 +477,21 @@
   font-style: normal;
 }
 
+.session-week-header {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  padding: var(--space-md) 0 var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.session-week-header:first-child {
+margin-top: 0;
+}
+
 /* --- Responsive --- */
 
 @media (max-width: 1024px) {
