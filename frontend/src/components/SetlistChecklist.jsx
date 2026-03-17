@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import './PracticeLog.css'
 
 function SetlistChecklist({ tunes, selectedTuneIds, onSelectionChange }) {
   // selectedTuneIds is an ordered array of tune IDs representing the setlist order

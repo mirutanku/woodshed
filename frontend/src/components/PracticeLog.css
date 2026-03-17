@@ -1,0 +1,543 @@
+/* --- Practice Log --- */
+
+.practice-summary {
+  margin-bottom: var(--space-xl);
+}
+
+.summary-stats {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.summary-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-lg) var(--space-md);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.summary-number {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--color-amber);
+  line-height: 1;
+  margin-bottom: var(--space-xs);
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.summary-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.summary-section {
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+.summary-section h3 {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.summary-tune-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.summary-tune-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.summary-tune-title {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.summary-tune-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.summary-tempo-range {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tempo-up {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.tempo-down {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* Summary section header (for sections with actions) */
+
+.summary-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.summary-section-header h3 {
+  margin-bottom: 0;
+}
+
+/* --- Performances --- */
+
+.perf-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.perf-form input,
+.perf-form select {
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.perf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.perf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.perf-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perf-title {
+  font-weight: 500;
+  font-size: 0.9375rem;
+}
+
+.perf-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.perf-countdown {
+  margin-left: var(--space-sm);
+  color: var(--color-amber);
+  font-weight: 500;
+}
+
+/* --- Practice header & sessions --- */
+
+.practice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.session-card {
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.session-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.session-card-header:hover {
+  background: var(--color-bg-surface);
+}
+
+.session-date {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.session-duration {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.session-entries {
+  padding: var(--space-md) var(--space-lg);
+}
+
+.entry-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto auto;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9375rem;
+}
+
+.entry-row:last-child {
+  border-bottom: none;
+}
+
+.entry-edit-form {
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.entry-edit-form:last-child {
+  border-bottom: none;
+}
+
+.session-edit-form {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.entry-tune {
+  font-weight: 500;
+}
+
+.entry-focus {
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  text-transform: capitalize;
+}
+
+.entry-tempo {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.entry-duration {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+/* --- Practice Form (legacy, may still be referenced) --- */
+
+.practice-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.practice-entry-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.practice-entry-card .form-row {
+  margin-bottom: var(--space-sm);
+}
+
+.practice-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+/* --- Session Checklist Form --- */
+
+.session-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.checklist-item {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.checklist-item.checked {
+  border-color: var(--color-amber-dim);
+  background: var(--color-amber-glow);
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.checklist-row:hover {
+  background: var(--color-bg-hover);
+}
+
+.checklist-item.checked .checklist-row:hover {
+  background: rgba(212, 160, 74, 0.1);
+}
+
+.checklist-check {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: transparent;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.checklist-check.on {
+  background: var(--color-amber);
+  border-color: var(--color-amber);
+  color: var(--color-bg);
+}
+
+.checklist-tune-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.checklist-tune-title {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checklist-tune-composer {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checklist-detail-toggle {
+  font-size: 0.75rem !important;
+  padding: 0.2rem 0.5rem !important;
+  color: var(--color-amber) !important;
+  flex-shrink: 0;
+}
+
+.checklist-details {
+  padding: 0.5rem 0.8rem 0.8rem;
+  padding-left: calc(22px + 0.8rem + var(--space-sm));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.checklist-details .form-row {
+  gap: var(--space-sm);
+}
+
+.checklist-details label {
+  font-size: 0.7rem;
+}
+
+.checklist-details input,
+.checklist-details select {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.checklist-details .star-rating .star {
+  font-size: 1rem;
+}
+
+/* --- Setlist Checklist (used in SetlistManager) --- */
+
+.setlist-checklist-number {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.setlist-checklist-arrows {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.setlist-checklist-arrows .btn-action {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.35rem;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* --- Practice Profile --- */
+
+.practice-profile {
+  margin-bottom: var(--space-lg);
+}
+
+.practice-quote {
+  border-left: 3px solid var(--color-amber);
+  padding: var(--space-md) var(--space-lg);
+  margin: 0;
+  background: var(--color-amber-glow);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.practice-quote-text {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.practice-quote-author {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+  margin-top: var(--space-sm);
+  font-style: normal;
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 1024px) {
+  .entry-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .entry-row .entry-tune {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .entry-row .entry-focus,
+  .entry-row .entry-tempo,
+  .entry-row .star-rating {
+    display: none;
+  }
+
+  .summary-details {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-stats {
+    gap: var(--space-sm);
+  }
+
+  .summary-number {
+    font-size: 1.5rem;
+  }
+
+  .session-card-header {
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+
+  .practice-header {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .checklist-tune-info {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .checklist-tune-composer {
+    font-size: 0.75rem;
+  }
+
+  .checklist-details {
+    padding-left: 0.8rem;
+  }
+
+  .checklist-details .form-row {
+    grid-template-columns: 1fr;
+  }
+}

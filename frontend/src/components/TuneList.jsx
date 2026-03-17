@@ -3,6 +3,7 @@ import api from '../api'
 import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
+import './TuneList.css'
 
 const STATUS_FILTERS = ['all', 'starred', 'learning', 'polishing', 'mastering']
 

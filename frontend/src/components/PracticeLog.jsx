@@ -5,6 +5,7 @@ import SessionForm from './SessionForm'
 import PracticeProfile from './PracticeProfile'
 import { FOCUS_OPTIONS } from '../constants'
 import { localToday } from './dateUtils'
+import './PracticeLog.css'
 
 function StarRating({ value, onChange }) {
   return (

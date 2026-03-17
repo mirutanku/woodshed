@@ -1,0 +1,320 @@
+/* --- Tune Detail --- */
+
+.tune-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+}
+
+.tune-detail-header h1 {
+  margin-bottom: var(--space-xs);
+}
+
+.tune-detail-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.tune-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.meta-value {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.tune-notes {
+  color: var(--color-text-dim);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  padding: var(--space-md);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-amber-dim);
+  margin-bottom: var(--space-xl);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.section-header h2 {
+  font-size: 1.15rem;
+}
+
+/* --- Recordings --- */
+
+.recording-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.recording-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease;
+}
+
+.recording-item:hover {
+  border-color: var(--color-border-light);
+}
+
+.recording-item.expanded {
+  border-color: var(--color-amber-dim);
+  background: var(--color-bg-surface);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.recording-expanded {
+  border: 1px solid var(--color-amber-dim);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: var(--space-lg);
+  background: var(--color-bg-surface);
+  margin-bottom: var(--space-sm);
+}
+
+.recording-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recording-name {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recording-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-md);
+}
+
+.recording-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* --- Upload --- */
+
+.upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--space-md);
+}
+
+.upload-area:hover {
+  border-color: var(--color-amber-dim);
+  background: var(--color-amber-glow);
+}
+
+.upload-area.dragover {
+  border-color: var(--color-amber);
+  background: var(--color-amber-glow);
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.upload-area p {
+  color: var(--color-text-dim);
+  font-size: 0.9375rem;
+}
+
+.upload-area .text-sm {
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}
+
+.upload-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.upload-file-name {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-amber);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-amber-glow);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* --- Segments --- */
+
+.segment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.segment-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.segment-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.segment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.segment-label {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.segment-times {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: block;
+}
+
+.segment-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.segment-form {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: var(--space-sm);
+  align-items: end;
+  padding: var(--space-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.segment-form .time-inputs {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.segment-form input[type="number"] {
+  width: 80px;
+}
+
+.mark-input {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.mark-input input {
+  flex: 1;
+  min-width: 60px;
+}
+
+.mark-btn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-amber-glow);
+  border: 1px solid var(--color-amber-dim);
+  color: var(--color-amber);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.mark-btn:hover {
+  background: var(--color-amber);
+  color: var(--color-bg);
+  border-color: var(--color-amber);
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 1024px) {
+  .tune-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .segment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .segment-item {
+    padding: var(--space-md);
+  }
+
+  .recording-info {
+    min-width: 0;
+  }
+
+  .recording-name {
+    word-break: break-word;
+  }
+
+  .recording-meta {
+    flex-wrap: wrap;
+  }
+}

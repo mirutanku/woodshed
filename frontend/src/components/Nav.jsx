@@ -1,3 +1,5 @@
+import './Nav.css'
+
 function Nav({ currentView, onNavigate, onLogout }) {
   return (
     <nav className="nav">

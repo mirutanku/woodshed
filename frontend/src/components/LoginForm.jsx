@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import api from '../api'
+import './LoginForm.css'
 
 function LoginForm({ onLogin, onForgotPassword }) {
     const [isRegister, setIsRegister] = useState(false)

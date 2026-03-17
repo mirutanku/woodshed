@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import './AudioPlayer.css'
 
 const SPEED_PRESETS = [
   { label: '50%', value: 0.5 },

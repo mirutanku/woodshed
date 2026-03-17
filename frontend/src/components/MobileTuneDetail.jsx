@@ -5,6 +5,7 @@ import MobileTuneEditForm from './MobileTuneEditForm'
 import MobileSegmentEditForm from './MobileSegmentEditForm'
 import MobileQuickMark from './MobileQuickMark'
 import RecordingUpload from './RecordingUpload'
+import './ShedMode.css'
 
 function formatTime(seconds) {
   const s = Math.round(seconds)

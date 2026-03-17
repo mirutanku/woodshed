@@ -8,6 +8,7 @@ import SegmentList from './SegmentList'
 import AudioPlayer from './AudioPlayer'
 import KeyPicker from './KeyPicker'
 import { parseKey, buildKey } from '../keyConstants'
+import './TuneDetail.css'
 
 function TuneDetail({ tuneId, onBack }) {
   const toast = useToast()
