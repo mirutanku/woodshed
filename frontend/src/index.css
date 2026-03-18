@@ -425,3 +425,12 @@ label {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-light);
 }
+
+/* --- iOS date rendering fix --- */
+
+input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
