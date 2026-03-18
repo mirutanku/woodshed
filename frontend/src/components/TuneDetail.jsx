@@ -372,6 +372,7 @@ function TuneDetail({ tuneId, onBack }) {
                     <AudioPlayer
                       recordingId={rec.id}
                       tuneId={tuneId}
+                      tuneTitle={tune.title}
                       segments={segments}
                       onTimeUpdate={setPlaybackTime}
                     />

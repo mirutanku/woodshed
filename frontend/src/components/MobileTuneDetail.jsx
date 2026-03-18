@@ -53,6 +53,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   // Practice tracking
   const hasCheckedIn = useRef(false)
   const hasTrackedPlayback = useRef(false)
+  const [quickLogged, setQuickLogged] = useState(false)
 
   // Auto-select first recording
   useEffect(() => {
@@ -238,6 +239,20 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
     audio.currentTime = fraction * duration
     setCurrentTime(fraction * duration)
+  }
+
+  async function handleQuickLog() {
+    try {
+      const res = await api.post(`/quick-log?tune_id=${tune.id}&client_date=${localToday()}`)
+      if (res.data.already_logged) {
+        toast('Already in today\'s log')
+      } else {
+        toast(`Logged ${tune.title} ✓`)
+      }
+      setQuickLogged(true)
+    } catch (err) {
+      toast('Failed to log', 'error')
+    }
   }
 
   // Cleanup
@@ -507,7 +522,6 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               )}
             </div>
           )}
-
           {/* Quick mark segment */}
           {marking ? (
             <MobileQuickMark
@@ -519,9 +533,17 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             />
           ) : (
             <button className="shed-mark-trigger" onClick={() => setMarking(true)}>
-              + Mark Segment
+              Mark Segment
             </button>
           )}
+          {/* Quick log button */}
+          <button
+            className={`shed-mark-trigger ${quickLogged ? 'logged' : ''}`}
+            onClick={handleQuickLog}
+            disabled={quickLogged}
+          >
+            {quickLogged ? `${tune.title} logged ✓` : `Log '${tune.title}'`}
+          </button>
         </>
       )}
 

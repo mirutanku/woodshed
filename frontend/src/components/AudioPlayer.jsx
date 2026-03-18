@@ -18,7 +18,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
+function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate }) {
   const audioRef = useRef(null)
   const progressRef = useRef(null)
   const animFrameRef = useRef(null)
@@ -45,6 +45,7 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
   // Practice tracking
   const hasCheckedIn = useRef(false)
   const hasTrackedPlayback = useRef(false)
+  const [quickLogged, setQuickLogged] = useState(false)
 
   const toast = useToast()
 
@@ -226,6 +227,22 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
     setCurrentTime(segment.start_time)
   }
 
+  // --- Practice quick log ---
+  async function handleQuickLog() {
+    if (!tuneId) return
+    try {
+      const res = await api.post(`/quick-log?tune_id=${tuneId}&client_date=${localToday()}`)
+      if (res.data.already_logged) {
+        toast('Already in today\'s log')
+      } else {
+        toast('Logged ✓')
+      }
+      setQuickLogged(true)
+    } catch (err) {
+      toast('Failed to log', 'error')
+    }
+  }
+
   // --- Cleanup on unmount ---
 
   useEffect(() => {
@@ -249,6 +266,7 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
     setRampEnabled(false)
     setRampReachedMax(false)
     hasTrackedPlayback.current = false
+    setQuickLogged(false)
     setError('')
     if (audioRef.current) {
       audioRef.current.playbackRate = 1.0
@@ -426,6 +444,14 @@ function AudioPlayer({ recordingId, tuneId, segments = [], onTimeUpdate }) {
             )}
           </div>
         )}
+        <button
+          className={`btn-ghost btn-sm ${quickLogged ? 'text-amber' : ''}`}
+          onClick={handleQuickLog}
+          disabled={quickLogged || !tuneId}
+          style={{ marginLeft: 'auto', whiteSpace: 'nowrap', border: '1px solid var(--color-border)' }}
+        >
+          {quickLogged ? `'${tuneTitle}' logged ✓` : `Log '${tuneTitle}'`}
+        </button>
       </div>
 
       {/* Segment quick-access */}

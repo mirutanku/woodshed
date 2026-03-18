@@ -1172,6 +1172,55 @@ def record_playback(
     db.commit()
     return {"already_recorded": False}
 
+@app.post("/api/quick-log")
+def quick_log(
+    tune_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+    tune = get_user_tune(tune_id, current_user.id, db)
+
+    # Find today's quick-log session
+    session = (
+        db.query(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+            PracticeSession.is_quick_log == True,
+        )
+        .first()
+    )
+
+    if not session:
+        session = PracticeSession(user_id=current_user.id, date=today, is_quick_log=True)
+        db.add(session)
+        db.flush()
+
+    # Check if this tune is already in the session
+    existing_entry = db.query(PracticeEntry).filter(
+        PracticeEntry.session_id == session.id,
+        PracticeEntry.tune_id == tune.id,
+    ).first()
+
+    if existing_entry:
+        return {"already_logged": True, "session_id": session.id}
+
+    db.add(PracticeEntry(session_id=session.id, tune_id=tune.id))
+    db.commit()
+
+    # Also create a check-in for the streak
+    existing_checkin = db.query(CheckIn).filter(
+        CheckIn.user_id == current_user.id,
+        CheckIn.date == today,
+    ).first()
+    if not existing_checkin:
+        db.add(CheckIn(user_id=current_user.id, date=today))
+        db.commit()
+
+    return {"already_logged": False, "session_id": session.id}
+
 @app.get("/api/most-practiced")
 def get_most_practiced(
     current_user: User = Depends(get_current_user),

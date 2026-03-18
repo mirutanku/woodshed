@@ -478,6 +478,12 @@
   font-style: normal;
 }
 
+.shed-mark-trigger.logged {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  border-style: solid;
+}
+
 .session-week-header {
   font-family: var(--font-body);
   font-size: 0.75rem;
