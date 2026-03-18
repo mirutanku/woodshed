@@ -12,7 +12,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
     composer: tune.composer || '',
     keyTonic: parsed.tonic,
     keyQuality: parsed.quality,
-    form: tune.form || '',
     status: tune.status || 'learning',
     notes: tune.notes || '',
   })
@@ -26,7 +25,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
         title: tuneForm.title.trim(),
         composer: tuneForm.composer.trim() || null,
         key: buildKey(tuneForm.keyTonic, tuneForm.keyQuality),
-        form: tuneForm.form.trim() || null,
         status: tuneForm.status,
         notes: tuneForm.notes.trim() || null,
       })
@@ -103,14 +101,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
         </div>
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label>Form</label>
-          <input
-            type="text"
-            value={tuneForm.form}
-            onChange={e => setTuneForm(prev => ({ ...prev, form: e.target.value }))}
-          />
-        </div>
         <div className="form-group" style={{ flex: 1 }}>
           <label>Status</label>
           <select

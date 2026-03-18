@@ -63,7 +63,6 @@ function TuneDetail({ tuneId, onBack }) {
         composer: res.data.composer || '',
         keyTonic: parsed.tonic,
         keyQuality: parsed.quality,
-        form: res.data.form || '',
         status: res.data.status || 'learning',
         notes: res.data.notes || '',
       })
@@ -98,7 +97,6 @@ function TuneDetail({ tuneId, onBack }) {
         title: editForm.title.trim(),
         composer: editForm.composer.trim() || null,
         key: buildKey(editForm.keyTonic, editForm.keyQuality),
-        form: editForm.form.trim() || null,
         status: editForm.status,
       }
       const res = await api.patch(`/tunes/${tuneId}`, payload)
@@ -229,16 +227,6 @@ function TuneDetail({ tuneId, onBack }) {
                   onQualityChange={v => handleEditChange('keyQuality', v)}
                 />
               </div>
-              <div className="form-row mb-md">
-                <div className="form-group">
-                  <label>Form</label>
-                  <input
-                    type="text"
-                    value={editForm.form}
-                    onChange={e => handleEditChange('form', e.target.value)}
-                  />
-                </div>
-              </div>
               <div className="form-group mb-md">
                 <label>Status</label>
                 <select
@@ -289,12 +277,6 @@ function TuneDetail({ tuneId, onBack }) {
               <div className="meta-item">
                 <span className="meta-label">Canonical Key</span>
                 <span className="meta-value">{tune.key}</span>
-              </div>
-            )}
-            {tune.form && (
-              <div className="meta-item">
-                <span className="meta-label">Form</span>
-                <span className="meta-value">{tune.form}</span>
               </div>
             )}
           </div>

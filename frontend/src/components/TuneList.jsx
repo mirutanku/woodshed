@@ -199,7 +199,6 @@ function AddTuneForm({ onCancel, onAdded }) {
     composer: '',
     keyTonic: '',
     keyQuality: '',
-    form: '',
     status: 'learning',
     notes: '',
   })
@@ -231,7 +230,6 @@ function AddTuneForm({ onCancel, onAdded }) {
         title: form.title.trim(),
         composer: form.composer.trim() || null,
         key: buildKey(form.keyTonic, form.keyQuality),
-        form: form.form.trim() || null,
         status: form.status,
         notes: form.notes.trim() || null,
       }
@@ -278,18 +276,6 @@ function AddTuneForm({ onCancel, onAdded }) {
             onTonicChange={v => handleChange('keyTonic', v)}
             onQualityChange={v => handleChange('keyQuality', v)}
           />
-        </div>
-
-        <div className="form-row mb-md">
-          <div className="form-group">
-            <label>Form</label>
-            <input
-              type="text"
-              value={form.form}
-              onChange={e => handleChange('form', e.target.value)}
-              placeholder="e.g. AABA"
-            />
-          </div>
         </div>
 
         <div className="form-group mb-md">
