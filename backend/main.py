@@ -448,7 +448,17 @@ def get_tune(
     db: Session = Depends(get_db),
 ):
     tune = get_user_tune(tune_id, current_user.id, db)
-    return {**tune.__dict__, "recording_count": len(tune.recordings)}
+    last_practiced = (
+        db.query(sql_func.max(PracticeSession.date))
+        .join(PracticeEntry, PracticeEntry.session_id == PracticeSession.id)
+        .filter(PracticeEntry.tune_id == tune.id)
+        .scalar()
+    )
+    return {
+        **tune.__dict__,
+        "recording_count": len(tune.recordings),
+        "last_practiced": last_practiced.isoformat() if last_practiced else None,
+    }
 
 @app.patch("/api/tunes/{tune_id}", response_model=TuneResponse)
 def update_tune(
