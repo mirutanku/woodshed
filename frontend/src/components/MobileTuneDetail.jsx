@@ -247,7 +247,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       if (res.data.already_logged) {
         toast('Already in today\'s log')
       } else {
-        toast(`Logged ${tune.title} ✓`)
+        toast(`Logged '${tune.title}' ✓`)
       }
       setQuickLogged(true)
     } catch (err) {
@@ -542,7 +542,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             onClick={handleQuickLog}
             disabled={quickLogged}
           >
-            {quickLogged ? `${tune.title} logged ✓` : `Log '${tune.title}'`}
+            {quickLogged ? `Logged ✓` : `+ Log Tune`}
           </button>
         </>
       )}

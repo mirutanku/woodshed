@@ -235,7 +235,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
       if (res.data.already_logged) {
         toast('Already in today\'s log')
       } else {
-        toast('Logged ✓')
+        toast(`Logged '${tuneTitle}' ✓`)
       }
       setQuickLogged(true)
     } catch (err) {
@@ -450,7 +450,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
           disabled={quickLogged || !tuneId}
           style={{ marginLeft: 'auto', whiteSpace: 'nowrap', border: '1px solid var(--color-border)' }}
         >
-          {quickLogged ? `'${tuneTitle}' logged ✓` : `Log '${tuneTitle}'`}
+          {quickLogged ? `Logged ✓` : `+ Log`}
         </button>
       </div>
 
