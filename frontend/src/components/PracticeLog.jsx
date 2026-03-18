@@ -42,7 +42,6 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
   const [date, setDate] = useState('')
   const [venue, setVenue] = useState('')
   const [time, setTime] = useState('')
-
   const [notes, setNotes] = useState('')
   const [setlistId, setSetlistId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -126,11 +125,9 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
       const newSetlistId = editForm.setlistId
       const oldSetlistId = editForm.originalSetlistId
       if (newSetlistId !== oldSetlistId) {
-        // Unlink old setlist
         if (oldSetlistId) {
           await api.patch(`/setlists/${oldSetlistId}`, { performance_id: null })
         }
-        // Link new setlist
         if (newSetlistId) {
           await api.patch(`/setlists/${newSetlistId}`, { performance_id: editingId })
         }
@@ -311,7 +308,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
     api.get('/most-practiced').then(res => setMostPracticed(res.data)).catch(() => {})
   }, [sessions])
-  
+
   const stats = useMemo(() => {
     if (sessions.length === 0) return null
 
@@ -391,7 +388,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
             <div className="summary-tune-list">
               {mostPracticed.map(tp => (
                 <div key={tp.tune_id} className="summary-tune-row" style={{ cursor: onSelectTune ? 'pointer' : 'default' }} onClick={() => onSelectTune && onSelectTune(tp.tune_id)}>
-                  <span className="summary-tune-title">{tp.title}</span>
+                  <span className="summary-tune-title entry-tune-link">{tp.title}</span>
                   <span className="summary-tune-count">
                     {tp.sessions} session{tp.sessions !== 1 ? 's' : ''}
                   </span>
@@ -439,7 +436,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
 }
 
 
-function PracticeLog({ onSelectTune}) {
+function PracticeLog({ onSelectTune }) {
   const toast = useToast()
   const [sessions, setSessions] = useState([])
   const [tunes, setTunes] = useState([])
@@ -447,6 +444,7 @@ function PracticeLog({ onSelectTune}) {
   const [setlists, setSetlists] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [expandedSession, setExpandedSession] = useState(null)
 
   // Form state
@@ -669,19 +667,16 @@ function PracticeLog({ onSelectTune}) {
     const now = new Date()
     now.setHours(12, 0, 0, 0)
 
-    // Start of this week (Sunday)
     const startOfThisWeek = new Date(now)
     startOfThisWeek.setDate(now.getDate() - now.getDay())
     startOfThisWeek.setHours(0, 0, 0, 0)
 
-    // Start of last week
     const startOfLastWeek = new Date(startOfThisWeek)
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7)
 
     if (sessionDate >= startOfThisWeek) return 'This Week'
     if (sessionDate >= startOfLastWeek) return 'Last Week'
 
-    // Find the Monday of that session's week
     const weekStart = new Date(sessionDate)
     weekStart.setDate(sessionDate.getDate() - sessionDate.getDay() + 1)
     return `Week of ${weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`
@@ -728,315 +723,315 @@ function PracticeLog({ onSelectTune}) {
         />
       )}
 
-      {/* Session history */}
-      {sessions.length === 0 && !showForm ? (
-        <div className="empty-state">
-          <h3>No sessions logged</h3>
-          <p>Log your first practice session to start tracking your progress.</p>
-          <button className="btn-primary" onClick={() => setShowForm(true)}>
-            + Log Your First Session
-          </button>
-        </div>
-      ) : (
-        <div className="session-list">
-          {(() => {
-            let lastWeekLabel = null
-            return sessions.map(session => {
-              const weekLabel = getWeekLabel(session.date)
-              const showHeader = weekLabel !== lastWeekLabel
-              lastWeekLabel = weekLabel
-              return (
-                <div key={session.id}>
-                  {showHeader && (
-                    <div className="session-week-header">{weekLabel}</div>
-                  )}
-                  <div className="session-card slide-up">
-              {editingSessionId === session.id ? (
-                <form className="session-edit-form" onSubmit={handleSaveSession}>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Date</label>
-                      <input
-                        type="date"
-                        value={editSessionForm.date}
-                        onChange={e => setEditSessionForm(prev => ({ ...prev, date: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Duration (min)</label>
-                      <input
-                        type="number"
-                        value={editSessionForm.duration_minutes}
-                        onChange={e => setEditSessionForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Notes</label>
-                    <input
-                      type="text"
-                      value={editSessionForm.notes}
-                      onChange={e => setEditSessionForm(prev => ({ ...prev, notes: e.target.value }))}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
-                    <button type="submit" className="btn-primary btn-sm">Save</button>
-                    <button type="button" className="btn-ghost btn-sm" onClick={cancelEditSession}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <div className="session-card-header">
-                  <div
-                    style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}
-                    onClick={() =>
-                      setExpandedSession(expandedSession === session.id ? null : session.id)
-                    }
-                  >
-                    <span className="session-date">{formatSessionDate(session.date)}</span>
-                    {session.notes && (
-                      <p className="text-sm text-dim mt-sm">{session.notes}</p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                    <span className="text-sm text-dim">
-                      {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
-                    </span>
-                    {session.duration_minutes && (
-                      <span className="session-duration">{session.duration_minutes} min</span>
-                    )}
-                    <button
-                      className="btn-ghost btn-action"
-                      onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
-                      title="Edit session"
-                    >
-                      ✎
-                    </button>
-                    {confirmDeleteSession === session.id ? (
-                      <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                        <span className="text-sm text-dim">Delete?</span>
-                        <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
-                          onClick={() => handleDeleteSession(session.id)}>Yes</button>
-                        <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
-                          onClick={() => setConfirmDeleteSession(null)}>No</button>
-                      </div>
-                    ) : (
-                      <button
-                        className="btn-ghost btn-action"
-                        style={{ color: 'var(--color-danger)' }}
-                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
-                        title="Delete session"
-                      >
-                        ×
-                      </button>
-                    )}
-                    <span
-                      className="text-dim"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() =>
-                        setExpandedSession(expandedSession === session.id ? null : session.id)
-                      }
-                    >
-                      {expandedSession === session.id ? '▾' : '▸'}
-                    </span>
-                  </div>
-                </div>
-              )}
+      {/* Session history — collapsible */}
+      {sessions.length > 0 && !showForm && (
+        <>
+          <div
+            className="session-history-toggle"
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            <span>Session History ({sessions.length})</span>
+            <span className="text-dim">{showHistory ? '▾' : '▸'}</span>
+          </div>
 
-              {expandedSession === session.id && session.entries.length > 0 && editingSessionId !== session.id && (
-                <div className="session-entries fade-in">
-                  {session.entries.map(entry => (
-                    editingEntryId === entry.id ? (
-                      <div key={entry.id} className="entry-edit-form">
-                        <div className="form-row">
-                          <div className="form-group">
-                            <label>Tune</label>
-                            <select
-                              value={editEntryForm.tune_id}
-                              onChange={e => setEditEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
-                            >
-                              <option value="">Select a tune...</option>
-                              {tunes.map(t => (
-                                <option key={t.id} value={t.id}>
-                                  {t.title}{t.composer ? ` (${t.composer})` : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="form-group">
-                            <label>Focus</label>
-                            <select
-                              value={editEntryForm.focus}
-                              onChange={e => setEditEntryForm(prev => ({ ...prev, focus: e.target.value }))}
-                            >
-                              <option value="">Select focus...</option>
-                              {FOCUS_OPTIONS.map(f => (
-                                <option key={f} value={f}>
-                                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="form-row">
-                          <div className="form-group">
-                            <label>Tempo (BPM)</label>
-                            <input
-                              type="number"
-                              value={editEntryForm.tempo_practiced}
-                              onChange={e => setEditEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
-                            />
-                          </div>
-                          <div className="form-group">
-                            <label>Duration (min)</label>
-                            <input
-                              type="number"
-                              value={editEntryForm.duration_minutes}
-                              onChange={e => setEditEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                            />
-                          </div>
-                        </div>
-                        <div className="form-group">
-                          <label>Notes</label>
-                          <input
-                            type="text"
-                            value={editEntryForm.notes}
-                            onChange={e => setEditEntryForm(prev => ({ ...prev, notes: e.target.value }))}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label>Rating</label>
-                          <StarRating
-                            value={editEntryForm.rating}
-                            onChange={val => setEditEntryForm(prev => ({ ...prev, rating: val }))}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
-                          <button className="btn-primary btn-sm" onClick={() => handleSaveEntry(session.id, entry.id)}>Save</button>
-                          <button className="btn-ghost btn-sm" onClick={cancelEditEntry}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={entry.id} className="entry-row">
-                        <span className="entry-tune">{entry.tune_title}</span>
-                        <span className="entry-duration">
-                          {entry.duration_minutes ? `${entry.duration_minutes} min` : ''}
-                        </span>
-                        <button
-                          className="btn-ghost btn-action"
-                          onClick={() => startEditEntry(entry)}
-                          title="Edit entry"
-                        >
-                          ✎
-                        </button>
-                        {confirmDeleteEntry === entry.id ? (
-                          <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                            <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
-                              onClick={() => handleDeleteEntry(session.id, entry.id)}>Yes</button>
-                            <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
-                              onClick={() => setConfirmDeleteEntry(null)}>No</button>
-                          </div>
+          {showHistory && (
+            <div className="session-list">
+              {(() => {
+                let lastWeekLabel = null
+                return sessions.map(session => {
+                  const weekLabel = getWeekLabel(session.date)
+                  const showHeader = weekLabel !== lastWeekLabel
+                  lastWeekLabel = weekLabel
+                  return (
+                    <div key={session.id}>
+                      {showHeader && (
+                        <div className="session-week-header">{weekLabel}</div>
+                      )}
+                      <div className="session-card slide-up">
+                        {editingSessionId === session.id ? (
+                          <form className="session-edit-form" onSubmit={handleSaveSession}>
+                            <div className="form-row">
+                              <div className="form-group">
+                                <label>Date</label>
+                                <input
+                                  type="date"
+                                  value={editSessionForm.date}
+                                  onChange={e => setEditSessionForm(prev => ({ ...prev, date: e.target.value }))}
+                                />
+                              </div>
+                              <div className="form-group">
+                                <label>Duration (min)</label>
+                                <input
+                                  type="number"
+                                  value={editSessionForm.duration_minutes}
+                                  onChange={e => setEditSessionForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Notes</label>
+                              <input
+                                type="text"
+                                value={editSessionForm.notes}
+                                onChange={e => setEditSessionForm(prev => ({ ...prev, notes: e.target.value }))}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                              <button type="submit" className="btn-primary btn-sm">Save</button>
+                              <button type="button" className="btn-ghost btn-sm" onClick={cancelEditSession}>Cancel</button>
+                            </div>
+                          </form>
                         ) : (
-                          <button
-                            className="btn-ghost btn-action"
-                            onClick={() => setConfirmDeleteEntry(entry.id)}
-                            title="Delete entry"
-                          >
-                            ×
-                          </button>
+                          <div className="session-card-header">
+                            <div
+                              style={{ flex: 1, cursor: 'pointer', minWidth: 0 }}
+                              onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
+                            >
+                              <span className="session-date">{formatSessionDate(session.date)}</span>
+                              {session.notes && (
+                                <p className="text-sm text-dim mt-sm">{session.notes}</p>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                              <span className="text-sm text-dim">
+                                {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
+                              </span>
+                              {session.duration_minutes && (
+                                <span className="session-duration">{session.duration_minutes} min</span>
+                              )}
+                              <button
+                                className="btn-ghost btn-action"
+                                onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
+                                title="Edit session"
+                              >
+                                ✎
+                              </button>
+                              {confirmDeleteSession === session.id ? (
+                                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                                  <span className="text-sm text-dim">Delete?</span>
+                                  <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                                    onClick={() => handleDeleteSession(session.id)}>Yes</button>
+                                  <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
+                                    onClick={() => setConfirmDeleteSession(null)}>No</button>
+                                </div>
+                              ) : (
+                                <button
+                                  className="btn-ghost btn-action"
+                                  style={{ color: 'var(--color-danger)' }}
+                                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
+                                  title="Delete session"
+                                >
+                                  ×
+                                </button>
+                              )}
+                              <span
+                                className="text-dim"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
+                              >
+                                {expandedSession === session.id ? '▾' : '▸'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {expandedSession === session.id && session.entries.length > 0 && editingSessionId !== session.id && (
+                          <div className="session-entries fade-in">
+                            {session.entries.map(entry => (
+                              editingEntryId === entry.id ? (
+                                <div key={entry.id} className="entry-edit-form">
+                                  <div className="form-row">
+                                    <div className="form-group">
+                                      <label>Tune</label>
+                                      <select
+                                        value={editEntryForm.tune_id}
+                                        onChange={e => setEditEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
+                                      >
+                                        <option value="">Select a tune...</option>
+                                        {tunes.map(t => (
+                                          <option key={t.id} value={t.id}>
+                                            {t.title}{t.composer ? ` (${t.composer})` : ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="form-group">
+                                      <label>Focus</label>
+                                      <select
+                                        value={editEntryForm.focus}
+                                        onChange={e => setEditEntryForm(prev => ({ ...prev, focus: e.target.value }))}
+                                      >
+                                        <option value="">Select focus...</option>
+                                        {FOCUS_OPTIONS.map(f => (
+                                          <option key={f} value={f}>
+                                            {f.charAt(0).toUpperCase() + f.slice(1)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div className="form-row">
+                                    <div className="form-group">
+                                      <label>Tempo (BPM)</label>
+                                      <input
+                                        type="number"
+                                        value={editEntryForm.tempo_practiced}
+                                        onChange={e => setEditEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
+                                      />
+                                    </div>
+                                    <div className="form-group">
+                                      <label>Duration (min)</label>
+                                      <input
+                                        type="number"
+                                        value={editEntryForm.duration_minutes}
+                                        onChange={e => setEditEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Notes</label>
+                                    <input
+                                      type="text"
+                                      value={editEntryForm.notes}
+                                      onChange={e => setEditEntryForm(prev => ({ ...prev, notes: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Rating</label>
+                                    <StarRating
+                                      value={editEntryForm.rating}
+                                      onChange={val => setEditEntryForm(prev => ({ ...prev, rating: val }))}
+                                    />
+                                  </div>
+                                  <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                                    <button className="btn-primary btn-sm" onClick={() => handleSaveEntry(session.id, entry.id)}>Save</button>
+                                    <button className="btn-ghost btn-sm" onClick={cancelEditEntry}>Cancel</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div key={entry.id} className="entry-row">
+                                  <span className="entry-tune">{entry.tune_title}</span>
+                                  <span className="entry-duration">
+                                    {entry.duration_minutes ? `${entry.duration_minutes} min` : ''}
+                                  </span>
+                                  <button
+                                    className="btn-ghost btn-action"
+                                    onClick={() => startEditEntry(entry)}
+                                    title="Edit entry"
+                                  >
+                                    ✎
+                                  </button>
+                                  {confirmDeleteEntry === entry.id ? (
+                                    <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                                      <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                                        onClick={() => handleDeleteEntry(session.id, entry.id)}>Yes</button>
+                                      <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
+                                        onClick={() => setConfirmDeleteEntry(null)}>No</button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      className="btn-ghost btn-action"
+                                      onClick={() => setConfirmDeleteEntry(entry.id)}
+                                      title="Delete entry"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              )
+                            ))}
+
+                            {/* Add entry to existing session */}
+                            {addingToSessionId === session.id ? (
+                              <div className="entry-edit-form">
+                                <div className="form-row">
+                                  <div className="form-group">
+                                    <label>Tune *</label>
+                                    <select
+                                      value={newEntryForm.tune_id}
+                                      onChange={e => setNewEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
+                                      autoFocus
+                                    >
+                                      <option value="">Select a tune...</option>
+                                      {tunes.map(t => (
+                                        <option key={t.id} value={t.id}>
+                                          {t.title}{t.composer ? ` (${t.composer})` : ''}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Focus</label>
+                                    <select
+                                      value={newEntryForm.focus}
+                                      onChange={e => setNewEntryForm(prev => ({ ...prev, focus: e.target.value }))}
+                                    >
+                                      <option value="">Select focus...</option>
+                                      {FOCUS_OPTIONS.map(f => (
+                                        <option key={f} value={f}>
+                                          {f.charAt(0).toUpperCase() + f.slice(1)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="form-row">
+                                  <div className="form-group">
+                                    <label>Tempo (BPM)</label>
+                                    <input
+                                      type="number"
+                                      value={newEntryForm.tempo_practiced}
+                                      onChange={e => setNewEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
+                                    />
+                                  </div>
+                                  <div className="form-group">
+                                    <label>Duration (min)</label>
+                                    <input
+                                      type="number"
+                                      value={newEntryForm.duration_minutes}
+                                      onChange={e => setNewEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="form-group">
+                                  <label>Notes</label>
+                                  <input
+                                    type="text"
+                                    value={newEntryForm.notes}
+                                    onChange={e => setNewEntryForm(prev => ({ ...prev, notes: e.target.value }))}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label>Rating</label>
+                                  <StarRating
+                                    value={newEntryForm.rating}
+                                    onChange={val => setNewEntryForm(prev => ({ ...prev, rating: val }))}
+                                  />
+                                </div>
+                                <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                                  <button className="btn-primary btn-sm" onClick={() => handleAddEntryToSession(session.id)}>Add</button>
+                                  <button className="btn-ghost btn-sm" onClick={() => setAddingToSessionId(null)}>Cancel</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                className="btn-ghost btn-sm"
+                                style={{ marginTop: 'var(--space-sm)', fontSize: '0.8rem' }}
+                                onClick={() => setAddingToSessionId(session.id)}
+                              >
+                                + Add Entry
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )
-                  ))}
-
-                  {/* Add entry to existing session */}
-                  {addingToSessionId === session.id ? (
-                    <div className="entry-edit-form">
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Tune *</label>
-                          <select
-                            value={newEntryForm.tune_id}
-                            onChange={e => setNewEntryForm(prev => ({ ...prev, tune_id: e.target.value }))}
-                            autoFocus
-                          >
-                            <option value="">Select a tune...</option>
-                            {tunes.map(t => (
-                              <option key={t.id} value={t.id}>
-                                {t.title}{t.composer ? ` (${t.composer})` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group">
-                          <label>Focus</label>
-                          <select
-                            value={newEntryForm.focus}
-                            onChange={e => setNewEntryForm(prev => ({ ...prev, focus: e.target.value }))}
-                          >
-                            <option value="">Select focus...</option>
-                            {FOCUS_OPTIONS.map(f => (
-                              <option key={f} value={f}>
-                                {f.charAt(0).toUpperCase() + f.slice(1)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Tempo (BPM)</label>
-                          <input
-                            type="number"
-                            value={newEntryForm.tempo_practiced}
-                            onChange={e => setNewEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label>Duration (min)</label>
-                          <input
-                            type="number"
-                            value={newEntryForm.duration_minutes}
-                            onChange={e => setNewEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div className="form-group">
-                        <label>Notes</label>
-                        <input
-                          type="text"
-                          value={newEntryForm.notes}
-                          onChange={e => setNewEntryForm(prev => ({ ...prev, notes: e.target.value }))}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Rating</label>
-                        <StarRating
-                          value={newEntryForm.rating}
-                          onChange={val => setNewEntryForm(prev => ({ ...prev, rating: val }))}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
-                        <button className="btn-primary btn-sm" onClick={() => handleAddEntryToSession(session.id)}>Add</button>
-                        <button className="btn-ghost btn-sm" onClick={() => setAddingToSessionId(null)}>Cancel</button>
-                      </div>
                     </div>
-                  ) : (
-                    <button
-                      className="btn-ghost btn-sm"
-                      style={{ marginTop: 'var(--space-sm)', fontSize: '0.8rem' }}
-                      onClick={() => setAddingToSessionId(session.id)}
-                    >
-                      + Add Entry
-                    </button>
-                  )}
-                </div>
-              )}
-</div>
-                </div>
-              )
-            })
-          })()}
-        </div>
+                  )
+                })
+              })()}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

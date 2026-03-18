@@ -279,6 +279,27 @@
   font-family: var(--font-mono);
 }
 
+.session-history-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-md);
+  user-select: none;
+}
+
+.session-history-toggle:hover {
+  color: var(--color-text-dim);
+}
+
 /* --- Practice Form (legacy, may still be referenced) --- */
 
 .practice-form {
