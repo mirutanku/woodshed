@@ -177,7 +177,7 @@
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-text-muted);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 
 /* Transport */

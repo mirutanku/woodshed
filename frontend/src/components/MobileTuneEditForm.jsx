@@ -12,7 +12,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
     composer: tune.composer || '',
     keyTonic: parsed.tonic,
     keyQuality: parsed.quality,
-    tempo: tune.tempo || '',
     form: tune.form || '',
     status: tune.status || 'learning',
     notes: tune.notes || '',
@@ -27,7 +26,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
         title: tuneForm.title.trim(),
         composer: tuneForm.composer.trim() || null,
         key: buildKey(tuneForm.keyTonic, tuneForm.keyQuality),
-        tempo: tuneForm.tempo ? parseInt(tuneForm.tempo, 10) : null,
         form: tuneForm.form.trim() || null,
         status: tuneForm.status,
         notes: tuneForm.notes.trim() || null,
@@ -62,6 +60,19 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
     }
   }
 
+  async function handleNotesSave() {
+    if (notesValue === (tune.notes || '')) return
+    setNotesSaving(true)
+    try {
+      await api.patch(`/tunes/${tune.id}`, { notes: notesValue.trim() || null })
+      if (onTuneChanged) onTuneChanged()
+    } catch (err) {
+      console.error('Failed to save notes:', err)
+    } finally {
+      setNotesSaving(false)
+    }
+  }
+
   return (
     <div className="shed-tune-edit">
       <div className="form-group">
@@ -88,14 +99,6 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
             quality={tuneForm.keyQuality}
             onTonicChange={v => setTuneForm(prev => ({ ...prev, keyTonic: v }))}
             onQualityChange={v => setTuneForm(prev => ({ ...prev, keyQuality: v }))}
-          />
-        </div>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label>Tempo</label>
-          <input
-            type="number"
-            value={tuneForm.tempo}
-            onChange={e => setTuneForm(prev => ({ ...prev, tempo: e.target.value }))}
           />
         </div>
       </div>

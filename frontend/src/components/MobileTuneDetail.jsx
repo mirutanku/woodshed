@@ -34,6 +34,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   // Content
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [segments, setSegments] = useState([])
+  const [notesValue, setNotesValue] = useState(tune.notes || '')
+  const [notesSaving, setNotesSaving] = useState(false)
 
   // Looping and auto-ramp
   const [loopSegment, setLoopSegment] = useState(null)
@@ -255,6 +257,19 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }
 
+  async function handleNotesSave() {
+    if (notesValue === (tune.notes || '')) return
+    setNotesSaving(true)
+    try {
+      await api.patch(`/tunes/${tune.id}`, { notes: notesValue.trim() || null })
+      if (onTuneChanged) onTuneChanged()
+    } catch (err) {
+      console.error('Failed to save notes:', err)
+    } finally {
+      setNotesSaving(false)
+    }
+  }
+
   // Cleanup
   useEffect(() => {
     return () => {
@@ -299,6 +314,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         </div>
       )}
 
+      {/* Notes */}
+      {!editingTune && (
+        <div className="tune-notes-inline" style={{ marginBottom: 'var(--space-md)' }}>
+          <textarea
+            className="tune-notes-editor"
+            value={notesValue}
+            onChange={e => setNotesValue(e.target.value)}
+            onBlur={handleNotesSave}
+            placeholder="What are you working on?"
+            rows={1}
+          />
+          {notesSaving && <span className="tune-notes-saving">Saving...</span>}
+        </div>
+      )}
+
       {/* Recording selector (if multiple) */}
       {recordings.length > 0 && !editingTune && (
         <div className="shed-recording-picker">
@@ -313,19 +343,6 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
           ))}
         </div>
       )}
-
-      {!editingTune && recordings.length > 0 && (showUpload ? (
-        <div>
-          <RecordingUpload tuneId={tune.id} onUploaded={() => { onRecordingsChanged(); setShowUpload(false) }} />
-          <button className="btn-ghost btn-sm" onClick={() => setShowUpload(false)} style={{ marginTop: 'var(--space-xs)' }}>
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button className="shed-mark-trigger" onClick={() => setShowUpload(true)} style={{ marginBottom: 'var(--space-sm)' }}>
-          + Add Recording
-        </button>
-      ))}
 
       {selectedRecording && (
         <>
@@ -522,6 +539,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               )}
             </div>
           )}
+
           {/* Quick mark segment */}
           {marking ? (
             <MobileQuickMark
@@ -536,6 +554,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               Mark Segment
             </button>
           )}
+
           {/* Quick log button */}
           <button
             className={`shed-mark-trigger ${quickLogged ? 'logged' : ''}`}
@@ -546,6 +565,20 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
           </button>
         </>
       )}
+
+      {/* Add Recording */}
+      {!editingTune && recordings.length > 0 && (showUpload ? (
+        <div style={{ marginTop: 'var(--space-md)' }}>
+          <RecordingUpload tuneId={tune.id} onUploaded={() => { onRecordingsChanged(); setShowUpload(false) }} />
+          <button className="btn-ghost btn-sm" onClick={() => setShowUpload(false)} style={{ marginTop: 'var(--space-xs)' }}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button className="shed-mark-trigger" onClick={() => setShowUpload(true)} style={{ marginTop: 'var(--space-md)' }}>
+          + Add Recording
+        </button>
+      ))}
 
       {recordings.length === 0 && (
         <RecordingUpload tuneId={tune.id} onUploaded={onRecordingsChanged} />

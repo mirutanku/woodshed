@@ -170,7 +170,6 @@ function TuneList({ onSelectTune }) {
                 <div className="tune-row-meta">
                   {tune.composer && <span>{tune.composer}</span>}
                   {tune.key && <span className="tune-meta-key">{tune.key}</span>}
-                  {tune.tempo && <span className="tune-meta-tempo">{tune.tempo} bpm</span>}
                   {tune.recording_count > 0 && (
                     <span>{tune.recording_count} rec{tune.recording_count !== 1 ? 's' : ''}</span>
                   )}
@@ -200,7 +199,6 @@ function AddTuneForm({ onCancel, onAdded }) {
     composer: '',
     keyTonic: '',
     keyQuality: '',
-    tempo: '',
     form: '',
     status: 'learning',
     notes: '',
@@ -233,7 +231,6 @@ function AddTuneForm({ onCancel, onAdded }) {
         title: form.title.trim(),
         composer: form.composer.trim() || null,
         key: buildKey(form.keyTonic, form.keyQuality),
-        tempo: form.tempo ? parseInt(form.tempo, 10) : null,
         form: form.form.trim() || null,
         status: form.status,
         notes: form.notes.trim() || null,
@@ -284,15 +281,6 @@ function AddTuneForm({ onCancel, onAdded }) {
         </div>
 
         <div className="form-row mb-md">
-          <div className="form-group">
-            <label>Tempo (BPM)</label>
-            <input
-              type="number"
-              value={form.tempo}
-              onChange={e => handleChange('tempo', e.target.value)}
-              placeholder="e.g. 280"
-            />
-          </div>
           <div className="form-group">
             <label>Form</label>
             <input

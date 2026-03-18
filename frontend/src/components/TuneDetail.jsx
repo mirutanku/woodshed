@@ -25,6 +25,8 @@ function TuneDetail({ tuneId, onBack }) {
   const [recordingSegments, setRecordingSegments] = useState({})
   const [playbackTime, setPlaybackTime] = useState(0)
   const [showUpload, setShowUpload] = useState(false)
+  const [notesValue, setNotesValue] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
 
   useEffect(() => {
     fetchTune()
@@ -54,13 +56,13 @@ function TuneDetail({ tuneId, onBack }) {
     try {
       const res = await api.get(`/tunes/${tuneId}`)
       setTune(res.data)
+      setNotesValue(res.data.notes || '')
       const parsed = parseKey(res.data.key)
       setEditForm({
         title: res.data.title || '',
         composer: res.data.composer || '',
         keyTonic: parsed.tonic,
         keyQuality: parsed.quality,
-        tempo: res.data.tempo || '',
         form: res.data.form || '',
         status: res.data.status || 'learning',
         notes: res.data.notes || '',
@@ -96,10 +98,8 @@ function TuneDetail({ tuneId, onBack }) {
         title: editForm.title.trim(),
         composer: editForm.composer.trim() || null,
         key: buildKey(editForm.keyTonic, editForm.keyQuality),
-        tempo: editForm.tempo ? parseInt(editForm.tempo, 10) : null,
         form: editForm.form.trim() || null,
         status: editForm.status,
-        notes: editForm.notes.trim() || null,
       }
       const res = await api.patch(`/tunes/${tuneId}`, payload)
       setTune(res.data)
@@ -153,6 +153,21 @@ function TuneDetail({ tuneId, onBack }) {
       day: 'numeric',
       year: 'numeric',
     })
+  }
+
+  async function handleNotesSave() {
+    if (notesValue === (tune.notes || '')) return
+    setNotesSaving(true)
+    try {
+      const res = await api.patch(`/tunes/${tuneId}`, {
+        notes: notesValue.trim() || null,
+      })
+      setTune(res.data)
+    } catch (err) {
+      console.error('Failed to save notes:', err)
+    } finally {
+      setNotesSaving(false)
+    }
   }
 
   if (loading) {
@@ -216,14 +231,6 @@ function TuneDetail({ tuneId, onBack }) {
               </div>
               <div className="form-row mb-md">
                 <div className="form-group">
-                  <label>Tempo (BPM)</label>
-                  <input
-                    type="number"
-                    value={editForm.tempo}
-                    onChange={e => handleEditChange('tempo', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
                   <label>Form</label>
                   <input
                     type="text"
@@ -242,14 +249,6 @@ function TuneDetail({ tuneId, onBack }) {
                   <option value="polishing">Polishing</option>
                   <option value="mastering">Mastering</option>
                 </select>
-              </div>
-              <div className="form-group mb-md">
-                <label>Notes</label>
-                <textarea
-                  value={editForm.notes}
-                  onChange={e => handleEditChange('notes', e.target.value)}
-                  rows={3}
-                />
               </div>
             </div>
           </div>
@@ -292,12 +291,6 @@ function TuneDetail({ tuneId, onBack }) {
                 <span className="meta-value">{tune.key}</span>
               </div>
             )}
-            {tune.tempo && (
-              <div className="meta-item">
-                <span className="meta-label">Tempo</span>
-                <span className="meta-value">{tune.tempo} BPM</span>
-              </div>
-            )}
             {tune.form && (
               <div className="meta-item">
                 <span className="meta-label">Form</span>
@@ -306,10 +299,18 @@ function TuneDetail({ tuneId, onBack }) {
             )}
           </div>
 
-          {/* Notes */}
-          {tune.notes && (
-            <div className="tune-notes">{tune.notes}</div>
-          )}
+          {/* Notes — always visible, inline editable */}
+          <div className="tune-notes-inline">
+            <textarea
+              className="tune-notes-editor"
+              value={notesValue}
+              onChange={e => setNotesValue(e.target.value)}
+              onBlur={handleNotesSave}
+              placeholder="What are you working on?"
+              rows={1}
+            />
+            {notesSaving && <span className="tune-notes-saving">Saving...</span>}
+          </div>
         </>
       )}
 
