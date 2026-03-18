@@ -520,6 +520,74 @@
 margin-top: 0;
 }
 
+/* --- Today View --- */
+
+.today-view {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.today-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.today-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.today-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.today-chip:hover {
+  border-color: var(--color-amber-dim);
+  color: var(--color-amber);
+  background: var(--color-amber-glow);
+}
+
+.today-chip-indicators {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.today-ind {
+  font-size: 0.75rem;
+}
+
+.today-ind.played {
+  color: var(--color-amber);
+}
+
+.today-ind.logged {
+  color: var(--color-success);
+}
+
+.today-chip-title {
+  white-space: nowrap;
+}
+
 /* --- Responsive --- */
 
 @media (max-width: 1024px) {

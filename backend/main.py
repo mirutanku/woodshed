@@ -1286,6 +1286,66 @@ def get_most_practiced(
     combined.sort(key=lambda x: x["sessions"], reverse=True)
     return combined[:5]
 
+@app.get("/api/today")
+def get_today(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
+    # Tunes played (from playbacks)
+    played_tune_ids = (
+        db.query(TunePlayback.tune_id)
+        .filter(
+            TunePlayback.user_id == current_user.id,
+            TunePlayback.date == today,
+        )
+        .all()
+    )
+    played_ids = {t[0] for t in played_tune_ids}
+
+    # Tunes logged (from practice entries in today's sessions)
+    logged_entries = (
+        db.query(PracticeEntry.tune_id, PracticeEntry.focus)
+        .join(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+        )
+        .all()
+    )
+    logged_by_tune = {}
+    for tune_id, focus in logged_entries:
+        if tune_id not in logged_by_tune:
+            logged_by_tune[tune_id] = []
+        if focus:
+            logged_by_tune[tune_id].append(focus)
+
+    # Combine all tune IDs
+    all_tune_ids = played_ids | set(logged_by_tune.keys())
+
+    if not all_tune_ids:
+        return {"tunes": [], "date": today.isoformat()}
+
+    # Fetch tune titles
+    tunes = db.query(Tune).filter(Tune.id.in_(all_tune_ids)).all()
+    tune_map = {t.id: t.title for t in tunes}
+
+    result = []
+    for tune_id in all_tune_ids:
+        result.append({
+            "tune_id": tune_id,
+            "title": tune_map.get(tune_id, "Unknown"),
+            "played": tune_id in played_ids,
+            "logged": tune_id in logged_by_tune,
+            "focus": logged_by_tune.get(tune_id, []),
+        })
+
+    # Sort alphabetically
+    result.sort(key=lambda x: x["title"])
+
+    return {"tunes": result, "date": today.isoformat()}
 
 @app.get("/api/practice-profile")
 def get_practice_profile(

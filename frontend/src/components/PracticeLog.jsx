@@ -3,6 +3,7 @@ import api from '../api'
 import { useToast } from './Toast'
 import SessionForm from './SessionForm'
 import PracticeProfile from './PracticeProfile'
+import TodayView from './TodayView'
 import { FOCUS_OPTIONS } from '../constants'
 import { localToday } from '../dateUtils'
 import './PracticeLog.css'
@@ -359,21 +360,16 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   return (
     <div className="practice-summary fade-in">
       <PracticeProfile />
+      <TodayView onSelectTune={onSelectTune} />
 
       <div className="summary-stats">
-        {hasStats && (
-          <>
-            <div className="summary-stat">
-              <span className="summary-number">{stats.weekSessions}</span>
-              <span className="summary-label">This Week</span>
-            </div>
-            <div className="summary-stat">
-              <span className="summary-number">
-                {stats.weekMinutes > 0 ? `${Math.round(stats.weekMinutes / 60 * 10) / 10}h` : '—'}
-              </span>
-              <span className="summary-label">Hours</span>
-            </div>
-          </>
+        {hasStats && stats.weekMinutes > 0 && (
+          <div className="summary-stat">
+            <span className="summary-number">
+              {Math.round(stats.weekMinutes / 60 * 10) / 10}h
+            </span>
+            <span className="summary-label">Hours</span>
+          </div>
         )}
         <div className="summary-stat">
           <span className="summary-number">{streak > 0 ? `${streak}d` : '—'}</span>
