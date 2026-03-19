@@ -325,35 +325,8 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     })
 
     const weekMinutes = thisWeek.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
-    const weekSessions = thisWeek.length
 
-    // Tempo progress
-    const tempoByTune = {}
-    sessions.forEach(s => {
-      s.entries.forEach(e => {
-        if (e.tempo_practiced && e.tune_title) {
-          if (!tempoByTune[e.tune_title]) tempoByTune[e.tune_title] = []
-          tempoByTune[e.tune_title].push({
-            date: s.date,
-            tempo: e.tempo_practiced,
-          })
-        }
-      })
-    })
-
-    const tempoProgress = Object.entries(tempoByTune)
-      .filter(([, entries]) => entries.length >= 2)
-      .map(([title, entries]) => {
-        const sorted = entries.sort((a, b) => a.date.localeCompare(b.date))
-        const first = sorted[0].tempo
-        const last = sorted[sorted.length - 1].tempo
-        const max = Math.max(...sorted.map(e => e.tempo))
-        return { title, first, last, max, sessions: sorted.length }
-      })
-      .sort((a, b) => b.sessions - a.sessions)
-      .slice(0, 5)
-
-    return { weekSessions, weekMinutes, tempoProgress }
+    return { weekMinutes }
   }, [sessions])
 
   const hasStats = !!stats
@@ -415,30 +388,6 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
           onEdit={onEditPerformance}
           onSetlistsChanged={onSetlistsChanged}
         />
-
-        {hasStats && stats.tempoProgress.length > 0 && (
-          <div className="summary-section">
-            <h3>Tempo Progress</h3>
-            <div className="summary-tune-list">
-              {stats.tempoProgress.map(tp => {
-                const delta = tp.last - tp.first
-                return (
-                  <div key={tp.title} className="summary-tune-row">
-                    <span className="summary-tune-title">{tp.title}</span>
-                    <span className="summary-tempo-range">
-                      {tp.first} → {tp.last} bpm
-                      {delta !== 0 && (
-                        <span className={delta > 0 ? 'tempo-up' : 'tempo-down'}>
-                          {delta > 0 ? ' ↑' : ' ↓'}{Math.abs(delta)}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -698,7 +647,7 @@ function PracticeLog({ onSelectTune }) {
   return (
     <div className="fade-in">
       <div className="practice-header">
-        <h1>Practice Log</h1>
+        <h1>Practice</h1>
         <button
           className="btn-primary"
           onClick={() => setShowForm(!showForm)}
