@@ -1235,36 +1235,53 @@ def quick_log(
 def get_most_practiced(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    period: str = "all",
+    client_date: str = None,
 ):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
+    if period == "week":
+        cutoff = today - timedelta(days=today.weekday() + 1)  # Sunday
+    elif period == "month":
+        cutoff = today.replace(day=1)
+    elif period == "year":
+        cutoff = today.replace(month=1, day=1)
+    else:
+        cutoff = None
+
     # Count practice log entries per tune
-    log_counts = dict(
+    log_query = (
         db.query(PracticeEntry.tune_id, sql_func.count(PracticeEntry.id))
         .join(PracticeSession)
         .filter(PracticeSession.user_id == current_user.id)
-        .group_by(PracticeEntry.tune_id)
-        .all()
     )
+    if cutoff:
+        log_query = log_query.filter(PracticeSession.date >= cutoff)
+    log_counts = dict(log_query.group_by(PracticeEntry.tune_id).all())
 
     # Count playback days per tune (only days not already covered by a log entry)
-    playback_days = (
-        db.query(TunePlayback.tune_id, TunePlayback.date)
-        .filter(TunePlayback.user_id == current_user.id)
-        .all()
+    playback_query = db.query(TunePlayback.tune_id, TunePlayback.date).filter(
+        TunePlayback.user_id == current_user.id
     )
+    if cutoff:
+        playback_query = playback_query.filter(TunePlayback.date >= cutoff)
+    playback_days = playback_query.all()
 
-    log_dates_by_tune = {}
-    log_entries = (
+    log_dates_query = (
         db.query(PracticeEntry.tune_id, PracticeSession.date)
         .join(PracticeSession)
         .filter(PracticeSession.user_id == current_user.id)
-        .all()
     )
+    if cutoff:
+        log_dates_query = log_dates_query.filter(PracticeSession.date >= cutoff)
+    log_entries = log_dates_query.all()
+
+    log_dates_by_tune = {}
     for tune_id, d in log_entries:
         if tune_id not in log_dates_by_tune:
             log_dates_by_tune[tune_id] = set()
         log_dates_by_tune[tune_id].add(d)
 
-    # Add playback-only days
     playback_only_counts = {}
     for tune_id, d in playback_days:
         if d not in log_dates_by_tune.get(tune_id, set()):

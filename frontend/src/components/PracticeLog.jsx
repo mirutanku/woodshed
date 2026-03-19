@@ -304,11 +304,12 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged, onSelectTune }) {
   const [streak, setStreak] = useState(0)
   const [mostPracticed, setMostPracticed] = useState([])
+  const [mostPracticedPeriod, setMostPracticedPeriod] = useState('all')
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
-    api.get('/most-practiced').then(res => setMostPracticed(res.data)).catch(() => {})
-  }, [sessions])
+    api.get(`/most-practiced?period=${mostPracticedPeriod}&client_date=${localToday()}`).then(res => setMostPracticed(res.data)).catch(() => {})
+  }, [sessions, mostPracticedPeriod])
 
   const stats = useMemo(() => {
     if (sessions.length === 0) return null
@@ -380,7 +381,19 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
       <div className="summary-details">
         {mostPracticed.length > 0 && (
           <div className="summary-section">
-            <h3>Most Practiced</h3>
+            <div className="summary-section-header">
+              <h3>Most Practiced</h3>
+              <select
+                className="sort-select"
+                value={mostPracticedPeriod}
+                onChange={e => setMostPracticedPeriod(e.target.value)}
+              >
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
             <div className="summary-tune-list">
               {mostPracticed.map(tp => (
                 <div key={tp.tune_id} className="summary-tune-row" style={{ cursor: onSelectTune ? 'pointer' : 'default' }} onClick={() => onSelectTune && onSelectTune(tp.tune_id)}>
