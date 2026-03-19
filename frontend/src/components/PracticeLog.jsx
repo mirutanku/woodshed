@@ -403,7 +403,7 @@ function PracticeLog({ onSelectTune }) {
   const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null)
   const [addingToSessionId, setAddingToSessionId] = useState(null)
   const [newEntryForm, setNewEntryForm] = useState({
-    tune_id: '', focus: '', tempo_practiced: '', duration_minutes: '', notes: '', rating: 0,
+    tune_id: '', focus: '', tempo_practiced: '', notes: '', rating: 0,
   })
 
   useEffect(() => {
@@ -476,7 +476,6 @@ function PracticeLog({ onSelectTune }) {
     setEditingSessionId(session.id)
     setEditSessionForm({
       date: session.date,
-      duration_minutes: session.duration_minutes || '',
       notes: session.notes || '',
     })
   }
@@ -491,7 +490,6 @@ function PracticeLog({ onSelectTune }) {
     try {
       await api.patch(`/sessions/${editingSessionId}`, {
         date: editSessionForm.date,
-        duration_minutes: editSessionForm.duration_minutes ? parseInt(editSessionForm.duration_minutes, 10) : null,
         notes: editSessionForm.notes.trim() || null,
       })
       toast('Session updated')
@@ -521,7 +519,6 @@ function PracticeLog({ onSelectTune }) {
       tune_id: entry.tune_id,
       focus: entry.focus || '',
       tempo_practiced: entry.tempo_practiced || '',
-      duration_minutes: entry.duration_minutes || '',
       notes: entry.notes || '',
       rating: entry.rating || 0,
     })
@@ -538,7 +535,6 @@ function PracticeLog({ onSelectTune }) {
         tune_id: parseInt(editEntryForm.tune_id, 10),
         focus: editEntryForm.focus || null,
         tempo_practiced: editEntryForm.tempo_practiced ? parseInt(editEntryForm.tempo_practiced, 10) : null,
-        duration_minutes: editEntryForm.duration_minutes ? parseInt(editEntryForm.duration_minutes, 10) : null,
         notes: editEntryForm.notes.trim() || null,
         rating: editEntryForm.rating || null,
       })
@@ -568,13 +564,12 @@ function PracticeLog({ onSelectTune }) {
         tune_id: parseInt(newEntryForm.tune_id, 10),
         focus: newEntryForm.focus || null,
         tempo_practiced: newEntryForm.tempo_practiced ? parseInt(newEntryForm.tempo_practiced, 10) : null,
-        duration_minutes: newEntryForm.duration_minutes ? parseInt(newEntryForm.duration_minutes, 10) : null,
         notes: newEntryForm.notes.trim() || null,
         rating: newEntryForm.rating || null,
       })
       toast('Entry added')
       setAddingToSessionId(null)
-      setNewEntryForm({ tune_id: '', focus: '', tempo_practiced: '', duration_minutes: '', notes: '', rating: 0 })
+      setNewEntryForm({ tune_id: '', focus: '', tempo_practiced: '', notes: '', rating: 0 })
       fetchSessions()
     } catch (err) {
       toast('Failed to add entry', 'error')
@@ -702,14 +697,6 @@ function PracticeLog({ onSelectTune }) {
                                   onChange={e => setEditSessionForm(prev => ({ ...prev, date: e.target.value }))}
                                 />
                               </div>
-                              <div className="form-group">
-                                <label>Duration (min)</label>
-                                <input
-                                  type="number"
-                                  value={editSessionForm.duration_minutes}
-                                  onChange={e => setEditSessionForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                                />
-                              </div>
                             </div>
                             <div className="form-group">
                               <label>Notes</label>
@@ -739,9 +726,6 @@ function PracticeLog({ onSelectTune }) {
                               <span className="text-sm text-dim">
                                 {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
                               </span>
-                              {session.duration_minutes && (
-                                <span className="session-duration">{session.duration_minutes} min</span>
-                              )}
                               <button
                                 className="btn-ghost btn-action"
                                 onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
@@ -822,14 +806,6 @@ function PracticeLog({ onSelectTune }) {
                                         onChange={e => setEditEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
                                       />
                                     </div>
-                                    <div className="form-group">
-                                      <label>Duration (min)</label>
-                                      <input
-                                        type="number"
-                                        value={editEntryForm.duration_minutes}
-                                        onChange={e => setEditEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                                      />
-                                    </div>
                                   </div>
                                   <div className="form-group">
                                     <label>Notes</label>
@@ -854,9 +830,6 @@ function PracticeLog({ onSelectTune }) {
                               ) : (
                                 <div key={entry.id} className="entry-row">
                                   <span className="entry-tune">{entry.tune_title}</span>
-                                  <span className="entry-duration">
-                                    {entry.duration_minutes ? `${entry.duration_minutes} min` : ''}
-                                  </span>
                                   <button
                                     className="btn-ghost btn-action"
                                     onClick={() => startEditEntry(entry)}
@@ -925,14 +898,6 @@ function PracticeLog({ onSelectTune }) {
                                       type="number"
                                       value={newEntryForm.tempo_practiced}
                                       onChange={e => setNewEntryForm(prev => ({ ...prev, tempo_practiced: e.target.value }))}
-                                    />
-                                  </div>
-                                  <div className="form-group">
-                                    <label>Duration (min)</label>
-                                    <input
-                                      type="number"
-                                      value={newEntryForm.duration_minutes}
-                                      onChange={e => setNewEntryForm(prev => ({ ...prev, duration_minutes: e.target.value }))}
                                     />
                                   </div>
                                 </div>

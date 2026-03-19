@@ -21,7 +21,6 @@ function StarRating({ value, onChange }) {
 
 function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
   const [sessionDate, setSessionDate] = useState(localToday())
-  const [sessionDuration, setSessionDuration] = useState('')
   const [sessionNotes, setSessionNotes] = useState('')
 
   // Track which tunes are checked and their optional details
@@ -101,7 +100,6 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
 
     onSubmit({
       date: sessionDate,
-      duration_minutes: sessionDuration ? parseInt(sessionDuration, 10) : null,
       notes: sessionNotes.trim() || null,
       entries,
     })
@@ -120,15 +118,6 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
               type="date"
               value={sessionDate}
               onChange={e => setSessionDate(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Duration (min)</label>
-            <input
-              type="number"
-              value={sessionDuration}
-              onChange={e => setSessionDuration(e.target.value)}
-              placeholder="e.g. 60"
             />
           </div>
         </div>
