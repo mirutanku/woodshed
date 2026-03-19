@@ -28,6 +28,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
   // Playback
   const [isPlaying, setIsPlaying] = useState(false)
+  const isPlayingRef = useRef(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [speed, setSpeed] = useState(1.0)
@@ -60,7 +61,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
   const { flush: flushTimer } = useVisibilityTimer((seconds) => {
     api.post(`/tunes/${tune.id}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
-  })
+  }, isPlayingRef)
 
   // Auto-select first recording
   useEffect(() => {
@@ -274,6 +275,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       setNotesSaving(false)
     }
   }
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
 
   // Cleanup
   useEffect(() => {

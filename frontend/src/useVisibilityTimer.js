@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 
-export default function useVisibilityTimer(onElapsed) {
+export default function useVisibilityTimer(onElapsed, isPlayingRef) {
   const startTimeRef = useRef(null)
   const accumulatedRef = useRef(0)
 
@@ -27,10 +27,10 @@ export default function useVisibilityTimer(onElapsed) {
     return seconds
   }, [pause, onElapsed])
 
-  // Handle visibility changes
   useEffect(() => {
     function handleVisibility() {
-      if (document.visibilityState === 'visible') {
+      const shouldRun = document.visibilityState === 'visible' || (isPlayingRef && isPlayingRef.current)
+      if (shouldRun) {
         start()
       } else {
         pause()
@@ -39,7 +39,6 @@ export default function useVisibilityTimer(onElapsed) {
 
     document.addEventListener('visibilitychange', handleVisibility)
 
-    // Start immediately if page is visible
     if (document.visibilityState === 'visible') {
       start()
     }
