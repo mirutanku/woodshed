@@ -6,6 +6,7 @@ import MobileSegmentEditForm from './MobileSegmentEditForm'
 import MobileQuickMark from './MobileQuickMark'
 import RecordingUpload from './RecordingUpload'
 import { localToday } from '../dateUtils'
+import useVisibilityTimer from '../useVisibilityTimer'
 import './ShedMode.css'
 
 function formatTime(seconds) {
@@ -56,6 +57,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const hasCheckedIn = useRef(false)
   const hasTrackedPlayback = useRef(false)
   const [quickLogged, setQuickLogged] = useState(false)
+
+  const { flush: flushTimer } = useVisibilityTimer((seconds) => {
+    api.post(`/tunes/${tune.id}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
+  })
 
   // Auto-select first recording
   useEffect(() => {
@@ -282,7 +287,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
   return (
     <div className="shed-mode fade-in">
-      <button className="shed-back-btn" onClick={() => { stopPlayback(); onBack() }}>
+      <button className="shed-back-btn" onClick={() => { stopPlayback(); flushTimer(); onBack() }}>
         ← Back
       </button>
 

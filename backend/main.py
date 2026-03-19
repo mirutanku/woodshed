@@ -1182,6 +1182,31 @@ def record_playback(
     db.commit()
     return {"already_recorded": False}
 
+@app.post("/api/tunes/{tune_id}/play-time")
+def record_play_time(
+    tune_id: int,
+    seconds: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+    tune = get_user_tune(tune_id, current_user.id, db)
+
+    playback = db.query(TunePlayback).filter(
+        TunePlayback.user_id == current_user.id,
+        TunePlayback.tune_id == tune.id,
+        TunePlayback.date == today,
+    ).first()
+
+    if not playback:
+        playback = TunePlayback(user_id=current_user.id, tune_id=tune.id, date=today, play_seconds=0)
+        db.add(playback)
+
+    playback.play_seconds += seconds
+    db.commit()
+    return {"play_seconds": playback.play_seconds}
+
 @app.post("/api/quick-log")
 def quick_log(
     tune_id: int,
@@ -1363,6 +1388,41 @@ def get_today(
     result.sort(key=lambda x: x["title"])
 
     return {"tunes": result, "date": today.isoformat()}
+
+@app.get("/api/weekly-hours")
+def get_weekly_hours(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+    # Start of week (Sunday)
+    start_of_week = today - timedelta(days=today.weekday() + 1)
+    if today.weekday() == 6:
+        start_of_week = today
+
+    # Playback seconds this week
+    playback_seconds = (
+        db.query(sql_func.coalesce(sql_func.sum(TunePlayback.play_seconds), 0))
+        .filter(
+            TunePlayback.user_id == current_user.id,
+            TunePlayback.date >= start_of_week,
+        )
+        .scalar()
+    )
+
+    # Manual session minutes this week
+    manual_minutes = (
+        db.query(sql_func.coalesce(sql_func.sum(PracticeSession.duration_minutes), 0))
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date >= start_of_week,
+        )
+        .scalar()
+    )
+
+    total_minutes = (playback_seconds / 60) + manual_minutes
+    return {"minutes": round(total_minutes), "hours": round(total_minutes / 60, 1)}
 
 @app.get("/api/practice-profile")
 def get_practice_profile(

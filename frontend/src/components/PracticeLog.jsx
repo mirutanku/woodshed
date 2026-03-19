@@ -305,31 +305,13 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [streak, setStreak] = useState(0)
   const [mostPracticed, setMostPracticed] = useState([])
   const [mostPracticedPeriod, setMostPracticedPeriod] = useState('all')
+  const [weeklyHours, setWeeklyHours] = useState(null)
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
     api.get(`/most-practiced?period=${mostPracticedPeriod}&client_date=${localToday()}`).then(res => setMostPracticed(res.data)).catch(() => {})
+    api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
   }, [sessions, mostPracticedPeriod])
-
-  const stats = useMemo(() => {
-    if (sessions.length === 0) return null
-
-    const now = new Date()
-    const startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDate() - now.getDay())
-    startOfWeek.setHours(0, 0, 0, 0)
-
-    const thisWeek = sessions.filter(s => {
-      const d = new Date(s.date + 'T12:00:00')
-      return d >= startOfWeek
-    })
-
-    const weekMinutes = thisWeek.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
-
-    return { weekMinutes }
-  }, [sessions])
-
-  const hasStats = !!stats
 
   return (
     <div className="practice-summary fade-in">
@@ -337,12 +319,15 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
       <TodayView onSelectTune={onSelectTune} />
 
       <div className="summary-stats">
-        {hasStats && stats.weekMinutes > 0 && (
+        {weeklyHours && weeklyHours.minutes > 0 && (
           <div className="summary-stat">
             <span className="summary-number">
-              {Math.round(stats.weekMinutes / 60 * 10) / 10}h
+              {weeklyHours.minutes >= 60
+                ? `${weeklyHours.hours}h`
+                : `${weeklyHours.minutes}m`
+              }
             </span>
-            <span className="summary-label">Hours</span>
+            <span className="summary-label">This Week</span>
           </div>
         )}
         <div className="summary-stat">

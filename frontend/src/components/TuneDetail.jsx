@@ -7,6 +7,8 @@ import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
 import AudioPlayer from './AudioPlayer'
 import KeyPicker from './KeyPicker'
+import useVisibilityTimer from '../useVisibilityTimer'
+import { localToday } from '../dateUtils'
 import { parseKey, buildKey } from '../keyConstants'
 import './TuneDetail.css'
 
@@ -27,6 +29,10 @@ function TuneDetail({ tuneId, onBack }) {
   const [showUpload, setShowUpload] = useState(false)
   const [notesValue, setNotesValue] = useState('')
   const [notesSaving, setNotesSaving] = useState(false)
+
+  const { flush: flushTimer } = useVisibilityTimer((seconds) => {
+    api.post(`/tunes/${tuneId}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
+  })
 
   useEffect(() => {
     fetchTune()
@@ -193,7 +199,7 @@ function TuneDetail({ tuneId, onBack }) {
   return (
     <div className="fade-in">
       {/* Back button */}
-      <button className="btn-ghost mb-lg" onClick={onBack}>
+      <button className="btn-ghost mb-lg" onClick={() => { flushTimer(); onBack() }}>
         ← Back to Tunes
       </button>
 

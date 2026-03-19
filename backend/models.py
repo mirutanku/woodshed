@@ -169,6 +169,7 @@ class TunePlayback(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     tune_id = Column(Integer, ForeignKey("tunes.id"), nullable=False)
     date = Column(Date, nullable=False)
+    play_seconds = Column(Integer, default=0, nullable=False, server_default="0")
 
     user = relationship("User", back_populates="tune_playbacks")
     tune = relationship("Tune")
