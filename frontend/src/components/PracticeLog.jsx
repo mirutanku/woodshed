@@ -304,14 +304,14 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged, onSelectTune }) {
   const [streak, setStreak] = useState(0)
   const [mostPracticed, setMostPracticed] = useState([])
-  const [mostPracticedPeriod, setMostPracticedPeriod] = useState('all')
+  const [mostPracticedMode, setMostPracticedMode] = useState('sessions')
   const [weeklyHours, setWeeklyHours] = useState(null)
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
-    api.get(`/most-practiced?period=${mostPracticedPeriod}&client_date=${localToday()}`).then(res => setMostPracticed(res.data)).catch(() => {})
+    api.get(`/most-practiced?mode=${mostPracticedMode}`).then(res => setMostPracticed(res.data)).catch(() => {})
     api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
-  }, [sessions, mostPracticedPeriod])
+  }, [sessions, mostPracticedMode])
 
   return (
     <div className="practice-summary fade-in">
@@ -341,23 +341,32 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
           <div className="summary-section">
             <div className="summary-section-header">
               <h3>Most Practiced</h3>
-              <select
-                className="sort-select"
-                value={mostPracticedPeriod}
-                onChange={e => setMostPracticedPeriod(e.target.value)}
-              >
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="year">This Year</option>
-                <option value="all">All Time</option>
-              </select>
+              <div className="toggle-group">
+                <button
+                  className={`toggle-btn ${mostPracticedMode === 'sessions' ? 'active' : ''}`}
+                  onClick={() => setMostPracticedMode('sessions')}
+                >
+                  Sessions
+                </button>
+                <button
+                  className={`toggle-btn ${mostPracticedMode === 'time' ? 'active' : ''}`}
+                  onClick={() => setMostPracticedMode('time')}
+                >
+                  Time
+                </button>
+              </div>
             </div>
             <div className="summary-tune-list">
               {mostPracticed.map(tp => (
                 <div key={tp.tune_id} className="summary-tune-row" style={{ cursor: onSelectTune ? 'pointer' : 'default' }} onClick={() => onSelectTune && onSelectTune(tp.tune_id)}>
                   <span className="summary-tune-title entry-tune-link">{tp.title}</span>
                   <span className="summary-tune-count">
-                    {tp.sessions} session{tp.sessions !== 1 ? 's' : ''}
+                    {tp.sessions !== undefined
+                      ? `${tp.sessions} session${tp.sessions !== 1 ? 's' : ''}`
+                      : tp.seconds >= 3600
+                        ? `${Math.round(tp.seconds / 360) / 10}h`
+                        : `${Math.round(tp.seconds / 60)}m`
+                    }
                   </span>
                 </div>
               ))}
