@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import ConfirmDialog from './ConfirmDialog'
 
 function Settings({ onLogout }) {
   const toast = useToast()
@@ -26,7 +27,6 @@ function Settings({ onLogout }) {
   const [saving, setSaving] = useState(false)
 
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [deletePassword, setDeletePassword] = useState('')
 
   // Fetch current user on mount
   useEffect(() => {
@@ -177,10 +177,10 @@ function Settings({ onLogout }) {
 
   // --- Delete Account ---
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(password) {
     setSaving(true)
     try {
-      await api.delete('/users/me', { data: { password: deletePassword || null } })
+      await api.delete('/users/me', { data: { password: password || null } })
       localStorage.removeItem('token')
       window.location.reload()
     } catch (err) {
@@ -360,49 +360,26 @@ function Settings({ onLogout }) {
       {/* Delete Account */}
       <div className="card mb-lg">
         <h3 style={{ marginBottom: 'var(--space-md)', color: 'var(--color-danger)' }}>Delete Account</h3>
-        {confirmDelete ? (
-          <div>
-            <p className="text-sm" style={{ marginBottom: 'var(--space-md)', lineHeight: 1.6 }}>
-              This will permanently delete your account and all your data — tunes, recordings, practice history, everything. This cannot be undone.
-            </p>
-            {user?.has_password && (
-              <div className="form-group mb-md">
-                <label>Enter your password to confirm</label>
-                <input
-                  type="password"
-                  value={deletePassword}
-                  onChange={e => setDeletePassword(e.target.value)}
-                  placeholder="Your password"
-                  autoFocus
-                />
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-              <button
-                className="btn-danger btn-sm"
-                onClick={handleDeleteAccount}
-                disabled={saving || (user?.has_password && !deletePassword)}
-              >
-                {saving ? '...' : 'Yes, delete my account'}
-              </button>
-              <button className="btn-ghost btn-sm" onClick={() => {
-                setConfirmDelete(false)
-                setDeletePassword('')
-              }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            className="btn-ghost btn-sm"
-            style={{ color: 'var(--color-danger)' }}
-            onClick={() => setConfirmDelete(true)}
-          >
-            Delete my account
-          </button>
-        )}
+        <button
+          className="btn-ghost btn-sm"
+          style={{ color: 'var(--color-danger)' }}
+          onClick={() => setConfirmDelete(true)}
+        >
+          Delete my account
+        </button>
       </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Delete Account"
+          message="This will permanently delete your account and all your data — tunes, recordings, practice history, everything. This cannot be undone."
+          confirmLabel={saving ? '...' : 'Delete my account'}
+          danger
+          requirePassword={user?.has_password}
+          onConfirm={(password) => handleDeleteAccount(password)}
+          onCancel={() => { setConfirmDelete(false); setDeletePassword('') }}
+        />
+      )}
     </div>
   )
 }

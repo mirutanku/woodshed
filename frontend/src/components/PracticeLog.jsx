@@ -4,6 +4,7 @@ import { useToast } from './Toast'
 import SessionForm from './SessionForm'
 import PracticeProfile from './PracticeProfile'
 import TodayView from './TodayView'
+import ConfirmDialog from './ConfirmDialog'
 import { FOCUS_OPTIONS } from '../constants'
 import { localToday } from '../dateUtils'
 import './PracticeLog.css'
@@ -48,6 +49,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   // Filter to upcoming (today or later) and sort soonest first
   const upcoming = useMemo(() => {
@@ -319,7 +321,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                   <button
                     className="btn-ghost btn-action"
                     style={{ color: 'var(--color-danger)' }}
-                    onClick={() => onDelete(p.id)}
+                    onClick={() => setConfirmDeleteId(p.id)}
                   >
                     ×
                   </button>
@@ -328,6 +330,16 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
             )
           ))}
         </div>
+      )}
+    {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete Performance"
+          message="Are you sure you want to remove this performance?"
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => { onDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   )
@@ -775,24 +787,14 @@ function PracticeLog({ onSelectTune }) {
                               >
                                 ✎
                               </button>
-                              {confirmDeleteSession === session.id ? (
-                                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                                  <span className="text-sm text-dim">Delete?</span>
-                                  <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
-                                    onClick={() => handleDeleteSession(session.id)}>Yes</button>
-                                  <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}
-                                    onClick={() => setConfirmDeleteSession(null)}>No</button>
-                                </div>
-                              ) : (
-                                <button
-                                  className="btn-ghost btn-action"
-                                  style={{ color: 'var(--color-danger)' }}
-                                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
-                                  title="Delete session"
-                                >
-                                  ×
-                                </button>
-                              )}
+                              <button
+                                className="btn-ghost btn-action"
+                                style={{ color: 'var(--color-danger)' }}
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteSession(session.id) }}
+                                title="Delete session"
+                              >
+                                ×
+                              </button>
                               <span
                                 className="text-dim"
                                 style={{ cursor: 'pointer' }}
@@ -879,22 +881,13 @@ function PracticeLog({ onSelectTune }) {
                                   >
                                     ✎
                                   </button>
-                                  {confirmDeleteEntry === entry.id ? (
-                                    <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                                      <button className="btn-danger btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
-                                        onClick={() => handleDeleteEntry(session.id, entry.id)}>Yes</button>
-                                      <button className="btn-ghost btn-sm" style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}
-                                        onClick={() => setConfirmDeleteEntry(null)}>No</button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      className="btn-ghost btn-action"
-                                      onClick={() => setConfirmDeleteEntry(entry.id)}
-                                      title="Delete entry"
-                                    >
-                                      ×
-                                    </button>
-                                  )}
+                                  <button
+                                    className="btn-ghost btn-action"
+                                    onClick={() => setConfirmDeleteEntry(entry.id)}
+                                    title="Delete entry"
+                                  >
+                                    ×
+                                  </button>
                                 </div>
                               )
                             ))}
@@ -982,6 +975,32 @@ function PracticeLog({ onSelectTune }) {
             </div>
           )}
         </>
+      )}
+    {confirmDeleteSession && (
+        <ConfirmDialog
+          title="Delete Session"
+          message="Are you sure you want to delete this practice session? This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => handleDeleteSession(confirmDeleteSession)}
+          onCancel={() => setConfirmDeleteSession(null)}
+        />
+      )}
+
+      {confirmDeleteEntry && (
+        <ConfirmDialog
+          title="Delete Entry"
+          message="Are you sure you want to remove this entry from the session?"
+          confirmLabel="Remove"
+          danger
+          onConfirm={() => {
+            const entry = sessions
+              .flatMap(s => s.entries.map(e => ({ ...e, sessionId: s.id })))
+              .find(e => e.id === confirmDeleteEntry)
+            if (entry) handleDeleteEntry(entry.sessionId, confirmDeleteEntry)
+          }}
+          onCancel={() => setConfirmDeleteEntry(null)}
+        />
       )}
     </div>
   )

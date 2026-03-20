@@ -7,6 +7,7 @@ import RecordingUpload from './RecordingUpload'
 import SegmentList from './SegmentList'
 import AudioPlayer from './AudioPlayer'
 import KeyPicker from './KeyPicker'
+import ConfirmDialog from './ConfirmDialog'
 import useVisibilityTimer from '../useVisibilityTimer'
 import { localToday } from '../dateUtils'
 import { parseKey, buildKey } from '../keyConstants'
@@ -265,15 +266,7 @@ function TuneDetail({ tuneId, onBack }) {
             <div className="tune-detail-actions">
               <span className={`status-badge ${tune.status}`}>{tune.status}</span>
               <button className="btn-sm" onClick={() => setEditing(true)}>Edit</button>
-              {confirmDelete ? (
-                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                  <span className="text-sm text-dim">Sure?</span>
-                  <button className="btn-danger btn-sm" onClick={handleDelete}>Yes, Delete</button>
-                  <button className="btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>No</button>
-                </div>
-              ) : (
-                <button className="btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>Delete</button>
-              )}
+              <button className="btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>Delete</button>
             </div>
           </div>
 
@@ -337,23 +330,13 @@ function TuneDetail({ tuneId, onBack }) {
                   </div>
                   <div className="recording-actions">
                     <span className="text-dim">{isExpanded ? '▾' : '▸'}</span>
-                    {confirmDeleteRecording === rec.id ? (
-                      <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <span className="text-sm text-dim">Sure?</span>
-                        <button className="btn-danger btn-sm" onClick={() => handleDeleteRecording(rec.id)}>Yes</button>
-                        <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteRecording(null)}>No</button>
-                      </div>
-                    ) : (
-                      <button
-                        className="btn-ghost btn-action"
-                        style={{ color: 'var(--color-danger)' }}
-                        onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
-                      >
-                        ×
-                      </button>
-                    )}
+                    <button
+                      className="btn-ghost btn-action"
+                      style={{ color: 'var(--color-danger)' }}
+                      onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
                 {isExpanded && (
@@ -398,6 +381,26 @@ function TuneDetail({ tuneId, onBack }) {
             + Add Recording
           </button>
         )
+      )}
+      {confirmDeleteRecording && (
+        <ConfirmDialog
+          title="Delete Recording"
+          message="Are you sure you want to delete this recording? This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => handleDeleteRecording(confirmDeleteRecording)}
+          onCancel={() => setConfirmDeleteRecording(null)}
+        />
+      )}
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Delete Tune"
+          message={`Are you sure you want to delete "${tune.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
       )}
     </div>
   )

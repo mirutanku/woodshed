@@ -43,6 +43,7 @@ class Tune(Base):
     user = relationship("User", back_populates="tunes")
     recordings = relationship("Recording", back_populates="tune", cascade="all, delete-orphan") # deleting a tune also deletes its associated recordings
     practice_entries = relationship("PracticeEntry", back_populates="tune")
+    playbacks = relationship("TunePlayback", back_populates="tune", cascade="all, delete-orphan")
 
 class Recording(Base):
     __tablename__ = "recordings"
@@ -172,7 +173,7 @@ class TunePlayback(Base):
     play_seconds = Column(Integer, default=0, nullable=False, server_default="0")
 
     user = relationship("User", back_populates="tune_playbacks")
-    tune = relationship("Tune")
+    tune = relationship("Tune", back_populates="playbacks")
 
     __table_args__ = (
         UniqueConstraint('user_id', 'tune_id', 'date', name='unique_user_tune_date'),

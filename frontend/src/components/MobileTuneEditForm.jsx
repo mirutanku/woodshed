@@ -2,6 +2,7 @@ import { useState } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
+import ConfirmDialog from './ConfirmDialog'
 import { parseKey, buildKey } from '../keyConstants'
 
 function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecording, onCancel }) {
@@ -127,15 +128,7 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
           {recordings.map(rec => (
             <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-xs) 0' }}>
               <span className="text-sm">{rec.artist || rec.original_name}</span>
-              {confirmDeleteRecording === rec.id ? (
-                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-                  <span className="text-sm text-dim">You sure?</span>
-                  <button className="btn-danger btn-sm" onClick={() => handleDeleteRecording(rec.id)}>Yes</button>
-                  <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteRecording(null)}>No</button>
-                </div>
-              ) : (
-                <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete Recording</button>
-              )}
+              <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete Recording</button>
             </div>
           ))}
         </div>
@@ -143,16 +136,28 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', alignItems: 'center' }}>
         <button className="btn-primary btn-sm" onClick={handleSave}>Save</button>
         <button className="btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
-        {confirmDeleteTune ? (
-          <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center', marginLeft: 'auto' }}>
-            <span className="text-sm text-dim">You sure?</span>
-            <button className="btn-danger btn-sm" onClick={handleDelete}>Yes</button>
-            <button className="btn-ghost btn-sm" onClick={() => setConfirmDeleteTune(false)}>No</button>
-          </div>
-        ) : (
-          <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteTune(true)} style={{ marginLeft: 'auto' }}>Delete Tune</button>
-        )}
+        <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteTune(true)} style={{ marginLeft: 'auto' }}>Delete Tune</button>
       </div>
+    {confirmDeleteTune && (
+        <ConfirmDialog
+          title="Delete Tune"
+          message={`Are you sure you want to delete "${tune.title}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDeleteTune(false)}
+        />
+      )}
+      {confirmDeleteRecording && (
+        <ConfirmDialog
+          title="Delete Recording"
+          message="Are you sure you want to delete this recording? This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => handleDeleteRecording(confirmDeleteRecording)}
+          onCancel={() => setConfirmDeleteRecording(null)}
+        />
+      )}
     </div>
   )
 }

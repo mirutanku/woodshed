@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import SetlistChecklist from './SetlistChecklist'
+import ConfirmDialog from './ConfirmDialog'
 import { localToday } from '../dateUtils'
 import './SetlistManager.css'
 
@@ -23,7 +24,8 @@ function SetlistManager({onSelectTune}) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [sortBy, setSortBy] = useState(sessionStorage.getItem('setlistSort') || 'created')
-
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  
   useEffect(() => {
     fetchSetlists()
     fetchTunes()
@@ -379,7 +381,7 @@ function SetlistManager({onSelectTune}) {
                     <button
                       className="btn-ghost btn-action"
                       style={{ color: 'var(--color-danger)' }}
-                      onClick={e => { e.stopPropagation(); handleDelete(setlist.id) }}
+                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(setlist.id) }}
                     >
                       ×
                     </button>
@@ -405,6 +407,16 @@ function SetlistManager({onSelectTune}) {
             )
           })}
         </div>
+      )}
+    {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete Setlist"
+          message="Are you sure you want to delete this setlist? This cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null) }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   )
