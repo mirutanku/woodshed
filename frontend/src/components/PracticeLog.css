@@ -520,6 +520,14 @@
 margin-top: 0;
 }
 
+.streak-nudge {
+  font-size: 0.65rem;
+  color: var(--color-amber);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: var(--space-xs);
+}
+
 /* --- Today View --- */
 
 .today-view {

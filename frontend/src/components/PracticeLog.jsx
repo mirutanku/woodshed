@@ -383,12 +383,10 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
               : '—'
             }
           </span>
-          <span className="summary-label">
-            {streakData.streak > 0 && !streakData.practiced_today
-              ? 'Streak — practice today!'
-              : 'Streak'
-            }
-          </span>
+          <span className="summary-label">Streak</span>
+          {streakData.streak > 0 && !streakData.practiced_today && (
+            <span className="streak-nudge">practice today!</span>
+          )}
         </div>
       </div>
 
