@@ -154,7 +154,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 
   function daysUntil(dateStr) {
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    today.setHours(12, 0, 0, 0)
     const target = new Date(dateStr + 'T12:00:00')
     const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24))
     if (diff === 0) return 'today'
