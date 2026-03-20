@@ -1140,6 +1140,8 @@ def get_streak(
     db: Session = Depends(get_db),
     client_date: str = None,
 ):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
     dates = (
         db.query(CheckIn.date)
         .filter(CheckIn.user_id == current_user.id)
@@ -1147,21 +1149,18 @@ def get_streak(
         .all()
     )
     if not dates:
-        return {"streak": 0}
+        return {"streak": 0, "practiced_today": False}
 
+    date_set = {d[0] for d in dates}
+    practiced_today = today in date_set
+
+    # Count streak starting from today if practiced, otherwise from yesterday
     streak = 0
-    expected = date.fromisoformat(client_date) if client_date else date.today()
-    for (d,) in dates:
-        if d == expected:
-            streak += 1
-            expected -= timedelta(days=1)
-        elif d < expected:
-            break
+    expected = today if practiced_today else today - timedelta(days=1)
 
-    practiced_today = db.query(CheckIn).filter(
-        CheckIn.user_id == current_user.id,
-        CheckIn.date == expected,
-    ).first() is not None
+    while expected in date_set:
+        streak += 1
+        expected -= timedelta(days=1)
 
     return {"streak": streak, "practiced_today": practiced_today}
 
