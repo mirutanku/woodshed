@@ -1158,7 +1158,12 @@ def get_streak(
         elif d < expected:
             break
 
-    return {"streak": streak}
+    practiced_today = db.query(CheckIn).filter(
+        CheckIn.user_id == current_user.id,
+        CheckIn.date == expected,
+    ).first() is not None
+
+    return {"streak": streak, "practiced_today": practiced_today}
 
 @app.post("/api/tunes/{tune_id}/playback")
 def record_playback(

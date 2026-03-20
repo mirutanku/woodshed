@@ -351,9 +351,10 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [mostPracticed, setMostPracticed] = useState([])
   const [mostPracticedMode, setMostPracticedMode] = useState('sessions')
   const [weeklyHours, setWeeklyHours] = useState(null)
+  const [streakData, setStreakData] = useState({ streak: 0, practiced_today: false })
 
   useEffect(() => {
-    api.get(`/streak?client_date=${localToday()}`).then(res => setStreak(res.data.streak)).catch(() => {})
+    api.get(`/streak?client_date=${localToday()}`).then(res => setStreakData(res.data)).catch(() => {})
     api.get(`/most-practiced?mode=${mostPracticedMode}`).then(res => setMostPracticed(res.data)).catch(() => {})
     api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
   }, [sessions, mostPracticedMode])
@@ -376,8 +377,18 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
           </div>
         )}
         <div className="summary-stat">
-          <span className="summary-number">{streak > 0 ? `${streak}d` : '—'}</span>
-          <span className="summary-label">Streak</span>
+          <span className="summary-number">
+            {streakData.streak > 0
+              ? `${streakData.streak}d`
+              : '—'
+            }
+          </span>
+          <span className="summary-label">
+            {streakData.streak > 0 && !streakData.practiced_today
+              ? 'Streak — practice today!'
+              : 'Streak'
+            }
+          </span>
         </div>
       </div>
 
