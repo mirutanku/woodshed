@@ -160,6 +160,34 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
     return `in ${diff} days`
   }
 
+  function googleCalendarUrl(p) {
+    const dateStr = p.date.replace(/-/g, '')
+    const timeStr = p.time ? p.time.replace(':', '') + '00' : ''
+    
+    // If we have a time, use datetime format; otherwise all-day event
+    let dates
+    if (timeStr) {
+      const start = `${dateStr}T${timeStr}`
+      // Default to 2 hour event
+      const startDate = new Date(`${p.date}T${p.time}`)
+      const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000)
+      const endStr = endDate.toISOString().replace(/[-:]/g, '').split('.')[0]
+      dates = `${start}/${endStr}`
+    } else {
+      dates = `${dateStr}/${dateStr}`
+    }
+
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: p.title,
+      dates,
+    })
+    if (p.venue) params.set('location', p.venue)
+    if (p.notes) params.set('details', p.notes)
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`
+  }
+
   return (
     <div className="summary-section">
       <div className="summary-section-header">
@@ -284,6 +312,16 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                     <span className="perf-countdown">{daysUntil(p.date)}</span>
                   </span>
                 </div>
+                <a
+                  href={googleCalendarUrl(p)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ghost btn-action"
+                  title="Add to Google Calendar"
+                  onClick={e => e.stopPropagation()}
+                >
+                  📅
+                </a>
                 <button
                   className="btn-ghost btn-action"
                   style={{ color: 'var(--color-danger)' }}
