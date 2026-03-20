@@ -312,23 +312,18 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                     <span className="perf-countdown">{daysUntil(p.date)}</span>
                   </span>
                 </div>
-                <a
-                  href={googleCalendarUrl(p)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-ghost btn-action"
-                  title="Add to Google Calendar"
-                  onClick={e => e.stopPropagation()}
-                >
-                  📅
-                </a>
-                <button
-                  className="btn-ghost btn-action"
-                  style={{ color: 'var(--color-danger)' }}
-                  onClick={() => onDelete(p.id)}
-                >
-                  ×
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+                  <a href={googleCalendarUrl(p)} target="_blank" rel="noopener noreferrer" className="btn-ghost btn-action" title="Add to Google Calendar" onClick={e => e.stopPropagation()}>
+                    📅
+                  </a>
+                  <button
+                    className="btn-ghost btn-action"
+                    style={{ color: 'var(--color-danger)' }}
+                    onClick={() => onDelete(p.id)}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )
           ))}
