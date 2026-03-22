@@ -315,8 +315,7 @@ def record_play_time(
     ).first()
 
     if not playback:
-        playback = TunePlayback(user_id=current_user.id, tune_id=tune.id, date=today, play_seconds=0)
-        db.add(playback)
+        return {"play_seconds": 0}
 
     playback.play_seconds += seconds
     db.commit()
