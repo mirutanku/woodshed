@@ -6,6 +6,7 @@ import PracticeProfile from './PracticeProfile'
 import TodayView from './TodayView'
 import ConfirmDialog from './ConfirmDialog'
 import { FOCUS_OPTIONS } from '../constants'
+import { FUNDAMENTALS_OPTIONS } from '../constants'
 import { localToday } from '../dateUtils'
 import './PracticeLog.css'
 
@@ -352,12 +353,34 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [mostPracticedMode, setMostPracticedMode] = useState('sessions')
   const [weeklyHours, setWeeklyHours] = useState(null)
   const [streakData, setStreakData] = useState({ streak: 0, practiced_today: false })
+  const [recentFundamentals, setRecentFundamentals] = useState([])
+  const [loggedFundamentals, setLoggedFundamentals] = useState([])
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreakData(res.data)).catch(() => {})
     api.get(`/most-practiced?mode=${mostPracticedMode}`).then(res => setMostPracticed(res.data)).catch(() => {})
     api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
+    api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
+    api.get(`/today?client_date=${localToday()}`).then(res => {
+      if (res.data.fundamentals) setLoggedFundamentals(res.data.fundamentals)
+    }).catch(() => {})
   }, [sessions, mostPracticedMode])
+
+  async function handleToggleFundamental(category) {
+    const isLogged = loggedFundamentals.includes(category)
+    try {
+      if (isLogged) {
+        await api.delete(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
+        setLoggedFundamentals(prev => prev.filter(c => c !== category))
+      } else {
+        await api.post(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
+        setLoggedFundamentals(prev => [...prev, category])
+      }
+      api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
+    } catch (err) {
+      console.error('Failed to toggle fundamental:', err)
+    }
+  }
 
   return (
     <div className="practice-summary fade-in">
@@ -436,6 +459,35 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
           onEdit={onEditPerformance}
           onSetlistsChanged={onSetlistsChanged}
         />
+
+        {recentFundamentals.length > 0 && (
+          <p className="recent-fundamentals">
+            Recent fundamentals: {recentFundamentals.map((f, i) => (
+              <span key={f.category}>
+                {i > 0 && ' · '}
+                {f.category.charAt(0).toUpperCase() + f.category.slice(1)} ({f.count})
+              </span>
+            ))}
+          </p>
+        )}
+
+        <div className="fundamentals-quick-log">
+          <span className="fundamentals-quick-log-label">Log fundamentals</span>
+          <div className="fundamentals-grid">
+            {FUNDAMENTALS_OPTIONS.map(category => {
+              const isLogged = loggedFundamentals.includes(category)
+              return (
+                <button
+                  key={category}
+                  className={`fundamental-chip ${isLogged ? 'checked' : ''}`}
+                  onClick={() => handleToggleFundamental(category)}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -789,6 +841,11 @@ function PracticeLog({ onSelectTune }) {
                               <span className="text-sm text-dim">
                                 {session.entries.length} tune{session.entries.length !== 1 ? 's' : ''}
                               </span>
+                              {session.fundamentals && session.fundamentals.length > 0 && (
+                                <span className="text-sm text-dim">
+                                  {session.fundamentals.length} fundamental{session.fundamentals.length !== 1 ? 's' : ''}
+                                </span>
+                              )}
                               <button
                                 className="btn-ghost btn-action"
                                 onClick={(e) => { e.stopPropagation(); startEditSession(session) }}
@@ -815,7 +872,7 @@ function PracticeLog({ onSelectTune }) {
                           </div>
                         )}
 
-                        {expandedSession === session.id && session.entries.length > 0 && editingSessionId !== session.id && (
+                        {expandedSession === session.id && (session.entries.length > 0 || (session.fundamentals && session.fundamentals.length > 0)) && editingSessionId !== session.id && (
                           <div className="session-entries fade-in">
                             {session.entries.map(entry => (
                               editingEntryId === entry.id ? (
@@ -973,6 +1030,16 @@ function PracticeLog({ onSelectTune }) {
                               >
                                 + Add Entry
                               </button>
+                            )}
+
+                            {session.fundamentals && session.fundamentals.length > 0 && (
+                              <div className="fundamentals-display">
+                                {session.fundamentals.map(f => (
+                                  <span key={f.id} className="fundamental-chip checked">
+                                    {f.category.charAt(0).toUpperCase() + f.category.slice(1)}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
                         )}

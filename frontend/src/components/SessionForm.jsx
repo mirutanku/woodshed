@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { localToday } from '../dateUtils'
 import { FOCUS_OPTIONS } from '../constants'
+import { FUNDAMENTALS_OPTIONS } from '../constants'
 import './PracticeLog.css'
 
 function StarRating({ value, onChange }) {
@@ -27,6 +28,8 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
   const [checked, setChecked] = useState({})       // { tuneId: true }
   const [details, setDetails] = useState({})        // { tuneId: { focus, tempo_practiced, duration_minutes, notes, rating } }
   const [expanded, setExpanded] = useState({})       // { tuneId: true } — which detail panels are open
+
+  const [checkedFundamentals, setCheckedFundamentals] = useState([])
 
   function toggleTune(tuneId) {
     setChecked(prev => {
@@ -62,6 +65,14 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
     })
   }
 
+  function toggleFundamental(category) {
+    setCheckedFundamentals(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }
+
   function updateDetail(tuneId, field, value) {
     setDetails(prev => ({
       ...prev,
@@ -83,7 +94,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (checkedCount === 0) return
+    if (checkedCount === 0 && checkedFundamentals.length === 0) return
 
     const entries = Object.keys(checked).map(tuneId => {
       const d = details[tuneId] || {}
@@ -102,6 +113,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
       date: sessionDate,
       notes: sessionNotes.trim() || null,
       entries,
+      fundamentals: checkedFundamentals.map(category => ({ category })),
     })
   }
 
@@ -235,12 +247,31 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
           </div>
         )}
 
+        <hr className="divider" />
+
+        <div className="session-form-section">
+          <h3 className="session-form-section-header">Fundamentals</h3>
+          <div className="fundamentals-grid">
+            {FUNDAMENTALS_OPTIONS.map(category => (
+              <label key={category} className={`fundamental-chip ${checkedFundamentals.includes(category) ? 'checked' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={checkedFundamentals.includes(category)}
+                  onChange={() => toggleFundamental(category)}
+                  style={{ display: 'none' }}
+                />
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="modal-actions" style={{ marginTop: 'var(--space-lg)' }}>
           <button type="button" className="btn-ghost" onClick={onCancel}>
             Cancel
           </button>
-          <button type="submit" className="btn-primary" disabled={saving || checkedCount === 0}>
-            {saving ? 'Saving...' : `Log Session (${checkedCount})`}
+          <button type="submit" className="btn-primary" disabled={saving || (checkedCount === 0 && checkedFundamentals.length === 0)}>
+            {saving ? 'Saving...' : `Log Session (${checkedCount + checkedFundamentals.length})`}
           </button>
         </div>
       </form>

@@ -212,6 +212,19 @@ class SegmentResponse(BaseModel):
         from_attributes = True
 
 
+# --- Fundamentals ---
+
+class FundamentalsEntryCreate(BaseModel):
+    category: str
+
+class FundamentalsEntryResponse(BaseModel):
+    id: int
+    category: str
+
+    class Config:
+        from_attributes = True
+
+
 # --- Practice Sessions ---
 
 class PracticeEntryValidators(BaseModel):
@@ -260,21 +273,25 @@ class PracticeSessionCreate(BaseModel):
     date: date
     duration_minutes: int | None = None
     notes: str | None = None
-    entries: list[PracticeEntryCreate] = [] # a practice session is comprised of practice entries
+    entries: list[PracticeEntryCreate] = []
+    fundamentals: list[FundamentalsEntryCreate] = []
 
 class PracticeSessionUpdate(BaseModel):
     date: str | None = None
     duration_minutes: int | None = None
     notes: str | None = None
+    fundamentals: list[FundamentalsEntryCreate] | None = None
 
 class PracticeSessionResponse(BaseModel):
     id: int
     date: date
     duration_minutes: int | None
     notes: str | None
-    created_at: datetime
+    is_quick_log: bool | None = None
     entries: list[PracticeEntryResponse] = []
-    
+    fundamentals: list[FundamentalsEntryResponse] = []
+    created_at: datetime | None = None
+
     class Config:
         from_attributes = True
 

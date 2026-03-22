@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func as sql_func
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Tune, PracticeSession, PracticeEntry, CheckIn, TunePlayback
+from models import Tune, PracticeSession, PracticeEntry, CheckIn, TunePlayback, FundamentalsEntry
 from schemas import (
     PracticeSessionCreate, PracticeSessionResponse, PracticeSessionUpdate,
     PracticeEntryCreate, PracticeEntryResponse, PracticeEntryUpdate,
@@ -37,6 +37,7 @@ def get_sessions(
         results.append({
             **session.__dict__,
             "entries": entry_responses,
+            "fundamentals": [{"id": f.id, "category": f.category} for f in session.fundamentals],
         })
     return results
 
@@ -69,6 +70,9 @@ def create_session(
         )
         db.add(db_entry)
 
+    for fund in session.fundamentals:
+        db.add(FundamentalsEntry(session_id=db_session.id, category=fund.category))
+
     session_date = session.date
     existing_checkin = db.query(CheckIn).filter(
         CheckIn.user_id == current_user.id,
@@ -86,7 +90,9 @@ def create_session(
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
         })
-    return {**db_session.__dict__, "entries": entry_responses}
+    
+    fund_responses = [{"id": f.id, "category": f.category} for f in db_session.fundamentals]
+    return {**db_session.__dict__, "entries": entry_responses, "fundamentals": fund_responses}
 
 
 @router.patch("/sessions/{session_id}", response_model=PracticeSessionResponse)
@@ -103,6 +109,13 @@ def update_session(
         raise HTTPException(status_code=404, detail="Session not found")
     for key, value in updates.model_dump(exclude_unset=True).items():
         setattr(session, key, value)
+
+    if updates.fundamentals is not None:
+        # Clear existing and replace
+        db.query(FundamentalsEntry).filter(FundamentalsEntry.session_id == session.id).delete()
+        for fund in updates.fundamentals:
+            db.add(FundamentalsEntry(session_id=session.id, category=fund.category))
+    
     db.commit()
     db.refresh(session)
 
@@ -112,7 +125,8 @@ def update_session(
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
         })
-    return {**session.__dict__, "entries": entry_responses}
+    fund_responses = [{"id": f.id, "category": f.category} for f in session.fundamentals]
+    return {**session.__dict__, "entries": entry_responses, "fundamentals": fund_responses}
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
@@ -356,6 +370,90 @@ def quick_log(
     return {"already_logged": False, "session_id": session.id}
 
 
+@router.post("/quick-log-fundamental")
+def quick_log_fundamental(
+    category: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
+    # Find today's quick-log session
+    session = (
+        db.query(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+            PracticeSession.is_quick_log == True,
+        )
+        .first()
+    )
+
+    if not session:
+        session = PracticeSession(user_id=current_user.id, date=today, is_quick_log=True)
+        db.add(session)
+        db.flush()
+
+    # Check if already logged
+    existing = db.query(FundamentalsEntry).filter(
+        FundamentalsEntry.session_id == session.id,
+        FundamentalsEntry.category == category,
+    ).first()
+
+    if existing:
+        return {"already_logged": True, "session_id": session.id}
+
+    db.add(FundamentalsEntry(session_id=session.id, category=category))
+    db.commit()
+
+    # Also create a check-in for the streak
+    existing_checkin = db.query(CheckIn).filter(
+        CheckIn.user_id == current_user.id,
+        CheckIn.date == today,
+    ).first()
+    if not existing_checkin:
+        db.add(CheckIn(user_id=current_user.id, date=today))
+        db.commit()
+
+    return {"already_logged": False, "session_id": session.id}
+
+
+@router.delete("/quick-log-fundamental")
+def remove_quick_log_fundamental(
+    category: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
+    session = (
+        db.query(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+            PracticeSession.is_quick_log == True,
+        )
+        .first()
+    )
+
+    if not session:
+        return {"removed": False}
+
+    entry = db.query(FundamentalsEntry).filter(
+        FundamentalsEntry.session_id == session.id,
+        FundamentalsEntry.category == category,
+    ).first()
+
+    if not entry:
+        return {"removed": False}
+
+    db.delete(entry)
+    db.commit()
+    return {"removed": True}
+
+
 @router.get("/most-practiced")
 def get_most_practiced(
     current_user=Depends(get_current_user),
@@ -435,6 +533,27 @@ def get_most_practiced(
         return combined[:5]
 
 
+@router.get("/recent-fundamentals")
+def get_recent_fundamentals(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    cutoff = date.today() - timedelta(days=14)
+    results = (
+        db.query(FundamentalsEntry.category, sql_func.count(FundamentalsEntry.id))
+        .join(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date >= cutoff,
+        )
+        .group_by(FundamentalsEntry.category)
+        .order_by(sql_func.count(FundamentalsEntry.id).desc())
+        .limit(4)
+        .all()
+    )
+    return [{"category": cat, "count": count} for cat, count in results]
+
+
 @router.get("/today")
 def get_today(
     current_user=Depends(get_current_user),
@@ -469,6 +588,19 @@ def get_today(
         if focus:
             logged_by_tune[tune_id].append(focus)
 
+    # Fundamentals logged today
+    fundamentals_today = (
+        db.query(FundamentalsEntry.category)
+        .join(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+        )
+        .distinct()
+        .all()
+    )
+    fundamentals_list = [f[0] for f in fundamentals_today]
+
     all_tune_ids = played_ids | set(logged_by_tune.keys())
 
     if not all_tune_ids:
@@ -489,7 +621,7 @@ def get_today(
 
     result.sort(key=lambda x: x["title"])
 
-    return {"tunes": result, "date": today.isoformat()}
+    return {"tunes": result, "fundamentals": fundamentals_list, "date": today.isoformat()}
 
 
 @router.get("/weekly-hours")

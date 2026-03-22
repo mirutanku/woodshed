@@ -90,6 +90,7 @@ class PracticeSession(Base):
 
     user = relationship("User", back_populates="sessions")
     entries = relationship("PracticeEntry", back_populates="session", cascade="all, delete-orphan")    #deleting a session also deletes its associated entries
+    fundamentals = relationship("FundamentalsEntry", back_populates="session", cascade="all, delete-orphan")
 
 class PracticeEntry(Base):
     __tablename__ = "practice_entries"
@@ -178,3 +179,12 @@ class TunePlayback(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'tune_id', 'date', name='unique_user_tune_date'),
     )
+
+class FundamentalsEntry(Base):
+    __tablename__ = "fundamentals_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("practice_sessions.id", ondelete="CASCADE"), nullable=False)
+    category = Column(String, nullable=False)
+
+    session = relationship("PracticeSession", back_populates="fundamentals")

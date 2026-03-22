@@ -12,7 +12,7 @@ function TodayView({ onSelectTune }) {
       .catch(() => {})
   }, [])
 
-  if (!data || data.tunes.length === 0) return null
+  if (!data || (data.tunes.length === 0 && (!data.fundamentals || data.fundamentals.length === 0))) return null
 
   return (
     <div className="today-view">
@@ -30,6 +30,11 @@ function TodayView({ onSelectTune }) {
             </span>
             <span className="today-chip-title">{tune.title}</span>
           </button>
+        ))}
+        {data.fundamentals && data.fundamentals.map(f => (
+          <span key={f} className="today-chip fundamental">
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </span>
         ))}
       </div>
     </div>

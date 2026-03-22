@@ -596,6 +596,15 @@ margin-top: 0;
   white-space: nowrap;
 }
 
+.today-chip.fundamental {
+  border-color: var(--color-success-dim);
+  color: var(--color-success);
+}
+
+.today-chip.fundamental:hover {
+  background: var(--color-success-dim);
+}
+
 .toggle-group {
   display: flex;
   border: 1px solid var(--color-border);
@@ -617,6 +626,82 @@ margin-top: 0;
   background: var(--color-bg-raised);
   color: var(--color-text);
   font-weight: 600;
+}
+
+/* --- Fundamentals --- */
+
+.session-form-section-header {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.fundamentals-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.fundamental-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.fundamental-chip:hover {
+  border-color: var(--color-amber-dim);
+  color: var(--color-text);
+}
+
+.fundamental-chip.checked {
+  background: var(--color-amber-glow);
+  border-color: var(--color-amber-dim);
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+.fundamentals-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-sm);
+}
+
+.recent-fundamentals {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  padding-top: var(--space-md);
+}
+
+.fundamentals-quick-log {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.fundamentals-quick-log-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  display: block;
+  margin-bottom: var(--space-sm);
 }
 
 /* --- Responsive --- */
