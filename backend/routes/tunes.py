@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func as sql_func
 from sqlalchemy.orm import Session
@@ -6,8 +7,10 @@ from models import Tune, PracticeSession, PracticeEntry, SetlistEntry
 from schemas import TuneCreate, TuneUpdate, TuneResponse
 from routes.deps import get_current_user, get_user_tune
 
-router = APIRouter(prefix="/api", tags=["tunes"])
 
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+
+router = APIRouter(prefix="/api", tags=["tunes"])
 
 @router.get("/tunes", response_model=list[TuneResponse])
 def get_tunes(
@@ -119,6 +122,11 @@ def delete_tune(
     tune = get_user_tune(tune_id, current_user.id, db)
 
     if tune.practice_entries:
+        for rec in tune.recordings:
+            filepath = os.path.join(UPLOAD_DIR, rec.filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        tune.recordings.clear()
         tune.archived = True
         db.commit()
         return

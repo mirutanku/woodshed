@@ -435,8 +435,8 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
             </div>
             <div className="summary-tune-list">
               {mostPracticed.map(tp => (
-                <div key={tp.tune_id} className="summary-tune-row" style={{ cursor: onSelectTune ? 'pointer' : 'default' }} onClick={() => onSelectTune && onSelectTune(tp.tune_id)}>
-                  <span className="summary-tune-title entry-tune-link">{tp.title}</span>
+                <div key={tp.tune_id} className={`summary-tune-row ${tp.archived ? 'archived' : ''}`} style={{ cursor: onSelectTune && !tp.archived ? 'pointer' : 'default' }} onClick={() => onSelectTune && !tp.archived && onSelectTune(tp.tune_id)}>
+                  <span className={`summary-tune-title ${tp.archived ? '' : 'entry-tune-link'}`}>{tp.title}</span>
                   <span className="summary-tune-count">
                     {tp.sessions !== undefined
                       ? `${tp.sessions} session${tp.sessions !== 1 ? 's' : ''}`

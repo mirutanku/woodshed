@@ -476,11 +476,13 @@ def get_most_practiced(
         tunes = db.query(Tune).filter(Tune.id.in_([r[0] for r in results])).all()
         tune_map = {t.id: t.title for t in tunes}
 
+        archived_map = {t.id: t.archived for t in tunes}
         return [
             {
                 "tune_id": tune_id,
                 "title": tune_map.get(tune_id, "Unknown"),
                 "seconds": total_seconds,
+                "archived": archived_map.get(tune_id, False),
             }
             for tune_id, total_seconds in results
         ]
@@ -526,6 +528,7 @@ def get_most_practiced(
                     "tune_id": tune_id,
                     "title": tune.title,
                     "sessions": total,
+                    "archived": tune.archived,
                 })
 
         combined.sort(key=lambda x: x["sessions"], reverse=True)
@@ -605,7 +608,7 @@ def get_today(
     if not all_tune_ids:
         return {"tunes": [], "date": today.isoformat()}
 
-    tunes = db.query(Tune).filter(Tune.id.in_(all_tune_ids)).all()
+    tunes = db.query(Tune).filter(Tune.id.in_(all_tune_ids), Tune.archived == False).all()
     tune_map = {t.id: t.title for t in tunes}
 
     result = []

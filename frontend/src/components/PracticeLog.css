@@ -73,6 +73,10 @@
   gap: var(--space-md);
 }
 
+.summary-tune-row.archived {
+  opacity: 0.5;
+}
+
 .summary-tune-title {
   font-weight: 500;
   font-size: 0.9375rem;
