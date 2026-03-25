@@ -613,9 +613,11 @@ def get_today(
 
     result = []
     for tune_id in all_tune_ids:
+        if tune_id not in tune_map:
+            continue
         result.append({
             "tune_id": tune_id,
-            "title": tune_map.get(tune_id, "Unknown"),
+            "title": tune_map[tune_id],
             "played": tune_id in played_ids,
             "logged": tune_id in logged_by_tune,
             "focus": logged_by_tune.get(tune_id, []),

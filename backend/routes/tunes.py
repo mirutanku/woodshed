@@ -73,6 +73,10 @@ def get_tune(
     db: Session = Depends(get_db),
 ):
     tune = get_user_tune(tune_id, current_user.id, db)
+
+    if tune.archived:
+        raise HTTPException(status_code=404, detail="Tune not found")
+    
     last_practiced = (
         db.query(sql_func.max(PracticeSession.date))
         .join(PracticeEntry, PracticeEntry.session_id == PracticeSession.id)
