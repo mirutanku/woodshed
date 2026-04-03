@@ -493,6 +493,7 @@
 .shed-mark-buttons {
   display: flex;
   gap: var(--space-sm);
+  flex-direction: column;
   margin-bottom: var(--space-md);
 }
 
@@ -530,4 +531,15 @@
   flex: 1;
   font-size: 1rem;
   padding: var(--space-md);
+}
+
+.shed-mark-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.shed-mark-nudge {
+  display: flex;
+  gap: var(--space-xs);
 }

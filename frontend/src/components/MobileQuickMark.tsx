@@ -55,18 +55,34 @@ function MobileQuickMark({ recordingId, segmentCount, currentTime, onSaved, onCa
       </div>
 
       <div className="shed-mark-buttons">
-        <button
-          className={`shed-mark-btn ${markStart !== null ? 'marked' : ''}`}
-          onClick={() => setMarkStart(Math.round(currentTime))}
-        >
-          {markStart !== null ? `Start: ${formatTime(markStart)}` : '● Mark Start'}
-        </button>
-        <button
-          className={`shed-mark-btn ${markEnd !== null ? 'marked' : ''}`}
-          onClick={() => setMarkEnd(Math.round(currentTime))}
-        >
-          {markEnd !== null ? `End: ${formatTime(markEnd)}` : '● Mark End'}
-        </button>
+        <div className="shed-mark-row">
+          <button
+            className={`shed-mark-btn ${markStart !== null ? 'marked' : ''}`}
+            onClick={() => setMarkStart(Math.round(currentTime))}
+          >
+            {markStart !== null ? `Start: ${formatTime(markStart)}` : '● Mark Start'}
+          </button>
+          {markStart !== null && (
+            <div className="shed-mark-nudge">
+              <button className="btn-ghost btn-sm" onClick={() => setMarkStart(Math.max(0, markStart - 1))}>−1s</button>
+              <button className="btn-ghost btn-sm" onClick={() => setMarkStart(markStart + 1)}>+1s</button>
+            </div>
+          )}
+        </div>
+        <div className="shed-mark-row">
+          <button
+            className={`shed-mark-btn ${markEnd !== null ? 'marked' : ''}`}
+            onClick={() => setMarkEnd(Math.round(currentTime))}
+          >
+            {markEnd !== null ? `End: ${formatTime(markEnd)}` : '● Mark End'}
+          </button>
+          {markEnd !== null && (
+            <div className="shed-mark-nudge">
+              <button className="btn-ghost btn-sm" onClick={() => setMarkEnd(Math.max(0, markEnd - 1))}>−1s</button>
+              <button className="btn-ghost btn-sm" onClick={() => setMarkEnd(markEnd + 1)}>+1s</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {markStart !== null && markEnd !== null && (

@@ -90,18 +90,20 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
           </button>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
         <button className="btn-primary btn-sm" onClick={handleSave}>Save</button>
         <button className="btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
-        {confirmDelete ? (
-          <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
-            <span className="text-sm text-dim">Sure?</span>
-            <button className="btn-danger btn-sm" onClick={handleDelete}>Yes, Delete</button>
-            <button className="btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>No</button>
-          </div>
-        ) : (
-          <button className="btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>Delete</button>
-        )}
+        <div style={{ marginLeft: 'auto' }}>
+          {confirmDelete ? (
+            <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
+              <span className="text-sm text-dim">Sure?</span>
+              <button className="btn-danger btn-sm" onClick={handleDelete}>Yes, Delete</button>
+              <button className="btn-ghost btn-sm" onClick={() => setConfirmDelete(false)}>No</button>
+            </div>
+          ) : (
+            <button className="btn-danger btn-sm" onClick={() => setConfirmDelete(true)}>Delete</button>
+          )}
+        </div>
       </div>
     </div>
   )
