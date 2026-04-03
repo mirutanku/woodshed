@@ -606,7 +606,7 @@ def get_today(
     all_tune_ids = played_ids | set(logged_by_tune.keys())
 
     if not all_tune_ids:
-        return {"tunes": [], "date": today.isoformat()}
+        return {"tunes": [], "fundamentals": fundamentals_list, "date": today.isoformat()}
 
     tunes = db.query(Tune).filter(Tune.id.in_(all_tune_ids), Tune.archived == False).all()
     tune_map = {t.id: t.title for t in tunes}
