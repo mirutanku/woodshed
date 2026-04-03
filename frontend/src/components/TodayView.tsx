@@ -3,8 +3,10 @@ import api from '../api'
 import { localToday } from '../dateUtils'
 import './PracticeLog.css'
 
-function TodayView({ onSelectTune }) {
-  const [data, setData] = useState(null)
+function TodayView({ onSelectTune }: { 
+  onSelectTune: (tuneId: number) => void 
+}) {
+  const [data, setData] = useState<any>(null)
 
   useEffect(() => {
     api.get(`/today?client_date=${localToday()}`)
@@ -18,7 +20,7 @@ function TodayView({ onSelectTune }) {
     <div className="today-view">
       <span className="today-label">Today</span>
       <div className="today-chips">
-        {data.tunes.map(tune => (
+        {data.tunes.map((tune: any) => (
           <button
             key={tune.tune_id}
             className="today-chip"

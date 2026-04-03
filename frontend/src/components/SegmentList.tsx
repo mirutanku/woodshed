@@ -7,19 +7,23 @@ const SEGMENT_COLORS = [
   '#9b7ec4', '#4a9e9e', '#c4884a', '#7a9e5a',
 ]
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   const s = Math.round(seconds)
   const mins = Math.floor(s / 60)
   const secs = s % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
+function SegmentList({ recordingId, onChanged, playbackTime = 0 }: {
+  recordingId: number
+  onChanged?: () => void
+  playbackTime?: number
+}) {
   const toast = useToast()
-  const [segments, setSegments] = useState([])
+  const [segments, setSegments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   // Form state
   const [label, setLabel] = useState('')
@@ -37,7 +41,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
     try {
       const res = await api.get(`/recordings/${recordingId}/segments`)
       setSegments(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch segments:', err)
     } finally {
       setLoading(false)
@@ -54,7 +58,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
     setShowForm(false)
   }
 
-  function startEdit(segment) {
+  function startEdit(segment: any) {
     setLabel(segment.label)
     setStartTime(Math.round(segment.start_time).toString())
     setEndTime(Math.round(segment.end_time).toString())
@@ -72,7 +76,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
     setEndTime(Math.round(playbackTime).toString())
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!label.trim() || !startTime || !endTime) return
 
@@ -97,20 +101,20 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }) {
       await fetchSegments()
       if (onChanged) onChanged()
       resetForm()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save segment:', err)
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete(segmentId) {
+  async function handleDelete(segmentId: number) {
     try {
       await api.delete(`/segments/${segmentId}`)
       setSegments(prev => prev.filter(s => s.id !== segmentId))
       toast('Segment deleted')
       if (onChanged) onChanged()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete segment:', err)
     }
   }

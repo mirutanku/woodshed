@@ -13,19 +13,22 @@ import { localToday } from '../dateUtils'
 import { parseKey, buildKey } from '../keyConstants'
 import './TuneDetail.css'
 
-function TuneDetail({ tuneId, onBack }) {
+function TuneDetail({ tuneId, onBack }: {
+  tuneId: number
+  onBack: () => void
+}) {
   const toast = useToast()
   const isMobile = useIsMobile()
-  const [tune, setTune] = useState(null)
-  const [recordings, setRecordings] = useState([])
+  const [tune, setTune] = useState<any>(null)
+  const [recordings, setRecordings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [editForm, setEditForm] = useState({})
+  const [editForm, setEditForm] = useState<Record<string, any>>({})
   const [saving, setSaving] = useState(false)
-  const [expandedRecording, setExpandedRecording] = useState(null)
+  const [expandedRecording, setExpandedRecording] = useState<number | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState(null)
-  const [recordingSegments, setRecordingSegments] = useState({})
+  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState<number | null>(null)
+  const [recordingSegments, setRecordingSegments] = useState<Record<number, any[]>>({})
   const [playbackTime, setPlaybackTime] = useState(0)
   const [showUpload, setShowUpload] = useState(false)
   const [notesValue, setNotesValue] = useState('')
@@ -46,16 +49,16 @@ function TuneDetail({ tuneId, onBack }) {
     }
   }, [expandedRecording])
 
-  async function fetchSegments(recordingId) {
+  async function fetchSegments(recordingId: number) {
     try {
       const res = await api.get(`/recordings/${recordingId}/segments`)
       setRecordingSegments(prev => ({ ...prev, [recordingId]: res.data }))
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch segments:', err)
     }
   }
 
-  function handleSegmentsChanged(recordingId) {
+  function handleSegmentsChanged(recordingId: number) {
     fetchSegments(recordingId)
   }
 
@@ -73,7 +76,7 @@ function TuneDetail({ tuneId, onBack }) {
         status: res.data.status || 'learning',
         notes: res.data.notes || '',
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch tune:', err)
     } finally {
       setLoading(false)
@@ -84,12 +87,12 @@ function TuneDetail({ tuneId, onBack }) {
     try {
       const res = await api.get(`/tunes/${tuneId}/recordings`)
       setRecordings(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch recordings:', err)
     }
   }
 
-  async function handleSaveEdit(e) {
+  async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault()
 
     // All-or-nothing key validation
@@ -110,7 +113,7 @@ function TuneDetail({ tuneId, onBack }) {
       setTune(res.data)
       setEditing(false)
       toast('Changes saved')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update tune:', err)
     } finally {
       setSaving(false)
@@ -122,37 +125,37 @@ function TuneDetail({ tuneId, onBack }) {
       await api.delete(`/tunes/${tuneId}`)
       toast('Tune deleted')
       onBack()
-    } catch (err) {
+    } catch (err: any) {
       const detail = err.response?.data?.detail
       alert(detail || 'Failed to delete tune')
       setConfirmDelete(false)
     }
   }
 
-  async function handleDeleteRecording(recordingId) {
+  async function handleDeleteRecording(recordingId: number) {
     try {
       await api.delete(`/recordings/${recordingId}`)
       setRecordings(prev => prev.filter(r => r.id !== recordingId))
       if (expandedRecording === recordingId) setExpandedRecording(null)
       setConfirmDeleteRecording(null)
       toast('Recording deleted')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete recording:', err)
     }
   }
 
-  function handleEditChange(field, value) {
+  function handleEditChange(field: string, value: string) {
     setEditForm(prev => ({ ...prev, [field]: value }))
   }
 
-  function formatFileSize(bytes) {
+  function formatFileSize(bytes: number) {
     if (!bytes) return ''
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -168,7 +171,7 @@ function TuneDetail({ tuneId, onBack }) {
         notes: notesValue.trim() || null,
       })
       setTune(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save notes:', err)
     } finally {
       setNotesSaving(false)

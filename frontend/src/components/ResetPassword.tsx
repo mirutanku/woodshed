@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 
-function ResetPassword({ token, onBackToLogin }) {
+function ResetPassword({ token, onBackToLogin }: {
+  token: string
+  onBackToLogin: () => void
+}) {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [username, setUsername] = useState(null)
+  const [username, setUsername] = useState<string | null>(null)
 
   useEffect(() => {
     api.get(`/auth/reset-token-info?token=${token}`)
@@ -15,7 +18,7 @@ function ResetPassword({ token, onBackToLogin }) {
       .catch(() => {})
   }, [token])
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
@@ -35,7 +38,7 @@ function ResetPassword({ token, onBackToLogin }) {
         new_password: newPassword,
       })
       setSuccess(true)
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to reset password. The link may have expired.')
     } finally {
       setLoading(false)

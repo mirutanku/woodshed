@@ -1,14 +1,16 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import './Toast.css'
 
-const ToastContext = createContext()
+type ToastFn = (message: string, type?: string, duration?: number) => void
+
+const ToastContext = createContext<ToastFn | null>(null)
 
 let toastIdCounter = 0
 
-export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([])
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<{ id: number, message: string, type: string }[]>([])
 
-  const addToast = useCallback((message, type = 'success', duration = 3000) => {
+  const addToast: ToastFn = useCallback((message, type = 'success', duration = 3000) => {
     const id = ++toastIdCounter
     setToasts(prev => [...prev, { id, message, type }])
     setTimeout(() => {
@@ -16,7 +18,7 @@ export function ToastProvider({ children }) {
     }, duration)
   }, [])
 
-  const dismiss = useCallback((id) => {
+  const dismiss = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
@@ -40,6 +42,6 @@ export function ToastProvider({ children }) {
   )
 }
 
-export function useToast() {
-  return useContext(ToastContext)
+export function useToast(): ToastFn {
+  return useContext(ToastContext) as ToastFn
 }

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react'
 
-export default function useVisibilityTimer(onElapsed, isPlayingRef) {
-  const startTimeRef = useRef(null)
+export default function useVisibilityTimer(onElapsed: ((seconds: number) => void) | null, isPlayingRef?: React.RefObject<boolean>) {
+  const startTimeRef = useRef<number | null>(null)
   const accumulatedRef = useRef(0)
 
   const start = useCallback(() => {

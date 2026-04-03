@@ -16,8 +16,8 @@ const SORT_OPTIONS = [
 
 const STATUS_ORDER = ['learning', 'polishing', 'mastering']
 
-function TuneList({ onSelectTune }) {
-  const [tunes, setTunes] = useState([])
+function TuneList({ onSelectTune }: { onSelectTune: (tuneId: number) => void }) {
+  const [tunes, setTunes] = useState<any[]>([])
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState(sessionStorage.getItem('tuneSort') || 'title-asc')
   const [loading, setLoading] = useState(true)
@@ -32,7 +32,7 @@ function TuneList({ onSelectTune }) {
     try {
       const res = await api.get('/tunes')
       setTunes(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch tunes:', err)
     } finally {
       setLoading(false)
@@ -48,14 +48,14 @@ function TuneList({ onSelectTune }) {
     fetchTunes()
   }
 
-  async function handleToggleStar(e, tuneId) {
+  async function handleToggleStar(e: React.MouseEvent, tuneId: number) {
     e.stopPropagation()
     try {
       const res = await api.post(`/tunes/${tuneId}/star`)
       setTunes(prev => prev.map(t =>
         t.id === tuneId ? { ...t, starred: res.data.starred } : t
       ))
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to toggle star:', err)
     }
   }
@@ -69,7 +69,7 @@ function TuneList({ onSelectTune }) {
     } else {
       filtered = tunes.filter(t => t.status === filter)
     }
-    
+
     const sorted = [...filtered]
     switch (sort) {
       case 'title-asc':
@@ -93,7 +93,7 @@ function TuneList({ onSelectTune }) {
   }, [tunes, filter, sort])
 
   const statusCounts = useMemo(() => {
-    const counts = {}
+    const counts: Record<string, number> = {}
     tunes.forEach(t => {
       counts[t.status] = (counts[t.status] || 0) + 1
     })
@@ -192,7 +192,10 @@ function TuneList({ onSelectTune }) {
 }
 
 
-function AddTuneForm({ onCancel, onAdded }) {
+function AddTuneForm({ onCancel, onAdded }: {
+  onCancel: () => void
+  onAdded: () => void
+}) {
   const toast = useToast()
   const [form, setForm] = useState({
     title: '',
@@ -205,11 +208,11 @@ function AddTuneForm({ onCancel, onAdded }) {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  function handleChange(field, value) {
+  function handleChange(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.title.trim()) {
       setError('Title is required')
@@ -236,7 +239,7 @@ function AddTuneForm({ onCancel, onAdded }) {
       await api.post('/tunes', payload)
       toast(`Added "${form.title.trim()}"`)
       onAdded()
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to add tune')
     } finally {
       setSaving(false)

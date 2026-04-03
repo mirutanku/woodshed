@@ -1,6 +1,10 @@
 import './Nav.css'
 
-function Nav({ currentView, onNavigate, onLogout }) {
+function Nav({ currentView, onNavigate, onLogout }: {
+  currentView: string
+  onNavigate: (view: string) => void
+  onLogout: () => void
+}) {
   return (
     <nav className="nav">
       <div className="nav-brand" onClick={() => onNavigate('tunes')} style={{ cursor: 'pointer' }}>Woodshed</div>

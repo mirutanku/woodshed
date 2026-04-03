@@ -15,9 +15,9 @@ import SetlistManager from './components/SetlistManager'
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'))
   const [currentView, setCurrentView] = useState('tunes')
-  const [selectedTuneId, setSelectedTuneId] = useState(null)
+  const [selectedTuneId, setSelectedTuneId] = useState<number | null>(null)
   const [authView, setAuthView] = useState('login') // 'login', 'forgot-password', 'reset-password'
-  const [resetToken, setResetToken] = useState(null)
+  const [resetToken, setResetToken] = useState<string | null>(null)
 
   function handleLogin() {
     setIsLoggedIn(true)
@@ -51,7 +51,7 @@ function App() {
     }
   }, [])
 
-  function handleSelectTune(tuneId) {
+  function handleSelectTune(tuneId: number) {
     setSelectedTuneId(tuneId)
     setCurrentView('tune-detail')
   }

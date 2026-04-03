@@ -1,6 +1,12 @@
 import { TONICS, QUALITIES } from '../keyConstants'
 
-function KeyPicker({ tonic, quality, onTonicChange, onQualityChange, label = 'Canonical Key' }) {
+function KeyPicker({ tonic, quality, onTonicChange, onQualityChange, label = 'Canonical Key' }: {
+  tonic: string
+  quality: string
+  onTonicChange: (tonic: string) => void
+  onQualityChange: (quality: string) => void
+  label?: string
+}) {
   return (
     <div className="form-group">
       <label>{label}</label>

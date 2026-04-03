@@ -5,7 +5,14 @@ import KeyPicker from './KeyPicker'
 import ConfirmDialog from './ConfirmDialog'
 import { parseKey, buildKey } from '../keyConstants'
 
-function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecording, onCancel }) {
+function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecording, onCancel }: {
+  tune: any
+  recordings: any[]
+  onSave: () => void
+  onDelete: () => void
+  onDeleteRecording: (recId: number) => void
+  onCancel: () => void
+}) {
   const toast = useToast()
   const parsed = parseKey(tune.key)
   const [tuneForm, setTuneForm] = useState({
@@ -17,7 +24,7 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
     notes: tune.notes || '',
   })
   const [confirmDeleteTune, setConfirmDeleteTune] = useState(false)
-  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState(null)
+  const [confirmDeleteRecording, setConfirmDeleteRecording] = useState<number | null>(null)
 
   async function handleSave() {
     if (!tuneForm.title.trim()) return
@@ -31,7 +38,7 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       })
       toast('Tune updated')
       onSave()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to update tune', 'error')
     }
   }
@@ -41,34 +48,21 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       await api.delete(`/tunes/${tune.id}`)
       toast('Tune deleted')
       onDelete()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to delete tune', 'error')
     } finally {
       setConfirmDeleteTune(false)
     }
   }
 
-  async function handleDeleteRecording(recId) {
+  async function handleDeleteRecording(recId: number) {
     try {
       await api.delete(`/recordings/${recId}`)
       toast('Recording deleted')
       setConfirmDeleteRecording(null)
       onDeleteRecording(recId)
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to delete recording', 'error')
-    }
-  }
-
-  async function handleNotesSave() {
-    if (notesValue === (tune.notes || '')) return
-    setNotesSaving(true)
-    try {
-      await api.patch(`/tunes/${tune.id}`, { notes: notesValue.trim() || null })
-      if (onTuneChanged) onTuneChanged()
-    } catch (err) {
-      console.error('Failed to save notes:', err)
-    } finally {
-      setNotesSaving(false)
     }
   }
 
@@ -125,7 +119,7 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       {recordings.length > 0 && (
         <div className="form-group">
           <label>Recordings</label>
-          {recordings.map(rec => (
+          {recordings.map((rec: any) => (
             <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-xs) 0' }}>
               <span className="text-sm">{rec.artist || rec.original_name}</span>
               <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete Recording</button>

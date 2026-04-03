@@ -4,7 +4,10 @@ import { FOCUS_OPTIONS } from '../constants'
 import { FUNDAMENTALS_OPTIONS } from '../constants'
 import './PracticeLog.css'
 
-function StarRating({ value, onChange }) {
+function StarRating({ value, onChange } : {
+  value: number,
+  onChange: (value: number) => void,
+}) {
   return (
     <div className="star-rating">
       {[1, 2, 3, 4, 5].map(star => (
@@ -20,18 +23,24 @@ function StarRating({ value, onChange }) {
   )
 }
 
-function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
+function SessionForm({ tunes, onSubmit, onCancel, saving, error } : {
+  tunes: { id: number, title: string, composer: string | null }[],
+  onSubmit: (data: { date: string, notes: string | null, entries: any[], fundamentals: any[] }) => void,
+  onCancel: () => void,
+  saving: boolean,
+  error: string | null,
+}) {
   const [sessionDate, setSessionDate] = useState(localToday())
   const [sessionNotes, setSessionNotes] = useState('')
 
   // Track which tunes are checked and their optional details
-  const [checked, setChecked] = useState({})       // { tuneId: true }
-  const [details, setDetails] = useState({})        // { tuneId: { focus, tempo_practiced, duration_minutes, notes, rating } }
-  const [expanded, setExpanded] = useState({})       // { tuneId: true } — which detail panels are open
+  const [checked, setChecked] = useState<Record<number, boolean>>({})       // { tuneId: true }
+  const [details, setDetails] = useState<Record<number, any>>({})        // { tuneId: { focus, tempo_practiced, duration_minutes, notes, rating } }
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})       // { tuneId: true } — which detail panels are open
 
-  const [checkedFundamentals, setCheckedFundamentals] = useState([])
+  const [checkedFundamentals, setCheckedFundamentals] = useState<string[]>([])
 
-  function toggleTune(tuneId) {
+  function toggleTune(tuneId: number) {
     setChecked(prev => {
       const next = { ...prev }
       if (next[tuneId]) {
@@ -46,7 +55,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
     })
   }
 
-  function toggleExpand(tuneId) {
+  function toggleExpand(tuneId: number) {
     setExpanded(prev => {
       const next = { ...prev }
       if (next[tuneId]) {
@@ -65,7 +74,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
     })
   }
 
-  function toggleFundamental(category) {
+  function toggleFundamental(category: string) {
     setCheckedFundamentals(prev =>
       prev.includes(category)
         ? prev.filter(c => c !== category)
@@ -73,7 +82,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
     )
   }
 
-  function updateDetail(tuneId, field, value) {
+  function updateDetail(tuneId: number, field: string, value: string | number) {
     setDetails(prev => ({
       ...prev,
       [tuneId]: { ...prev[tuneId], [field]: value },
@@ -83,16 +92,16 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error }) {
   // Sort: checked tunes first, then alphabetical
   const sortedTunes = useMemo(() => {
     return [...tunes].sort((a, b) => {
-      const aChecked = checked[a.id] ? 0 : 1
-      const bChecked = checked[b.id] ? 0 : 1
+      const aChecked: number = checked[a.id] ? 0 : 1
+      const bChecked: number = checked[b.id] ? 0 : 1
       if (aChecked !== bChecked) return aChecked - bChecked
       return a.title.localeCompare(b.title)
     })
   }, [tunes, checked])
 
-  const checkedCount = Object.keys(checked).length
+  const checkedCount: number = Object.keys(checked).length
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (checkedCount === 0 && checkedFundamentals.length === 0) return
 

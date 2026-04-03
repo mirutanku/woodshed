@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react'
 import './PracticeLog.css'
 
-function SetlistChecklist({ tunes, selectedTuneIds, onSelectionChange }) {
+function SetlistChecklist({ tunes, selectedTuneIds, onSelectionChange }: { 
+  tunes: any[]
+  selectedTuneIds: number[]
+  onSelectionChange: (tuneIds: number[]) => void
+}) {
   // selectedTuneIds is an ordered array of tune IDs representing the setlist order
 
-  function toggleTune(tuneId) {
+  function toggleTune(tuneId: number) {
     if (selectedTuneIds.includes(tuneId)) {
       // Remove from setlist
       onSelectionChange(selectedTuneIds.filter(id => id !== tuneId))
@@ -14,7 +18,7 @@ function SetlistChecklist({ tunes, selectedTuneIds, onSelectionChange }) {
     }
   }
 
-  function moveTune(tuneId, direction) {
+  function moveTune(tuneId: number, direction: number) {
     const idx = selectedTuneIds.indexOf(tuneId)
     if (idx === -1) return
     const targetIdx = idx + direction
@@ -29,7 +33,7 @@ function SetlistChecklist({ tunes, selectedTuneIds, onSelectionChange }) {
 
   // Build the display list: selected tunes in order first, then unselected alphabetically
   const sortedTunes = useMemo(() => {
-    const tuneMap = {}
+    const tuneMap: Record<number, any> = {}
     tunes.forEach(t => { tuneMap[t.id] = t })
 
     const selected = selectedTuneIds

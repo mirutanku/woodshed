@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import api from '../api'
 
-function ForgotPassword({ onBack }) {
+function ForgotPassword({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) {
       setError('Please enter your email')
@@ -18,7 +18,7 @@ function ForgotPassword({ onBack }) {
     try {
       await api.post('/auth/forgot-password', { email: email.trim() })
       setSubmitted(true)
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.detail || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
@@ -31,7 +31,7 @@ function ForgotPassword({ onBack }) {
         <div className="login-card">
           <h2 style={{ marginBottom: 'var(--space-md)' }}>Check your email</h2>
           <p className="text-dim" style={{ marginBottom: 'var(--space-lg)', lineHeight: 1.6 }}>
-            If an account exists with <strong>{email}</strong>, we've sent a password reset link. 
+            If an account exists with <strong>{email}</strong>, we've sent a password reset link.
             Check your inbox (and spam folder).
           </p>
           <button className="btn-ghost" onClick={onBack}>

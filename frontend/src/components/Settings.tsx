@@ -3,11 +3,11 @@ import api from '../api'
 import { useToast } from './Toast'
 import ConfirmDialog from './ConfirmDialog'
 
-function Settings({ onLogout }) {
+function Settings() {
   const toast = useToast()
 
   // User info
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const [loadingUser, setLoadingUser] = useState(true)
 
   // Username
@@ -55,18 +55,18 @@ function Settings({ onLogout }) {
 
     google.accounts.id.initialize({
       client_id: clientId,
-      callback: async (response) => {
+      callback: async (response: any) => {
         setSaving(true)
         try {
           const res = await api.post('/users/me/link-google', {
             credential: response.credential,
           })
-          setUser(prev => ({ ...prev, has_google: true, email: res.data.email || prev.email }))
+          setUser((prev: any) => ({ ...prev, has_google: true, email: res.data.email || prev.email }))
           if (res.data.email && !email) {
             setEmail(res.data.email)
           }
           toast('Google account linked')
-        } catch (err) {
+        } catch (err: any) {
           toast(err.response?.data?.detail || 'Failed to link Google account', 'error')
         } finally {
           setSaving(false)
@@ -81,9 +81,9 @@ function Settings({ onLogout }) {
     setSaving(true)
     try {
       await api.post('/users/me/unlink-google')
-      setUser(prev => ({ ...prev, has_google: false }))
+      setUser((prev: any) => ({ ...prev, has_google: false }))
       toast('Google account unlinked')
-    } catch (err) {
+    } catch (err: any) {
       toast(err.response?.data?.detail || 'Failed to unlink Google account', 'error')
     } finally {
       setSaving(false)
@@ -103,7 +103,7 @@ function Settings({ onLogout }) {
       setUsername(res.data.username)
       setEditingUsername(false)
       toast('Username updated')
-    } catch (err) {
+    } catch (err: any) {
       toast(err.response?.data?.detail || 'Failed to update username', 'error')
     } finally {
       setSaving(false)
@@ -121,10 +121,10 @@ function Settings({ onLogout }) {
     try {
       const res = await api.patch('/users/me/email', { email: email.trim() })
       setEmail(res.data.email)
-      setUser(prev => ({ ...prev, email: res.data.email }))
+      setUser((prev: any) => ({ ...prev, email: res.data.email }))
       setEditingEmail(false)
       toast('Email updated')
-    } catch (err) {
+    } catch (err: any) {
       toast(err.response?.data?.detail || 'Failed to update email', 'error')
     } finally {
       setSaving(false)
@@ -161,14 +161,14 @@ function Settings({ onLogout }) {
         await api.post('/users/me/set-password', {
           new_password: newPassword,
         })
-        setUser(prev => ({ ...prev, has_password: true }))
+        setUser((prev: any) => ({ ...prev, has_password: true }))
       }
       toast('Password changed')
       setShowPasswordForm(false)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err) {
+    } catch (err: any) {
       toast(err.response?.data?.detail || 'Failed to change password', 'error')
     } finally {
       setSaving(false)
@@ -177,13 +177,13 @@ function Settings({ onLogout }) {
 
   // --- Delete Account ---
 
-  async function handleDeleteAccount(password) {
+  async function handleDeleteAccount(password?: string) {
     setSaving(true)
     try {
       await api.delete('/users/me', { data: { password: password || null } })
       localStorage.removeItem('token')
       window.location.reload()
-    } catch (err) {
+    } catch (err: any) {
       toast(err.response?.data?.detail || 'Failed to delete account', 'error')
     } finally {
       setSaving(false)
@@ -377,7 +377,7 @@ function Settings({ onLogout }) {
           danger
           requirePassword={user?.has_password}
           onConfirm={(password) => handleDeleteAccount(password)}
-          onCancel={() => { setConfirmDelete(false); setDeletePassword('') }}
+          onCancel={() => setConfirmDelete(false)}
         />
       )}
     </div>

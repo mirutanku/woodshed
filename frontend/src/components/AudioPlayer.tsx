@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Key } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import './AudioPlayer.css'
@@ -11,17 +11,23 @@ const SPEED_PRESETS = [
   { label: '125%', value: 1.25 },
 ]
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   if (!seconds || !isFinite(seconds)) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
+  const mins: number = Math.floor(seconds / 60)
+  const secs: number = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate }) {
-  const audioRef = useRef(null)
-  const progressRef = useRef(null)
-  const animFrameRef = useRef(null)
+function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate }: { 
+  recordingId: number 
+  tuneId: number 
+  tuneTitle: string 
+  segments?: any[] 
+  onTimeUpdate: (time: number) => void 
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const progressRef = useRef<HTMLDivElement | null>(null)
+  const animFrameRef = useRef<number | null>(null)
   const speedRef = useRef(1.0)
   const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
   const rampLoopCount = useRef(0)
@@ -30,7 +36,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [speed, setSpeed] = useState(1.0)
-  const [loopSegment, setLoopSegment] = useState(null) // segment object or null
+  const [loopSegment, setLoopSegment] = useState<any>(null) // segment object or null
   const [error, setError] = useState('')
 
   // Auto-ramp state
@@ -51,7 +57,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
 
-  function applyRamp(audio) {
+  function applyRamp(audio: HTMLAudioElement) {
     const ramp = rampRef.current
     if (!ramp.enabled) return
     const currentSpeed = speedRef.current
@@ -165,7 +171,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   // --- Speed control ---
 
-  function handleSpeedChange(newSpeed) {
+  function handleSpeedChange(newSpeed: number) {
     const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
     const rounded = Math.round(clamped * 100) / 100
     setSpeed(rounded)
@@ -182,7 +188,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   // --- Progress bar interaction ---
 
-  function handleProgressClick(e) {
+  function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current
     const bar = progressRef.current
     if (!audio || !bar || !duration) return
@@ -196,7 +202,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   // --- Segment looping ---
 
-  function handleSegmentLoop(segment) {
+  function handleSegmentLoop(segment: any) {
     const audio = audioRef.current
     if (!audio) return
 
@@ -220,7 +226,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
   }
 
   // Jump to a segment's start time without looping
-  function handleSegmentCue(segment) {
+  function handleSegmentCue(segment: any) {
     const audio = audioRef.current
     if (!audio) return
     audio.currentTime = segment.start_time
@@ -275,10 +281,10 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   // Spacebar to toggle play/pause
   useEffect(() => {
-    function handleKeyDown(e) {
+    function handleKeyDown(e: KeyboardEvent) {
       // Only handle spacebar, and not when typing in an input
       if (e.code !== 'Space') return
-      const tag = e.target.tagName
+      const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       e.preventDefault()
       togglePlay()
@@ -427,7 +433,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                     Reps
                     <select
                       value={rampLoopsPerStep}
-                      onChange={e => { setRampLoopsPerStep(parseInt(e.target.value, 10)); setRampReachedMax(false), ramp }}
+                      onChange={e => { setRampLoopsPerStep(parseInt(e.target.value, 10)); setRampReachedMax(false) }}
                     >
                       <option value={1}>1x</option>
                       <option value={2}>2x</option>

@@ -9,19 +9,26 @@ import { localToday } from '../dateUtils'
 import useVisibilityTimer from '../useVisibilityTimer'
 import './ShedMode.css'
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   const s = Math.round(seconds)
   const mins = Math.floor(s / 60)
   const secs = s % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTuneChanged, onTuneDeleted }) {
+function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTuneChanged, onTuneDeleted }: {
+  tune: any
+  recordings: any[]
+  onBack: () => void
+  onRecordingsChanged: () => void
+  onTuneChanged: () => void
+  onTuneDeleted: () => void
+}) {
   const toast = useToast()
 
   // Audio engine
-  const audioRef = useRef(null)
-  const animFrameRef = useRef(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const animFrameRef = useRef<number | null>(null)
   const speedRef = useRef(1.0)
   const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
   const rampLoopCount = useRef(0)
@@ -34,13 +41,13 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const [speed, setSpeed] = useState(1.0)
 
   // Content
-  const [selectedRecording, setSelectedRecording] = useState(null)
-  const [segments, setSegments] = useState([])
+  const [selectedRecording, setSelectedRecording] = useState<any>(null)
+  const [segments, setSegments] = useState<any[]>([])
   const [notesValue, setNotesValue] = useState(tune.notes || '')
   const [notesSaving, setNotesSaving] = useState(false)
 
   // Looping and auto-ramp
-  const [loopSegment, setLoopSegment] = useState(null)
+  const [loopSegment, setLoopSegment] = useState<any>(null)
   const [rampEnabled, setRampEnabled] = useState(false)
   const [rampEnd, setRampEnd] = useState(1.0)
   const [rampStep, setRampStep] = useState(0.05)
@@ -49,10 +56,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
   // UI modes — only one active at a time
   const [editingTune, setEditingTune] = useState(false)
-  const [editingSegment, setEditingSegment] = useState(null)
+  const [editingSegment, setEditingSegment] = useState<number | null>(null)
   const [marking, setMarking] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
-  const longPressTimer = useRef(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Practice tracking
   const hasCheckedIn = useRef(false)
@@ -70,7 +77,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }, [recordings])
 
-  async function selectRecording(rec) {
+  async function selectRecording(rec: any) {
     stopPlayback()
     setSelectedRecording(rec)
     setLoopSegment(null)
@@ -78,7 +85,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     try {
       const res = await api.get(`/recordings/${rec.id}/segments`)
       setSegments(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch segments:', err)
     }
   }
@@ -88,7 +95,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     try {
       const res = await api.get(`/recordings/${selectedRecording.id}/segments`)
       setSegments(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch segments:', err)
     }
   }
@@ -105,7 +112,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
   }
 
-  function applyRamp(audio) {
+  function applyRamp(audio: HTMLAudioElement) {
     const ramp = rampRef.current
     if (!ramp.enabled) return
     const currentSpeed = speedRef.current
@@ -156,9 +163,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     if (!audio || !loopSegment) return
 
     function handleTimeUpdate() {
-      if (loopSegment && audio.currentTime >= loopSegment.end_time) {
-        applyRamp(audio)
-        audio.currentTime = loopSegment.start_time
+      if (loopSegment && audio!.currentTime >= loopSegment.end_time) {
+        applyRamp(audio!)
+        audio!.currentTime = loopSegment.start_time
         setCurrentTime(loopSegment.start_time)
       }
     }
@@ -167,7 +174,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate)
   }, [loopSegment])
 
-  function handleSegmentPressStart(segment) {
+  function handleSegmentPressStart(segment: any) {
     longPressTimer.current = setTimeout(() => {
       setEditingSegment(segment.id)
     }, 500)
@@ -205,7 +212,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }
 
-  function setPlaybackSpeed(newSpeed) {
+  function setPlaybackSpeed(newSpeed: number) {
     const clamped = Math.round(newSpeed * 100) / 100
     setSpeed(clamped)
     speedRef.current = clamped
@@ -217,7 +224,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep, loopsPerStep: rampLoopsPerStep }
   }, [rampEnabled, rampEnd, rampStep, rampLoopsPerStep])
 
-  function handleSegmentTap(segment) {
+  function handleSegmentTap(segment: any) {
     const audio = audioRef.current
     if (!audio) return
 
@@ -240,7 +247,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }
 
-  function handleTimelineClick(e) {
+  function handleTimelineClick(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current
     if (!audio || !duration) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -258,7 +265,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         toast(`Logged '${tune.title}' ✓`)
       }
       setQuickLogged(true)
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to log', 'error')
     }
   }
@@ -269,7 +276,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     try {
       await api.patch(`/tunes/${tune.id}`, { notes: notesValue.trim() || null })
       if (onTuneChanged) onTuneChanged()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save notes:', err)
     } finally {
       setNotesSaving(false)
@@ -368,8 +375,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             }}
             onEnded={() => {
               if (loopSegment) {
-                audioRef.current.currentTime = loopSegment.start_time
-                audioRef.current.play()
+                audioRef.current!.currentTime = loopSegment.start_time
+                audioRef.current!.play()
               } else {
                 setIsPlaying(false)
               }
@@ -492,7 +499,6 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                     setRampReachedMax(false)
                     setRampEnabled(true)
                     rampLoopCount.current = 0
-                    setRampEnabled
                   }}
                 >
                   Auto-Ramp ↗

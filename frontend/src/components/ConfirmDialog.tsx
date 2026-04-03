@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import './ConfirmDialog.css'
 
-function ConfirmDialog({ title, message, confirmLabel, danger, requirePassword, onConfirm, onCancel }) {
+function ConfirmDialog({ title, message, confirmLabel, danger, requirePassword, onConfirm, onCancel }: {
+  title: string
+  message: string
+  onConfirm: (password?: string) => void
+  onCancel: () => void
+  confirmLabel?: string
+  danger?: boolean
+  requirePassword?: boolean 
+}) {
+
   const [password, setPassword] = useState('')
 
   function handleConfirm() {

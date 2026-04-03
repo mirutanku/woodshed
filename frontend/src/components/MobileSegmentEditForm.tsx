@@ -2,14 +2,20 @@ import { useState } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   const s = Math.round(seconds)
   const mins = Math.floor(s / 60)
   const secs = s % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCancel }) {
+function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCancel }: {
+  segment: any
+  currentTime: number
+  onSave: () => void
+  onDelete: (segmentId: number) => void
+  onCancel: () => void
+}) {
   const toast = useToast()
   const [form, setForm] = useState({
     label: segment.label,
@@ -27,7 +33,7 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
       })
       toast('Segment updated')
       onSave()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to update segment', 'error')
     }
   }
@@ -37,7 +43,7 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
       await api.delete(`/segments/${segment.id}`)
       toast('Segment deleted')
       onDelete(segment.id)
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to delete segment', 'error')
     } finally {
       setConfirmDelete(false)

@@ -2,14 +2,17 @@ import { useState } from 'react'
 import api from '../api'
 import './LoginForm.css'
 
-function LoginForm({ onLogin, onForgotPassword }) {
+function LoginForm({ onLogin, onForgotPassword } : {
+  onLogin: () => void
+  onForgotPassword?: () => void
+}) {
     const [isRegister, setIsRegister] = useState(false)
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
-    async function handleSubmit(e) {
+    async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
         e.preventDefault()
         setError('')
         setLoading(true)
@@ -22,7 +25,7 @@ function LoginForm({ onLogin, onForgotPassword }) {
             const res = await api.post('/login', { username, password })
             localStorage.setItem('token',res.data.access_token)
             onLogin()
-        } catch (err) {
+        } catch (err: any) {
             const detail = err.response?.data?.detail || 'An error occurred'
             if (typeof detail === 'string') {
                 setError(detail)
@@ -44,7 +47,7 @@ function LoginForm({ onLogin, onForgotPassword }) {
       }
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: async (response) => {
+        callback: async (response: any) => {
           setError('')
           setLoading(true)
           try {
@@ -53,7 +56,7 @@ function LoginForm({ onLogin, onForgotPassword }) {
             })
             localStorage.setItem('token', res.data.access_token)
             onLogin()
-          } catch (err) {
+          } catch (err: any) {
             setError(err.response?.data?.detail || 'Google sign-in failed')
           } finally {
             setLoading(false)

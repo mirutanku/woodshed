@@ -4,7 +4,10 @@ import { useToast } from './Toast'
 import KeyPicker from './KeyPicker'
 import { buildKey } from '../keyConstants'
 
-function RecordingUpload({ tuneId, onUploaded }) {
+function RecordingUpload({ tuneId, onUploaded } : {
+  tuneId: number
+  onUploaded: () => void
+}) {
   const toast = useToast()
   const [file, setFile] = useState(null)
   const [artist, setArtist] = useState('')
@@ -16,7 +19,7 @@ function RecordingUpload({ tuneId, onUploaded }) {
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
 
-  function handleFileSelect(selectedFile) {
+  function handleFileSelect(selectedFile: File | null) {
     setError('')
     if (!selectedFile) return
 

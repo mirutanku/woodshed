@@ -42,8 +42,10 @@ const QUOTES = {
   ],
 }
 
-function pickQuote(focus) {
-  let pool
+type Focus = keyof typeof QUOTES
+
+function pickQuote(focus?: Focus | null) {
+  let pool: { text: string; author: string | null }[]
   if (focus && QUOTES[focus]) {
     pool = QUOTES[focus]
   } else {
@@ -51,12 +53,12 @@ function pickQuote(focus) {
     pool = Object.values(QUOTES).flat()
   }
   const now = new Date()
-  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24))
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
   return pool[dayOfYear % pool.length]
 }
 
 function PracticeProfile() {
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     api.get('/practice-profile').then(res => setProfile(res.data)).catch(() => {})

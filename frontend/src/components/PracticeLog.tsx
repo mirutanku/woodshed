@@ -10,7 +10,10 @@ import { FUNDAMENTALS_OPTIONS } from '../constants'
 import { localToday } from '../dateUtils'
 import './PracticeLog.css'
 
-function StarRating({ value, onChange }) {
+function StarRating({ value, onChange }: {
+  value: number
+  onChange: (value: number) => void
+}) {
   return (
     <div className="star-rating">
       {[1, 2, 3, 4, 5].map(star => (
@@ -26,7 +29,7 @@ function StarRating({ value, onChange }) {
   )
 }
 
-function StarDisplay({ value }) {
+function StarDisplay({ value }: { value: number }) {
   if (!value) return null
   return (
     <span className="star-rating" style={{ cursor: 'default' }}>
@@ -39,7 +42,14 @@ function StarDisplay({ value }) {
   )
 }
 
-function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }) {
+function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit, onSetlistsChanged }: {
+  performances: any[]
+  setlists: any[]
+  onAdd: (data: any) => Promise<any>
+  onDelete: (id: number) => void
+  onEdit: (id: number, data: any) => Promise<void>
+  onSetlistsChanged?: () => void
+}) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
@@ -48,9 +58,9 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
   const [notes, setNotes] = useState('')
   const [setlistId, setSetlistId] = useState('')
   const [saving, setSaving] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({})
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<Record<string, any>>({})
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
   // Filter to upcoming (today or later) and sort soonest first
   const upcoming = useMemo(() => {
@@ -60,7 +70,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
       .sort((a, b) => a.date.localeCompare(b.date))
   }, [performances])
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !date) return
 
@@ -85,16 +95,16 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
       setNotes('')
       setSetlistId('')
       setShowForm(false)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to add performance:', err)
     } finally {
       setSaving(false)
     }
   }
 
-  function startEdit(p) {
+  function startEdit(p: any) {
     setEditingId(p.id)
-    const linkedSetlist = (setlists || []).find(s => s.performance_id === p.id)
+    const linkedSetlist = (setlists || []).find((s: any) => s.performance_id === p.id)
     setEditForm({
       title: p.title,
       date: p.date,
@@ -111,13 +121,13 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
     setEditForm({})
   }
 
-  async function handleSaveEdit(e) {
+  async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault()
     if (!editForm.title.trim() || !editForm.date) return
 
     setSaving(true)
     try {
-      await onEdit(editingId, {
+      await onEdit(editingId!, {
         title: editForm.title.trim(),
         date: editForm.date,
         time: editForm.time.trim() || null,
@@ -139,34 +149,34 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
       }
 
       cancelEdit()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to edit performance:', err)
     } finally {
       setSaving(false)
     }
   }
 
-  function formatPerformanceDate(dateStr) {
+  function formatPerformanceDate(dateStr: string) {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     })
   }
 
-  function daysUntil(dateStr) {
+  function daysUntil(dateStr: string) {
     const today = new Date()
     today.setHours(12, 0, 0, 0)
     const target = new Date(dateStr + 'T12:00:00')
-    const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24))
+    const diff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     if (diff === 0) return 'today'
     if (diff === 1) return 'tomorrow'
     return `in ${diff} days`
   }
 
-  function googleCalendarUrl(p) {
+  function googleCalendarUrl(p: any) {
     const dateStr = p.date.replace(/-/g, '')
     const timeStr = p.time ? p.time.replace(':', '') + '00' : ''
-    
+
     // If we have a time, use datetime format; otherwise all-day event
     let dates
     if (timeStr) {
@@ -233,7 +243,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
             onChange={e => setSetlistId(e.target.value)}
           >
             <option value="">Link a setlist (optional)</option>
-            {(setlists || []).filter(s => !s.performance_id).map(s => (
+            {(setlists || []).filter((s: any) => !s.performance_id).map((s: any) => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
@@ -252,7 +262,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
         <p className="text-sm text-dim">No upcoming gigs.</p>
       ) : (
         <div className="perf-list">
-          {upcoming.map(p => (
+          {upcoming.map((p: any) => (
             editingId === p.id ? (
               <form key={p.id} className="perf-form" onSubmit={handleSaveEdit}>
                 <input
@@ -290,8 +300,8 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                 >
                   <option value="">No linked setlist</option>
                   {(setlists || [])
-                    .filter(s => !s.performance_id || s.id.toString() === editForm.originalSetlistId)
-                    .map(s => (
+                    .filter((s: any) => !s.performance_id || s.id.toString() === editForm.originalSetlistId)
+                    .map((s: any) => (
                       <option key={s.id} value={s.id}>{s.title}</option>
                     ))}
                 </select>
@@ -347,14 +357,22 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
 }
 
 
-function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged, onSelectTune }) {
-  const [streak, setStreak] = useState(0)
-  const [mostPracticed, setMostPracticed] = useState([])
+function PracticeSummary({ sessions, performances, setlists, onAddPerformance, onDeletePerformance, onEditPerformance, onSetlistsChanged, onSelectTune }: {
+  sessions: any[]
+  performances: any[]
+  setlists: any[]
+  onAddPerformance: (data: any) => Promise<any>
+  onDeletePerformance: (id: number) => void
+  onEditPerformance: (id: number, data: any) => Promise<void>
+  onSetlistsChanged: () => void
+  onSelectTune: (tuneId: number) => void
+}) {
+  const [mostPracticed, setMostPracticed] = useState<any[]>([])
   const [mostPracticedMode, setMostPracticedMode] = useState('sessions')
-  const [weeklyHours, setWeeklyHours] = useState(null)
+  const [weeklyHours, setWeeklyHours] = useState<any>(null)
   const [streakData, setStreakData] = useState({ streak: 0, practiced_today: false })
-  const [recentFundamentals, setRecentFundamentals] = useState([])
-  const [loggedFundamentals, setLoggedFundamentals] = useState([])
+  const [recentFundamentals, setRecentFundamentals] = useState<any[]>([])
+  const [loggedFundamentals, setLoggedFundamentals] = useState<string[]>([])
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreakData(res.data)).catch(() => {})
@@ -366,7 +384,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     }).catch(() => {})
   }, [sessions, mostPracticedMode])
 
-  async function handleToggleFundamental(category) {
+  async function handleToggleFundamental(category: string) {
     const isLogged = loggedFundamentals.includes(category)
     try {
       if (isLogged) {
@@ -377,7 +395,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
         setLoggedFundamentals(prev => [...prev, category])
       }
       api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to toggle fundamental:', err)
     }
   }
@@ -462,7 +480,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
 
         {recentFundamentals.length > 0 && (
           <p className="recent-fundamentals">
-            Recent fundamentals: {recentFundamentals.map((f, i) => (
+            Recent fundamentals: {recentFundamentals.map((f: any, i: number) => (
               <span key={f.category}>
                 {i > 0 && ' · '}
                 {f.category.charAt(0).toUpperCase() + f.category.slice(1)} ({f.count})
@@ -494,29 +512,29 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
 }
 
 
-function PracticeLog({ onSelectTune }) {
+function PracticeLog({ onSelectTune }: { onSelectTune: (tuneId: number) => void }) {
   const toast = useToast()
-  const [sessions, setSessions] = useState([])
-  const [tunes, setTunes] = useState([])
-  const [performances, setPerformances] = useState([])
-  const [setlists, setSetlists] = useState([])
+  const [sessions, setSessions] = useState<any[]>([])
+  const [tunes, setTunes] = useState<any[]>([])
+  const [performances, setPerformances] = useState<any[]>([])
+  const [setlists, setSetlists] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  const [expandedSession, setExpandedSession] = useState(null)
+  const [expandedSession, setExpandedSession] = useState<number | null>(null)
 
   // Form state
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   // Edit state
-  const [editingSessionId, setEditingSessionId] = useState(null)
-  const [editSessionForm, setEditSessionForm] = useState({})
-  const [editingEntryId, setEditingEntryId] = useState(null)
-  const [editEntryForm, setEditEntryForm] = useState({})
-  const [confirmDeleteSession, setConfirmDeleteSession] = useState(null)
-  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(null)
-  const [addingToSessionId, setAddingToSessionId] = useState(null)
+  const [editingSessionId, setEditingSessionId] = useState<number | null>(null)
+  const [editSessionForm, setEditSessionForm] = useState<Record<string, any>>({})
+  const [editingEntryId, setEditingEntryId] = useState<number | null>(null)
+  const [editEntryForm, setEditEntryForm] = useState<Record<string, any>>({})
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState<number | null>(null)
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState<number | null>(null)
+  const [addingToSessionId, setAddingToSessionId] = useState<number | null>(null)
   const [newEntryForm, setNewEntryForm] = useState({
     tune_id: '', focus: '', tempo_practiced: '', notes: '', rating: 0,
   })
@@ -532,7 +550,7 @@ function PracticeLog({ onSelectTune }) {
     try {
       const res = await api.get('/sessions')
       setSessions(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch sessions:', err)
     } finally {
       setLoading(false)
@@ -543,7 +561,7 @@ function PracticeLog({ onSelectTune }) {
     try {
       const res = await api.get('/tunes')
       setTunes(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch tunes:', err)
     }
   }
@@ -552,7 +570,7 @@ function PracticeLog({ onSelectTune }) {
     try {
       const res = await api.get('/performances')
       setPerformances(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch performances:', err)
     }
   }
@@ -561,25 +579,25 @@ function PracticeLog({ onSelectTune }) {
     try {
       const res = await api.get('/setlists')
       setSetlists(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch setlists:', err)
     }
   }
 
-  async function handleAddPerformance(data) {
+  async function handleAddPerformance(data: any) {
     const res = await api.post('/performances', data)
     toast(`Added "${data.title}"`)
     fetchPerformances()
     return res.data
   }
 
-  async function handleDeletePerformance(id) {
+  async function handleDeletePerformance(id: number) {
     await api.delete(`/performances/${id}`)
     setPerformances(prev => prev.filter(p => p.id !== id))
     toast('Performance removed')
   }
 
-  async function handleEditPerformance(id, data) {
+  async function handleEditPerformance(id: number, data: any) {
     await api.patch(`/performances/${id}`, data)
     toast('Performance updated')
     fetchPerformances()
@@ -587,7 +605,7 @@ function PracticeLog({ onSelectTune }) {
 
   // --- Session editing ---
 
-  function startEditSession(session) {
+  function startEditSession(session: any) {
     setEditingSessionId(session.id)
     setEditSessionForm({
       date: session.date,
@@ -600,7 +618,7 @@ function PracticeLog({ onSelectTune }) {
     setEditSessionForm({})
   }
 
-  async function handleSaveSession(e) {
+  async function handleSaveSession(e: React.FormEvent) {
     e.preventDefault()
     try {
       await api.patch(`/sessions/${editingSessionId}`, {
@@ -610,25 +628,25 @@ function PracticeLog({ onSelectTune }) {
       toast('Session updated')
       cancelEditSession()
       fetchSessions()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to update session', 'error')
     }
   }
 
-  async function handleDeleteSession(id) {
+  async function handleDeleteSession(id: number) {
     try {
       await api.delete(`/sessions/${id}`)
       setSessions(prev => prev.filter(s => s.id !== id))
       setConfirmDeleteSession(null)
       toast('Session deleted')
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to delete session', 'error')
     }
   }
 
   // --- Entry editing ---
 
-  function startEditEntry(entry) {
+  function startEditEntry(entry: any) {
     setEditingEntryId(entry.id)
     setEditEntryForm({
       tune_id: entry.tune_id,
@@ -644,7 +662,7 @@ function PracticeLog({ onSelectTune }) {
     setEditEntryForm({})
   }
 
-  async function handleSaveEntry(sessionId, entryId) {
+  async function handleSaveEntry(sessionId: number, entryId: number) {
     try {
       await api.patch(`/sessions/${sessionId}/entries/${entryId}`, {
         tune_id: parseInt(editEntryForm.tune_id, 10),
@@ -656,23 +674,23 @@ function PracticeLog({ onSelectTune }) {
       toast('Entry updated')
       cancelEditEntry()
       fetchSessions()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to update entry', 'error')
     }
   }
 
-  async function handleDeleteEntry(sessionId, entryId) {
+  async function handleDeleteEntry(sessionId: number, entryId: number) {
     try {
       await api.delete(`/sessions/${sessionId}/entries/${entryId}`)
       setConfirmDeleteEntry(null)
       toast('Entry removed')
       fetchSessions()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to delete entry', 'error')
     }
   }
 
-  async function handleAddEntryToSession(sessionId) {
+  async function handleAddEntryToSession(sessionId: number) {
     if (!newEntryForm.tune_id) return
     try {
       await api.post(`/sessions/${sessionId}/entries`, {
@@ -686,12 +704,12 @@ function PracticeLog({ onSelectTune }) {
       setAddingToSessionId(null)
       setNewEntryForm({ tune_id: '', focus: '', tempo_practiced: '', notes: '', rating: 0 })
       fetchSessions()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to add entry', 'error')
     }
   }
 
-  async function handleSubmit(payload) {
+  async function handleSubmit(payload: any) {
     setError('')
     setSaving(true)
     try {
@@ -699,14 +717,14 @@ function PracticeLog({ onSelectTune }) {
       setShowForm(false)
       toast('Session logged')
       fetchSessions()
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to log session')
     } finally {
       setSaving(false)
     }
   }
 
-  function formatSessionDate(dateStr) {
+  function formatSessionDate(dateStr: string) {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -715,7 +733,7 @@ function PracticeLog({ onSelectTune }) {
     })
   }
 
-  function getWeekLabel(dateStr) {
+  function getWeekLabel(dateStr: string) {
     const sessionDate = new Date(dateStr + 'T12:00:00')
     const now = new Date()
     now.setHours(12, 0, 0, 0)
@@ -790,7 +808,7 @@ function PracticeLog({ onSelectTune }) {
           {showHistory && (
             <div className="session-list">
               {(() => {
-                let lastWeekLabel = null
+                let lastWeekLabel: string | null = null
                 return sessions.map(session => {
                   const weekLabel = getWeekLabel(session.date)
                   const showHeader = weekLabel !== lastWeekLabel
@@ -874,7 +892,7 @@ function PracticeLog({ onSelectTune }) {
 
                         {expandedSession === session.id && (session.entries.length > 0 || (session.fundamentals && session.fundamentals.length > 0)) && editingSessionId !== session.id && (
                           <div className="session-entries fade-in">
-                            {session.entries.map(entry => (
+                            {session.entries.map((entry: any) => (
                               editingEntryId === entry.id ? (
                                 <div key={entry.id} className="entry-edit-form">
                                   <div className="form-row">
@@ -1034,7 +1052,7 @@ function PracticeLog({ onSelectTune }) {
 
                             {session.fundamentals && session.fundamentals.length > 0 && (
                               <div className="fundamentals-display">
-                                {session.fundamentals.map(f => (
+                                {session.fundamentals.map((f: any) => (
                                   <span key={f.id} className="fundamental-chip checked">
                                     {f.category.charAt(0).toUpperCase() + f.category.slice(1)}
                                   </span>
@@ -1071,7 +1089,7 @@ function PracticeLog({ onSelectTune }) {
           danger
           onConfirm={() => {
             const entry = sessions
-              .flatMap(s => s.entries.map(e => ({ ...e, sessionId: s.id })))
+              .flatMap(s => s.entries.map((e: any) => ({ ...e, sessionId: s.id })))
               .find(e => e.id === confirmDeleteEntry)
             if (entry) handleDeleteEntry(entry.sessionId, confirmDeleteEntry)
           }}

@@ -6,25 +6,27 @@ import ConfirmDialog from './ConfirmDialog'
 import { localToday } from '../dateUtils'
 import './SetlistManager.css'
 
-function SetlistManager({onSelectTune}) {
+function SetlistManager({ onSelectTune } : {
+  onSelectTune: (tuneId: number) => void
+}) {
   const toast = useToast()
-  const [setlists, setSetlists] = useState([])
-  const [tunes, setTunes] = useState([])
-  const [performances, setPerformances] = useState([])
+  const [setlists, setSetlists] = useState<any[]>([])
+  const [tunes, setTunes] = useState<any[]>([])
+  const [performances, setPerformances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-  const [expandedSetlist, setExpandedSetlist] = useState(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [expandedSetlist, setExpandedSetlist] = useState<number | null>(null)
 
   // Form state
   const [title, setTitle] = useState('')
   const [performanceId, setPerformanceId] = useState('')
   const [notes, setNotes] = useState('')
-  const [selectedTuneIds, setSelectedTuneIds] = useState([])
+  const [selectedTuneIds, setSelectedTuneIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [sortBy, setSortBy] = useState(sessionStorage.getItem('setlistSort') || 'created')
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   
   useEffect(() => {
     fetchSetlists()
@@ -40,7 +42,7 @@ function SetlistManager({onSelectTune}) {
     try {
       const res = await api.get('/setlists')
       setSetlists(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch setlists:', err)
     } finally {
       setLoading(false)
@@ -51,7 +53,7 @@ function SetlistManager({onSelectTune}) {
     try {
       const res = await api.get('/tunes')
       setTunes(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch tunes:', err)
     }
   }
@@ -60,7 +62,7 @@ function SetlistManager({onSelectTune}) {
     try {
       const res = await api.get('/performances')
       setPerformances(res.data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch performances:', err)
     }
   }
@@ -73,7 +75,7 @@ function SetlistManager({onSelectTune}) {
       case 'oldest':
         return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at))
       case 'performance': {
-        const perfDateMap = {}
+        const perfDateMap: Record<number, string> = {}
         performances.forEach(p => { perfDateMap[p.id] = p.date })
         return sorted.sort((a, b) => {
           const aDate = a.performance_id ? perfDateMap[a.performance_id] : null
@@ -99,17 +101,17 @@ function SetlistManager({onSelectTune}) {
     setError('')
   }
 
-  function startEdit(setlist) {
+  function startEdit(setlist: any) {
     setTitle(setlist.title)
     setPerformanceId(setlist.performance_id ? setlist.performance_id.toString() : '')
     setNotes(setlist.notes || '')
-    setSelectedTuneIds(setlist.entries.map(entry => entry.tune_id))
+    setSelectedTuneIds(setlist.entries.map((entry: any) => entry.tune_id))
     setEditingId(setlist.id)
     setShowForm(true)
     setExpandedSetlist(null)
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
 
@@ -152,25 +154,25 @@ function SetlistManager({onSelectTune}) {
 
       resetForm()
       fetchSetlists()
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save setlist')
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete(setlistId) {
+  async function handleDelete(setlistId: number) {
     try {
       await api.delete(`/setlists/${setlistId}`)
       setSetlists(prev => prev.filter(s => s.id !== setlistId))
       if (expandedSetlist === setlistId) setExpandedSetlist(null)
       toast('Setlist deleted')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete setlist:', err)
     }
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string) {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -178,7 +180,7 @@ function SetlistManager({onSelectTune}) {
   }
 
   // Tune name helper — shows composer in parens for disambiguation
-  function tuneLabel(tune) {
+  function tuneLabel(tune: any) {
     return tune.composer ? `${tune.title} (${tune.composer})` : tune.title
   }
 
@@ -189,7 +191,7 @@ function SetlistManager({onSelectTune}) {
   })
 
   // Find linked performance for display
-  function getPerformanceLabel(perfId) {
+  function getPerformanceLabel(perfId: number) {
     const p = performances.find(perf => perf.id === perfId)
     if (!p) return null
     return `${p.title} — ${formatDate(p.date)}${p.venue ? ` at ${p.venue}` : ''}`

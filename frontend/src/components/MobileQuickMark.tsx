@@ -2,7 +2,7 @@ import { useState } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   const s = Math.round(seconds)
   const mins = Math.floor(s / 60)
   const secs = s % 60
@@ -14,10 +14,16 @@ const SEGMENT_COLORS = [
   '#9b7ec4', '#4a9e9e', '#c4884a', '#7a9e5a',
 ]
 
-function MobileQuickMark({ recordingId, segmentCount, currentTime, onSaved, onCancel }) {
+function MobileQuickMark({ recordingId, segmentCount, currentTime, onSaved, onCancel }: {
+  recordingId: number
+  segmentCount: number
+  currentTime: number
+  onSaved: () => void
+  onCancel: () => void
+}) {
   const toast = useToast()
-  const [markStart, setMarkStart] = useState(null)
-  const [markEnd, setMarkEnd] = useState(null)
+  const [markStart, setMarkStart] = useState<number | null>(null)
+  const [markEnd, setMarkEnd] = useState<number | null>(null)
   const [markLabel, setMarkLabel] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -34,7 +40,7 @@ function MobileQuickMark({ recordingId, segmentCount, currentTime, onSaved, onCa
       })
       toast(`Added "${markLabel.trim()}"`)
       onSaved()
-    } catch (err) {
+    } catch (err: any) {
       toast('Failed to save segment', 'error')
     } finally {
       setSaving(false)
