@@ -340,6 +340,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             onChange={e => setNotesValue(e.target.value)}
             onBlur={handleNotesSave}
             placeholder="What are you working on?"
+            spellCheck={false}
             rows={1}
           />
           {notesSaving && <span className="tune-notes-saving">Saving...</span>}
