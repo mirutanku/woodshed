@@ -19,8 +19,8 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
   const toast = useToast()
   const [form, setForm] = useState({
     label: segment.label,
-    start_time: segment.start_time,
-    end_time: segment.end_time,
+    start_time: Math.round(segment.start_time),
+    end_time: Math.round(segment.end_time),
   })
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -28,8 +28,8 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
     try {
       await api.patch(`/segments/${segment.id}`, {
         label: form.label.trim(),
-        start_time: parseFloat(form.start_time),
-        end_time: parseFloat(form.end_time),
+        start_time: Math.min(form.start_time, form.end_time),
+        end_time: Math.max(form.start_time, form.end_time),
       })
       toast('Segment updated')
       onSave()
@@ -52,47 +52,47 @@ function MobileSegmentEditForm({ segment, currentTime, onSave, onDelete, onCance
 
   return (
     <div className="shed-segment-edit">
+      <div className="shed-mark-header">
+        <span className="shed-mark-title">Edit Segment</span>
+        <button className="btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
+      </div>
+
       <input
         type="text"
         value={form.label}
         onChange={e => setForm(prev => ({ ...prev, label: e.target.value }))}
         placeholder="Label"
       />
-      <div className="shed-segment-edit-times">
-        <div className="shed-segment-edit-field">
-          <label>Start (sec)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={form.start_time}
-            onChange={e => setForm(prev => ({ ...prev, start_time: e.target.value }))}
-          />
+
+      <div className="shed-mark-buttons">
+        <div className="shed-mark-row">
           <button
-            className="btn-ghost btn-action"
-            onClick={() => setForm(prev => ({ ...prev, start_time: Math.round(currentTime * 10) / 10 }))}
+            className="shed-mark-btn marked"
+            onClick={() => setForm(prev => ({ ...prev, start_time: Math.round(currentTime) }))}
           >
-            Now
+            Start: {formatTime(form.start_time)}
           </button>
+          <div className="shed-mark-nudge">
+            <button className="btn-ghost btn-sm" onClick={() => setForm(prev => ({ ...prev, start_time: Math.max(0, prev.start_time - 1) }))}>−1s</button>
+            <button className="btn-ghost btn-sm" onClick={() => setForm(prev => ({ ...prev, start_time: prev.start_time + 1 }))}>+1s</button>
+          </div>
         </div>
-        <div className="shed-segment-edit-field">
-          <label>End (sec)</label>
-          <input
-            type="number"
-            step="0.1"
-            value={form.end_time}
-            onChange={e => setForm(prev => ({ ...prev, end_time: e.target.value }))}
-          />
+        <div className="shed-mark-row">
           <button
-            className="btn-ghost btn-action"
-            onClick={() => setForm(prev => ({ ...prev, end_time: Math.round(currentTime * 10) / 10 }))}
+            className="shed-mark-btn marked"
+            onClick={() => setForm(prev => ({ ...prev, end_time: Math.round(currentTime) }))}
           >
-            Now
+            End: {formatTime(form.end_time)}
           </button>
+          <div className="shed-mark-nudge">
+            <button className="btn-ghost btn-sm" onClick={() => setForm(prev => ({ ...prev, end_time: Math.max(0, prev.end_time - 1) }))}>−1s</button>
+            <button className="btn-ghost btn-sm" onClick={() => setForm(prev => ({ ...prev, end_time: prev.end_time + 1 }))}>+1s</button>
+          </div>
         </div>
       </div>
+
       <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
         <button className="btn-primary btn-sm" onClick={handleSave}>Save</button>
-        <button className="btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
         <div style={{ marginLeft: 'auto' }}>
           {confirmDelete ? (
             <div style={{ display: 'flex', gap: 'var(--space-xs)', alignItems: 'center' }}>
