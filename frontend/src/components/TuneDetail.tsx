@@ -33,6 +33,8 @@ function TuneDetail({ tuneId, onBack }: {
   const [showUpload, setShowUpload] = useState(false)
   const [notesValue, setNotesValue] = useState('')
   const [notesSaving, setNotesSaving] = useState(false)
+  const [editingRecordingId, setEditingRecordingId] = useState<number | null>(null)
+  const [editRecordingForm, setEditRecordingForm] = useState({ original_name: '', artist: '', description: '', keyTonic: '', keyQuality: '' })
 
   const { flush: flushTimer } = useVisibilityTimer((seconds) => {
     api.post(`/tunes/${tuneId}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
@@ -129,6 +131,39 @@ function TuneDetail({ tuneId, onBack }: {
       const detail = err.response?.data?.detail
       alert(detail || 'Failed to delete tune')
       setConfirmDelete(false)
+    }
+  }
+
+  function startEditRecording(rec: any) {
+    const parsed = parseKey(rec.key)
+    setEditingRecordingId(rec.id)
+    setEditRecordingForm({
+      original_name: rec.original_name || '',
+      artist: rec.artist || '',
+      description: rec.description || '',
+      keyTonic: parsed.tonic,
+      keyQuality: parsed.quality,
+    })
+  }
+
+  async function handleSaveRecording(recId: number) {
+    if ((editRecordingForm.keyTonic && !editRecordingForm.keyQuality) || (!editRecordingForm.keyTonic && editRecordingForm.keyQuality)) {
+      alert('Please select both a tonic and quality for the key, or leave both blank')
+      return
+    }
+    try {
+      const params = new URLSearchParams()
+      params.set('original_name', editRecordingForm.original_name.trim())
+      params.set('artist', editRecordingForm.artist.trim())
+      params.set('description', editRecordingForm.description.trim())
+      const key = buildKey(editRecordingForm.keyTonic, editRecordingForm.keyQuality)
+      params.set('key', key || '')
+      await api.patch(`/recordings/${recId}?${params.toString()}`)
+      setEditingRecordingId(null)
+      toast('Recording updated')
+      fetchRecordings()
+    } catch (err) {
+      console.error('Failed to update recording:', err)
     }
   }
 
@@ -320,28 +355,80 @@ function TuneDetail({ tuneId, onBack }: {
                   style={{ cursor: 'pointer' }}
                   onClick={() => setExpandedRecording(isExpanded ? null : rec.id)}
                 >
-                  <div className="recording-info">
-                    <span className="recording-name">{rec.original_name}</span>
-                    <div className="recording-meta">
-                      {rec.artist && <span>{rec.artist}</span>}
-                      {rec.key && <span>{rec.key}</span>}
-                      <span>{formatFileSize(rec.file_size)}</span>
-                      <span>{formatDate(rec.created_at)}</span>
+                  {editingRecordingId === rec.id ? (
+                    <div className="upload-fields" onClick={e => e.stopPropagation()}>
+                      <div className="form-group">
+                        <label>Title</label>
+                        <input
+                          type="text"
+                          value={editRecordingForm.original_name}
+                          onChange={e => setEditRecordingForm(prev => ({ ...prev, original_name: e.target.value }))}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Artist</label>
+                          <input
+                            type="text"
+                            value={editRecordingForm.artist}
+                            onChange={e => setEditRecordingForm(prev => ({ ...prev, artist: e.target.value }))}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Description</label>
+                          <input
+                            type="text"
+                            value={editRecordingForm.description}
+                            onChange={e => setEditRecordingForm(prev => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <KeyPicker
+                        tonic={editRecordingForm.keyTonic}
+                        quality={editRecordingForm.keyQuality}
+                        onTonicChange={(v: string) => setEditRecordingForm(prev => ({ ...prev, keyTonic: v }))}
+                        onQualityChange={(v: string) => setEditRecordingForm(prev => ({ ...prev, keyQuality: v }))}
+                        label="Key"
+                      />
+                      <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                        <button className="btn-primary btn-sm" onClick={() => handleSaveRecording(rec.id)}>Save</button>
+                        <button className="btn-ghost btn-sm" onClick={() => setEditingRecordingId(null)}>Cancel</button>
+                      </div>
                     </div>
-                    {rec.description && (
-                      <span className="text-sm text-dim mt-sm">{rec.description}</span>
-                    )}
-                  </div>
-                  <div className="recording-actions">
-                    <span className="text-dim">{isExpanded ? '▾' : '▸'}</span>
-                    <button
-                      className="btn-ghost btn-action"
-                      style={{ color: 'var(--color-danger)' }}
-                      onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
-                    >
-                      ×
-                    </button>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="recording-info">
+                        <span className="recording-name">{rec.original_name}</span>
+                        <div className="recording-meta">
+                          {rec.artist && <span>{rec.artist}</span>}
+                          {rec.key && <span>{rec.key}</span>}
+                          <span>{formatFileSize(rec.file_size)}</span>
+                          <span>{formatDate(rec.created_at)}</span>
+                        </div>
+                        {rec.description && (
+                          <span className="text-sm text-dim mt-sm">{rec.description}</span>
+                        )}
+                      </div>
+                      <div className="recording-actions">
+                        <span className="text-dim">{isExpanded ? '▾' : '▸'}</span>
+                        <button
+                          className="btn-ghost btn-action"
+                          onClick={e => { e.stopPropagation(); startEditRecording(rec) }}
+                          title="Edit recording"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          className="btn-ghost btn-action"
+                          style={{ color: 'var(--color-danger)' }}
+                          onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
                 {isExpanded && (
                   <div className="recording-expanded fade-in">

@@ -25,7 +25,9 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
   })
   const [confirmDeleteTune, setConfirmDeleteTune] = useState(false)
   const [confirmDeleteRecording, setConfirmDeleteRecording] = useState<number | null>(null)
-
+  const [editingRecordingId, setEditingRecordingId] = useState<number | null>(null)
+  const [editRecordingForm, setEditRecordingForm] = useState({ original_name: '', artist: '', description: '', keyTonic: '', keyQuality: '' })
+  
   async function handleSave() {
     if (!tuneForm.title.trim()) return
     try {
@@ -52,6 +54,39 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
       toast('Failed to delete tune', 'error')
     } finally {
       setConfirmDeleteTune(false)
+    }
+  }
+
+  function startEditRecording(rec: any) {
+    const parsed = parseKey(rec.key)
+    setEditingRecordingId(rec.id)
+    setEditRecordingForm({
+      original_name: rec.original_name || '',
+      artist: rec.artist || '',
+      description: rec.description || '',
+      keyTonic: parsed.tonic,
+      keyQuality: parsed.quality,
+    })
+  }
+
+  async function handleSaveRecording(recId: number) {
+    if ((editRecordingForm.keyTonic && !editRecordingForm.keyQuality) || (!editRecordingForm.keyTonic && editRecordingForm.keyQuality)) {
+      alert('Please select both a tonic and quality for the key, or leave both blank')
+      return
+    }
+    try {
+      const params = new URLSearchParams()
+      params.set('original_name', editRecordingForm.original_name.trim())
+      params.set('artist', editRecordingForm.artist.trim())
+      params.set('description', editRecordingForm.description.trim())
+      const key = buildKey(editRecordingForm.keyTonic, editRecordingForm.keyQuality)
+      params.set('key', key || '')
+      await api.patch(`/recordings/${recId}?${params.toString()}`)
+      setEditingRecordingId(null)
+      toast('Recording updated')
+      onSave()
+    } catch (err) {
+      console.error('Failed to update recording:', err)
     }
   }
 
@@ -120,9 +155,55 @@ function MobileTuneEditForm({ tune, recordings, onSave, onDelete, onDeleteRecord
         <div className="form-group">
           <label>Recordings</label>
           {recordings.map((rec: any) => (
-            <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-xs) 0' }}>
-              <span className="text-sm">{rec.artist || rec.original_name}</span>
-              <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete Recording</button>
+            <div key={rec.id} style={{ padding: 'var(--space-xs) 0' }}>
+              {editingRecordingId === rec.id ? (
+                <div className="upload-fields">
+                  <div className="form-group">
+                    <label>Title</label>
+                    <input
+                      type="text"
+                      value={editRecordingForm.original_name}
+                      onChange={e => setEditRecordingForm(prev => ({ ...prev, original_name: e.target.value }))}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Artist</label>
+                    <input
+                      type="text"
+                      value={editRecordingForm.artist}
+                      onChange={e => setEditRecordingForm(prev => ({ ...prev, artist: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <input
+                      type="text"
+                      value={editRecordingForm.description}
+                      onChange={e => setEditRecordingForm(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+                  <KeyPicker
+                    tonic={editRecordingForm.keyTonic}
+                    quality={editRecordingForm.keyQuality}
+                    onTonicChange={(v: string) => setEditRecordingForm(prev => ({ ...prev, keyTonic: v }))}
+                    onQualityChange={(v: string) => setEditRecordingForm(prev => ({ ...prev, keyQuality: v }))}
+                    label="Key"
+                  />
+                  <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                    <button className="btn-primary btn-sm" onClick={() => handleSaveRecording(rec.id)}>Save</button>
+                    <button className="btn-ghost btn-sm" onClick={() => setEditingRecordingId(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="text-sm">{rec.artist || rec.original_name}</span>
+                  <div style={{ display: 'flex', gap: 'var(--space-xs)' }}>
+                    <button className="btn-ghost btn-sm" onClick={() => startEditRecording(rec)}>Edit</button>
+                    <button className="btn-danger btn-sm" onClick={() => setConfirmDeleteRecording(rec.id)}>Delete</button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

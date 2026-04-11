@@ -192,6 +192,17 @@
   justify-content: space-between;
 }
 
+/* --- Import Mode Toggle --- */
+
+.import-mode-toggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  width: fit-content;
+}
+
 /* --- Segments --- */
 
 .segment-list {
@@ -359,5 +370,9 @@
 
   .recording-meta {
     flex-wrap: wrap;
+  }
+
+  .form-row .form-group + .form-group {
+    margin-top: var(--space-sm);
   }
 }
