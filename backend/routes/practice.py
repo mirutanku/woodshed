@@ -37,7 +37,7 @@ def get_sessions(
         results.append({
             **session.__dict__,
             "entries": entry_responses,
-            "fundamentals": [{"id": f.id, "category": f.category} for f in session.fundamentals],
+            "fundamentals": [{"id": f.id, "category": f.category, "duration_seconds": f.duration_seconds} for f in session.fundamentals],
         })
     return results
 
@@ -91,7 +91,7 @@ def create_session(
             "tune_title": entry.tune.title if entry.tune else "",
         })
     
-    fund_responses = [{"id": f.id, "category": f.category} for f in db_session.fundamentals]
+    fund_responses = [{"id": f.id, "category": f.category, "duration_seconds": f.duration_seconds} for f in db_session.fundamentals]
     return {**db_session.__dict__, "entries": entry_responses, "fundamentals": fund_responses}
 
 
@@ -125,7 +125,7 @@ def update_session(
             **entry.__dict__,
             "tune_title": entry.tune.title if entry.tune else "",
         })
-    fund_responses = [{"id": f.id, "category": f.category} for f in session.fundamentals]
+    fund_responses = [{"id": f.id, "category": f.category, "duration_seconds": f.duration_seconds} for f in session.fundamentals]
     return {**session.__dict__, "entries": entry_responses, "fundamentals": fund_responses}
 
 
@@ -453,6 +453,42 @@ def remove_quick_log_fundamental(
     return {"removed": True}
 
 
+@router.patch("/quick-log-fundamental")
+def update_quick_log_fundamental(
+    category: str,
+    duration_seconds: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    client_date: str = None,
+):
+    today = date.fromisoformat(client_date) if client_date else date.today()
+
+    session = (
+        db.query(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date == today,
+            PracticeSession.is_quick_log == True,
+        )
+        .first()
+    )
+
+    if not session:
+        return {"updated": False}
+
+    entry = db.query(FundamentalsEntry).filter(
+        FundamentalsEntry.session_id == session.id,
+        FundamentalsEntry.category == category,
+    ).first()
+
+    if not entry:
+        return {"updated": False}
+
+    entry.duration_seconds = duration_seconds
+    db.commit()
+    return {"updated": True, "duration_seconds": duration_seconds}
+
+
 @router.get("/most-practiced")
 def get_most_practiced(
     current_user=Depends(get_current_user),
@@ -592,16 +628,18 @@ def get_today(
 
     # Fundamentals logged today
     fundamentals_today = (
-        db.query(FundamentalsEntry.category)
+        db.query(FundamentalsEntry.category, FundamentalsEntry.duration_seconds)
         .join(PracticeSession)
         .filter(
             PracticeSession.user_id == current_user.id,
             PracticeSession.date == today,
         )
-        .distinct()
         .all()
     )
-    fundamentals_list = [f[0] for f in fundamentals_today]
+    fundamentals_list = [
+        {"category": f[0], "duration_seconds": f[1]}
+        for f in fundamentals_today
+    ]
 
     all_tune_ids = played_ids | set(logged_by_tune.keys())
 
@@ -648,6 +686,17 @@ def get_weekly_hours(
         .scalar()
     )
 
+    # Fundamentals seconds this week
+    fundamentals_seconds = (
+        db.query(sql_func.coalesce(sql_func.sum(FundamentalsEntry.duration_seconds), 0))
+        .join(PracticeSession)
+        .filter(
+            PracticeSession.user_id == current_user.id,
+            PracticeSession.date >= start_of_week,
+        )
+        .scalar()
+    )
+
     manual_minutes = (
         db.query(sql_func.coalesce(sql_func.sum(PracticeSession.duration_minutes), 0))
         .filter(
@@ -657,7 +706,7 @@ def get_weekly_hours(
         .scalar()
     )
 
-    total_minutes = (playback_seconds / 60) + manual_minutes
+    total_minutes = (playback_seconds / 60) + manual_minutes + (fundamentals_seconds / 60)
     return {"minutes": round(total_minutes), "hours": round(total_minutes / 60, 1)}
 
 

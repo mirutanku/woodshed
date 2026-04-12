@@ -33,9 +33,17 @@ function TodayView({ onSelectTune }: {
             <span className="today-chip-title">{tune.title}</span>
           </button>
         ))}
-        {data.fundamentals && data.fundamentals.map(f => (
-          <span key={f} className="today-chip fundamental">
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+        {data.fundamentals && data.fundamentals.map((f: { category: string; duration_seconds: number | null }) => (
+          <span key={f.category} className="today-chip fundamental">
+            {f.category.charAt(0).toUpperCase() + f.category.slice(1)}
+            {f.duration_seconds && f.duration_seconds > 0 && (
+              <span className="today-chip-duration">
+                {f.duration_seconds >= 3600
+                  ? ` ${Math.round(f.duration_seconds / 360) / 10}h`
+                  : ` ${Math.round(f.duration_seconds / 60)}m`
+                }
+              </span>
+            )}
           </span>
         ))}
       </div>

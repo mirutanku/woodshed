@@ -186,5 +186,6 @@ class FundamentalsEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("practice_sessions.id", ondelete="CASCADE"), nullable=False)
     category = Column(String, nullable=False)
+    duration_seconds = Column(Integer, nullable=True)
 
     session = relationship("PracticeSession", back_populates="fundamentals")

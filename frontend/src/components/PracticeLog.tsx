@@ -373,6 +373,10 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [streakData, setStreakData] = useState({ streak: 0, practiced_today: false })
   const [recentFundamentals, setRecentFundamentals] = useState<any[]>([])
   const [loggedFundamentals, setLoggedFundamentals] = useState<string[]>([])
+  const [activeFundamental, setActiveFundamental] = useState<string | null>(null)
+  const [fundamentalStartTime, setFundamentalStartTime] = useState<number | null>(null)
+  const [fundamentalElapsed, setFundamentalElapsed] = useState(0)
+  
 
   useEffect(() => {
     api.get(`/streak?client_date=${localToday()}`).then(res => setStreakData(res.data)).catch(() => {})
@@ -380,24 +384,63 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
     api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
     api.get(`/today?client_date=${localToday()}`).then(res => {
-      if (res.data.fundamentals) setLoggedFundamentals(res.data.fundamentals)
+      if (res.data.fundamentals) setLoggedFundamentals(res.data.fundamentals.map((f: { category: string }) => f.category))
     }).catch(() => {})
   }, [sessions, mostPracticedMode])
 
+  useEffect(() => {
+    if (!activeFundamental || !fundamentalStartTime) return
+    const interval = setInterval(() => {
+      setFundamentalElapsed(Math.round((Date.now() - fundamentalStartTime) / 1000))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [activeFundamental, fundamentalStartTime])
+
+  function formatElapsed(seconds: number): string {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${String(s).padStart(2, '0')}`
+  }
+
   async function handleToggleFundamental(category: string) {
     const isLogged = loggedFundamentals.includes(category)
-    try {
-      if (isLogged) {
+    const isActive = activeFundamental === category
+
+    if (isActive) {
+      // Stop the timer
+      const elapsed = Math.round((Date.now() - (fundamentalStartTime || 0)) / 1000)
+      try {
+        await api.patch(`/quick-log-fundamental?category=${encodeURIComponent(category)}&duration_seconds=${elapsed}&client_date=${localToday()}`)
+      } catch (err) {
+        console.error('Failed to save duration:', err)
+      }
+      setActiveFundamental(null)
+      setFundamentalStartTime(null)
+      setFundamentalElapsed(0)
+      api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
+    } else if (isLogged) {
+      try {
         await api.delete(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
         setLoggedFundamentals(prev => prev.filter(c => c !== category))
-      } else {
-        await api.post(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
-        setLoggedFundamentals(prev => [...prev, category])
+      } catch (err) {
+        console.error('Failed to toggle fundamental:', err)
       }
       api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
-    } catch (err: any) {
-      console.error('Failed to toggle fundamental:', err)
+    } else {
+      try {
+        await api.post(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
+        setLoggedFundamentals(prev => [...prev, category])
+      } catch (err) {
+        console.error('Failed to toggle fundamental:', err)
+      }
+      api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
     }
+  }
+
+  function startFundamentalTimer(category: string) {
+    setActiveFundamental(category)
+    setFundamentalStartTime(Date.now())
+    setFundamentalElapsed(0)
   }
 
   return (
@@ -497,10 +540,22 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
               return (
                 <button
                   key={category}
-                  className={`fundamental-chip ${isLogged ? 'checked' : ''}`}
+                  className={`fundamental-chip ${isLogged ? 'checked' : ''} ${activeFundamental === category ? 'timing' : ''}`}
                   onClick={() => handleToggleFundamental(category)}
                 >
                   {category.charAt(0).toUpperCase() + category.slice(1)}
+                  {activeFundamental === category && (
+                    <span className="fundamental-timer"> {formatElapsed(fundamentalElapsed)}</span>
+                  )}
+                  {isLogged && activeFundamental !== category && (
+                    <span
+                      className="fundamental-timer-btn"
+                      onClick={(e) => { e.stopPropagation(); startFundamentalTimer(category) }}
+                      title="Start timer"
+                    >
+                      ⏱
+                    </span>
+                  )}
                 </button>
               )
             })}

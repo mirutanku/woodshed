@@ -220,6 +220,7 @@ class FundamentalsEntryCreate(BaseModel):
 class FundamentalsEntryResponse(BaseModel):
     id: int
     category: str
+    duration_seconds: int | None = None
 
     class Config:
         from_attributes = True
