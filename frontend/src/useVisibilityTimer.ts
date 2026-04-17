@@ -3,6 +3,8 @@ import { useRef, useEffect, useCallback } from 'react'
 export default function useVisibilityTimer(onElapsed: ((seconds: number) => void) | null, isPlayingRef?: React.RefObject<boolean>) {
   const startTimeRef = useRef<number | null>(null)
   const accumulatedRef = useRef(0)
+  const onElapsedRef = useRef(onElapsed)
+  onElapsedRef.current = onElapsed
 
   const start = useCallback(() => {
     if (!startTimeRef.current) {
@@ -21,11 +23,11 @@ export default function useVisibilityTimer(onElapsed: ((seconds: number) => void
     pause()
     const seconds = accumulatedRef.current
     accumulatedRef.current = 0
-    if (seconds > 0 && onElapsed) {
-      onElapsed(seconds)
+    if (seconds > 0 && onElapsedRef.current) {
+      onElapsedRef.current(seconds)
     }
     return seconds
-  }, [pause, onElapsed])
+  }, [pause])
 
   useEffect(() => {
     function handleVisibility() {

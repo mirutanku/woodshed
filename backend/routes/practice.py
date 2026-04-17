@@ -600,15 +600,16 @@ def get_today(
 ):
     today = date.fromisoformat(client_date) if client_date else date.today()
 
-    played_tune_ids = (
-        db.query(TunePlayback.tune_id)
+    played_tunes = (
+        db.query(TunePlayback.tune_id, TunePlayback.play_seconds)
         .filter(
             TunePlayback.user_id == current_user.id,
             TunePlayback.date == today,
         )
         .all()
     )
-    played_ids = {t[0] for t in played_tune_ids}
+    played_ids = {t[0] for t in played_tunes}
+    played_seconds = {t[0]: t[1] for t in played_tunes}
 
     logged_entries = (
         db.query(PracticeEntry.tune_id, PracticeEntry.focus)
@@ -659,6 +660,7 @@ def get_today(
             "played": tune_id in played_ids,
             "logged": tune_id in logged_by_tune,
             "focus": logged_by_tune.get(tune_id, []),
+            "play_seconds": played_seconds.get(tune_id, 0),
         })
 
     result.sort(key=lambda x: x["title"])
