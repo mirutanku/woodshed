@@ -375,6 +375,7 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
   const [loggedFundamentals, setLoggedFundamentals] = useState<string[]>([])
   const [activeFundamental, setActiveFundamental] = useState<string | null>(null)
   const [fundamentalStartTime, setFundamentalStartTime] = useState<number | null>(null)
+  const [fundamentalAccumulated, setFundamentalAccumulated] = useState<Record<string, number>>({})
   const [fundamentalElapsed, setFundamentalElapsed] = useState(0)
   
 
@@ -384,7 +385,14 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     api.get(`/weekly-hours?client_date=${localToday()}`).then(res => setWeeklyHours(res.data)).catch(() => {})
     api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
     api.get(`/today?client_date=${localToday()}`).then(res => {
-      if (res.data.fundamentals) setLoggedFundamentals(res.data.fundamentals.map((f: { category: string }) => f.category))
+      if (res.data.fundamentals) {
+        setLoggedFundamentals(res.data.fundamentals.map((f: { category: string }) => f.category))
+        const acc: Record<string, number> = {}
+        res.data.fundamentals.forEach((f: { category: string; duration_seconds: number | null }) => {
+          if (f.duration_seconds) acc[f.category] = f.duration_seconds
+        })
+        setFundamentalAccumulated(acc)
+      }
     }).catch(() => {})
   }, [sessions, mostPracticedMode])
 
@@ -407,21 +415,29 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
     const isActive = activeFundamental === category
 
     if (isActive) {
-      // Stop the timer
-      const elapsed = Math.round((Date.now() - (fundamentalStartTime || 0)) / 1000)
+      const sessionElapsed = Math.round((Date.now() - (fundamentalStartTime || 0)) / 1000)
+      const totalSeconds = (fundamentalAccumulated[category] || 0) + sessionElapsed
       try {
-        await api.patch(`/quick-log-fundamental?category=${encodeURIComponent(category)}&duration_seconds=${elapsed}&client_date=${localToday()}`)
+        await api.patch(`/quick-log-fundamental?category=${encodeURIComponent(category)}&duration_seconds=${totalSeconds}&client_date=${localToday()}`)
       } catch (err) {
         console.error('Failed to save duration:', err)
       }
+      setFundamentalAccumulated(prev => ({ ...prev, [category]: totalSeconds }))
       setActiveFundamental(null)
       setFundamentalStartTime(null)
       setFundamentalElapsed(0)
       api.get('/recent-fundamentals').then(res => setRecentFundamentals(res.data)).catch(() => {})
     } else if (isLogged) {
+      const accumulated = fundamentalAccumulated[category] || 0
+      if (accumulated >= 60) return
       try {
         await api.delete(`/quick-log-fundamental?category=${encodeURIComponent(category)}&client_date=${localToday()}`)
         setLoggedFundamentals(prev => prev.filter(c => c !== category))
+        setFundamentalAccumulated(prev => {
+          const next = { ...prev }
+          delete next[category]
+          return next
+        })
       } catch (err) {
         console.error('Failed to toggle fundamental:', err)
       }
@@ -545,7 +561,10 @@ function PracticeSummary({ sessions, performances, setlists, onAddPerformance, o
                 >
                   {category.charAt(0).toUpperCase() + category.slice(1)}
                   {activeFundamental === category && (
-                    <span className="fundamental-timer"> {formatElapsed(fundamentalElapsed)}</span>
+                    <span className="fundamental-timer"> {formatElapsed((fundamentalAccumulated[category] || 0) + fundamentalElapsed)}</span>
+                  )}
+                  {isLogged && activeFundamental !== category && (fundamentalAccumulated[category] || 0) > 0 && (
+                    <span className="fundamental-timer"> {formatElapsed(fundamentalAccumulated[category])}</span>
                   )}
                   {isLogged && activeFundamental !== category && (
                     <span
