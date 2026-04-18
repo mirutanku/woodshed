@@ -566,6 +566,7 @@ margin-top: 0;
   background: var(--color-bg-raised);
   border: 1px solid var(--color-border);
   border-radius: 100px;
+  height: 28px;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-text);
@@ -581,6 +582,11 @@ margin-top: 0;
 
 .today-chip-title {
   white-space: nowrap;
+}
+
+.today-chip-play {
+  font-size: 0.6rem;
+  color: var(--color-amber-dim);
 }
 
 .today-chip.fundamental {
