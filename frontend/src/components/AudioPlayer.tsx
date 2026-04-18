@@ -138,18 +138,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
     if (audio.paused) {
       audio.play().then(() => {
         setIsPlaying(true)
-        if (!hasCheckedIn.current) {
-          hasCheckedIn.current = true
-          api.post(`/checkin?client_date=${localToday()}`).then(res => {
-            if (!res.data.already_checked_in) {
-              toast('Practice streak updated ✓')
-            }
-          }).catch(() => {})
-        }
-        if (!hasTrackedPlayback.current && tuneId) {
-          hasTrackedPlayback.current = true
-          api.post(`/tunes/${tuneId}/playback?client_date=${localToday()}`).catch(() => {})
-        }
+        trackPlaybackIfNeeded()
       }).catch(() => setError('Playback failed'))
     } else {
       audio.pause()
@@ -218,7 +207,10 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
       if (!isPlaying) {
         function onSeeked() {
           audio.removeEventListener('seeked', onSeeked)
-          audio.play().then(() => setIsPlaying(true)).catch(() => {})
+          audio.play().then(() => {
+            setIsPlaying(true)
+            trackPlaybackIfNeeded()
+          }).catch(() => {})
         }
         audio.addEventListener('seeked', onSeeked)
       }
@@ -246,6 +238,21 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
       setQuickLogged(true)
     } catch (err) {
       toast('Failed to log', 'error')
+    }
+  }
+
+  function trackPlaybackIfNeeded() {
+    if (!hasCheckedIn.current) {
+      hasCheckedIn.current = true
+      api.post(`/checkin?client_date=${localToday()}`).then(res => {
+        if (!res.data.already_checked_in) {
+          toast('Practice streak updated ✓')
+        }
+      }).catch(() => {})
+    }
+    if (!hasTrackedPlayback.current && tuneId) {
+      hasTrackedPlayback.current = true
+      api.post(`/tunes/${tuneId}/playback?client_date=${localToday()}`).catch(() => {})
     }
   }
 

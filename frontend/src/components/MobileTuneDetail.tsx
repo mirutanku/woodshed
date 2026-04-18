@@ -112,6 +112,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
   }
 
+  function trackPlaybackIfNeeded() {
+    if (!hasCheckedIn.current) {
+      hasCheckedIn.current = true
+      api.post(`/checkin?client_date=${localToday()}`).then(res => {
+        if (!res.data.already_checked_in) {
+          toast('Practice streak updated ✓')
+        }
+      }).catch(() => {})
+    }
+    if (!hasTrackedPlayback.current) {
+      hasTrackedPlayback.current = true
+      api.post(`/tunes/${tune.id}/playback?client_date=${localToday()}`).catch(() => {})
+    }
+  }
+
   function applyRamp(audio: HTMLAudioElement) {
     const ramp = rampRef.current
     if (!ramp.enabled) return
@@ -196,18 +211,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     } else {
       audio.play().then(() => {
         setIsPlaying(true)
-        if (!hasCheckedIn.current) {
-          hasCheckedIn.current = true
-          api.post(`/checkin?client_date=${localToday()}`).then(res => {
-            if (!res.data.already_checked_in) {
-              toast('Practice streak updated ✓')
-            }
-          }).catch(() => {})
-        }
-        if (!hasTrackedPlayback.current) {
-          hasTrackedPlayback.current = true
-          api.post(`/tunes/${tune.id}/playback?client_date=${localToday()}`).catch(() => {})
-        }
+        trackPlaybackIfNeeded()
       }).catch(() => {})
     }
   }
@@ -240,7 +244,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         // Wait for the seek to finish before playing
         function onSeeked() {
           audio.removeEventListener('seeked', onSeeked)
-          audio.play().then(() => setIsPlaying(true)).catch(() => {})
+          audio.play().then(() => {
+            setIsPlaying(true)
+            trackPlaybackIfNeeded()
+          }).catch(() => {})
         }
         audio.addEventListener('seeked', onSeeked)
       }
