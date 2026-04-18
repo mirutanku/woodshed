@@ -26,10 +26,6 @@ function TodayView({ onSelectTune }: {
             className="today-chip"
             onClick={() => onSelectTune && onSelectTune(tune.tune_id)}
           >
-            <span className="today-chip-indicators">
-              {tune.played && <span className="today-ind played">▶</span>}
-              {tune.logged && <span className="today-ind logged">✎</span>}
-            </span>
             <span className="today-chip-title">{tune.title}</span>
             {tune.play_seconds >= 60 && (
               <span className="today-chip-duration">

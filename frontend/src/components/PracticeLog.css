@@ -579,23 +579,6 @@ margin-top: 0;
   background: var(--color-amber-glow);
 }
 
-.today-chip-indicators {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.today-ind {
-  font-size: 0.75rem;
-}
-
-.today-ind.played {
-  color: var(--color-amber);
-}
-
-.today-ind.logged {
-  color: var(--color-success);
-}
-
 .today-chip-title {
   white-space: nowrap;
 }
