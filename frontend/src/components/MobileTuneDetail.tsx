@@ -419,6 +419,18 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
           {/* Transport */}
           <div className="shed-transport">
+            <button className="shed-restart-btn" onClick={() => {
+              const audio = audioRef.current
+              if (!audio) return
+              if (loopSegment) {
+                audio.currentTime = loopSegment.start_time
+              } else {
+                audio.currentTime = 0
+              }
+              setCurrentTime(audio.currentTime)
+            }}>
+              ↺
+            </button>
             <button className="shed-play-btn" onClick={togglePlay}>
               {isPlaying ? '❚❚' : '▶'}
             </button>

@@ -346,7 +346,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
         {/* Transport */}
         <div className="player-transport">
           <button className="transport-btn" onClick={restart} title="Restart">
-            ⏮
+            ↺
           </button>
           <button className="transport-btn play-btn" onClick={togglePlay}>
             {isPlaying ? '⏸' : '▶'}

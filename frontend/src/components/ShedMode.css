@@ -185,6 +185,8 @@
 .shed-transport {
   display: flex;
   justify-content: center;
+  align-items: center;
+  position: relative;
   margin-bottom: var(--space-lg);
 }
 
@@ -206,6 +208,28 @@
 .shed-play-btn:active {
   transform: scale(0.95);
   background: var(--color-gold);
+}
+
+.shed-restart-btn {
+  position: absolute;
+  left: calc(50% - 100px);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  color: var(--color-text-dim);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.shed-restart-btn:hover {
+  border-color: var(--color-amber-dim);
+  color: var(--color-text);
 }
 
 /* Speed */
