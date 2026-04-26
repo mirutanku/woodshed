@@ -438,6 +438,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               <button
                 className="shed-speed-nudge"
                 onClick={() => setPlaybackSpeed(Math.max(0.25, Math.round((speed - 0.05) * 100) / 100))}
+                onTouchEnd={(e) => (e.target as HTMLElement).blur()}
               >
                 −
               </button>
@@ -445,6 +446,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               <button
                 className="shed-speed-nudge"
                 onClick={() => setPlaybackSpeed(Math.min(1.5, Math.round((speed + 0.05) * 100) / 100))}
+                onTouchEnd={(e) => (e.target as HTMLElement).blur()}
               >
                 +
               </button>

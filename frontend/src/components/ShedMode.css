@@ -267,15 +267,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.shed-speed-nudge:active {
-  color: var(--color-text);
-}
-
-.shed-speed-nudge:focus {
-  outline: none;
-  color: var(--color-text-dim);
-}
-
 /* Segments */
 
 .shed-segments {
