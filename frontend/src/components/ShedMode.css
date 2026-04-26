@@ -229,9 +229,12 @@
   transition: all 0.15s ease;
 }
 
-.shed-restart-btn:hover {
-  border-color: var(--color-amber-dim);
-  color: var(--color-text);
+.shed-restart-btn:hover,
+.shed-restart-btn:focus,
+.shed-restart-btn:active {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-dim);
 }
 
 /* Speed control */
@@ -265,6 +268,24 @@
   padding: 0.1rem 0.2rem;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+.shed-speed-nudge {
+  border: none;
+  background: transparent;
+  color: var(--color-text-dim);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  flex-shrink: 0;
+}
+
+.shed-speed-nudge:hover,
+.shed-speed-nudge:focus,
+.shed-speed-nudge:active {
+  background: transparent;
+  border: none;
+  color: var(--color-text-dim);
 }
 
 /* Segments */
