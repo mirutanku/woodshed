@@ -204,6 +204,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: var(--space-sm);
 }
 
 .shed-play-btn:active {
@@ -252,7 +253,7 @@
   color: var(--color-amber);
   min-width: 2.2rem;
   text-align: center;
-  padding: 0.05rem 0.15rem;
+  padding: 0.05rem 0.3rem;
 }
 
 .shed-speed-nudge {
@@ -268,6 +269,11 @@
 
 .shed-speed-nudge:active {
   color: var(--color-text);
+}
+
+.shed-speed-nudge:focus {
+  outline: none;
+  color: var(--color-text-dim);
 }
 
 /* Segments */
