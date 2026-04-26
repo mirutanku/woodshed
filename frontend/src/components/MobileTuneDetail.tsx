@@ -434,30 +434,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             <button className="shed-play-btn" onClick={togglePlay}>
               {isPlaying ? '❚❚' : '▶'}
             </button>
-          </div>
-
-          {/* Speed */}
-          <div className="shed-speed">
-            {[0.5, 0.75, 1.0, 1.25].map(s => (
+            <div className="shed-speed-control">
               <button
-                key={s}
-                className={`shed-speed-btn ${speed === s ? 'active' : ''}`}
-                onClick={() => setPlaybackSpeed(s)}
+                className="shed-speed-nudge"
+                onClick={() => setPlaybackSpeed(Math.max(0.25, Math.round((speed - 0.05) * 100) / 100))}
               >
-                {s === 1.0 ? '1×' : `${s}×`}
+                −
               </button>
-            ))}
-          </div>
-          <div className="shed-speed-slider">
-            <input
-              type="range"
-              min="0.25"
-              max="1.5"
-              step="0.05"
-              value={speed}
-              onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-            />
-            <span className="shed-speed-value">{speed.toFixed(2)}×</span>
+              <span className="shed-speed-current">{speed.toFixed(2)}×</span>
+              <button
+                className="shed-speed-nudge"
+                onClick={() => setPlaybackSpeed(Math.min(1.5, Math.round((speed + 0.05) * 100) / 100))}
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {/* Segments */}

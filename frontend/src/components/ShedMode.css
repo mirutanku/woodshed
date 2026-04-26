@@ -188,16 +188,17 @@
   align-items: center;
   position: relative;
   margin-bottom: var(--space-lg);
+  min-height: 64px;
 }
 
 .shed-play-btn {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   border: none;
   background: var(--color-amber);
   color: var(--color-bg);
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -212,14 +213,14 @@
 
 .shed-restart-btn {
   position: absolute;
-  left: calc(50% - 100px);
-  width: 44px;
-  height: 44px;
+  right: calc(50% + 48px);
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
-  background: var(--color-bg-surface);
+  background: transparent;
   color: var(--color-text-dim);
-  font-size: 1.25rem;
+  font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -232,92 +233,40 @@
   color: var(--color-text);
 }
 
-/* Speed */
+/* Speed control */
 
-.shed-speed {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xl);
-}
-
-.shed-speed-btn {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
-  border-radius: var(--radius-md);
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-dim);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-width: 56px;
-}
-
-.shed-speed-btn.active {
-  background: var(--color-amber-glow);
-  border-color: var(--color-amber-dim);
-  color: var(--color-amber);
-}
-
-.shed-speed-btn:active {
-  transform: scale(0.95);
-}
-
-.shed-segment-edit {
-  padding: var(--space-md);
-  background: var(--color-bg-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.shed-segment-edit-times {
-  display: flex;
-  gap: var(--space-md);
-}
-
-.shed-segment-edit-field {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.shed-segment-edit-field label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-}
-
-.shed-segment-edit-field input {
-  font-size: 1rem;
-}
-
-.shed-speed-slider {
+.shed-speed-control {
+  position: absolute;
+  left: calc(50% + 48px);
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.15rem 0.1rem;
 }
 
-.shed-speed-slider input[type="range"] {
-  flex: 1;
-  height: 36px;
-  cursor: pointer;
-  accent-color: var(--color-amber);
-}
-
-.shed-speed-value {
+.shed-speed-current {
   font-family: var(--font-mono);
   font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-amber);
+  min-width: 2.2rem;
+  text-align: center;
+  padding: 0.05rem 0.15rem;
+}
+
+.shed-speed-nudge {
+  border: none;
+  background: transparent;
   color: var(--color-text-dim);
-  min-width: 3.5rem;
-  text-align: right;
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0.1rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.shed-speed-nudge:hover {
+  color: var(--color-text);
 }
 
 /* Segments */
@@ -371,6 +320,42 @@
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
+
+.shed-segment-edit {
+  padding: var(--space-md);
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.shed-segment-edit-times {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.shed-segment-edit-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.shed-segment-edit-field label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.shed-segment-edit-field input {
+  font-size: 1rem;
+}
+
+/* Loop indicator */
 
 .shed-loop-indicator {
   text-align: center;
