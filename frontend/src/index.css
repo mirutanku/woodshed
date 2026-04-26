@@ -3,6 +3,10 @@
    Warm & woody. Late-night jazz club energy.
    ============================================ */
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   /* --- Palette --- */
   --color-bg:          #1a1410;
