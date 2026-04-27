@@ -376,7 +376,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
             value={speed}
             onChange={e => handleSpeedChange(parseFloat(e.target.value))}
           />
-          <span className="speed-value">{speed.toFixed(2)}×</span>
+          <span className="speed-value">{Math.round(speed * 100)}%</span>
         </div>
 
         {/* Loop indicator + auto-ramp */}

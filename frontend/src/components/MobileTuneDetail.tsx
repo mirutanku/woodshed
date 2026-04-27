@@ -441,7 +441,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               >
                 −
               </button>
-              <span className="shed-speed-current">{speed.toFixed(2)}×</span>
+              <span className="shed-speed-current">{Math.round(speed * 100)}%</span>
               <button
                 className="shed-speed-nudge"
                 onClick={() => setPlaybackSpeed(Math.min(1.5, Math.round((speed + 0.05) * 100) / 100))}
