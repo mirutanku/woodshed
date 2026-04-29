@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect } from 'react'
 
 export default function useVisibilityTimer(onElapsed: ((seconds: number) => void) | null, isPlayingRef?: React.RefObject<boolean>) {
   const startTimeRef = useRef<number | null>(null)
@@ -6,20 +6,20 @@ export default function useVisibilityTimer(onElapsed: ((seconds: number) => void
   const onElapsedRef = useRef(onElapsed)
   onElapsedRef.current = onElapsed
 
-  const start = useCallback(() => {
+  function start() {
     if (!startTimeRef.current) {
       startTimeRef.current = Date.now()
     }
-  }, [])
+  }
 
-  const pause = useCallback(() => {
+  function pause() {
     if (startTimeRef.current) {
       accumulatedRef.current += Math.round((Date.now() - startTimeRef.current) / 1000)
       startTimeRef.current = null
     }
-  }, [])
+  }
 
-  const flush = useCallback(() => {
+  function flush() {
     pause()
     const seconds = accumulatedRef.current
     accumulatedRef.current = 0
@@ -27,7 +27,10 @@ export default function useVisibilityTimer(onElapsed: ((seconds: number) => void
       onElapsedRef.current(seconds)
     }
     return seconds
-  }, [pause])
+  }
+
+  const flushRef = useRef(flush)
+  flushRef.current = flush
 
   useEffect(() => {
     function handleVisibility() {
@@ -47,9 +50,28 @@ export default function useVisibilityTimer(onElapsed: ((seconds: number) => void
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility)
-      flush()
+      flushRef.current()
     }
-  }, [start, pause, flush])
+  }, [])
+
+  // Periodic save every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (startTimeRef.current) {
+        const elapsed = Math.round((Date.now() - startTimeRef.current) / 1000)
+        accumulatedRef.current += elapsed
+        startTimeRef.current = Date.now()
+
+        const seconds = accumulatedRef.current
+        accumulatedRef.current = 0
+        if (seconds > 0 && onElapsedRef.current) {
+          onElapsedRef.current(seconds)
+        }
+      }
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return { flush }
 }

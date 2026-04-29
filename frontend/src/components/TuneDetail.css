@@ -67,6 +67,13 @@
   font-size: 1.15rem;
 }
 
+.tune-practice-timer {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
 /* --- Recordings --- */
 
 .recording-list {

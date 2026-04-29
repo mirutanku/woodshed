@@ -18,12 +18,13 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate }: { 
+function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate, onPlayingChange }: { 
   recordingId: number 
   tuneId: number 
   tuneTitle: string 
   segments?: any[] 
-  onTimeUpdate: (time: number) => void 
+  onTimeUpdate: (time: number) => void
+  onPlayingChange?: (playing: boolean) => void
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const progressRef = useRef<HTMLDivElement | null>(null)
@@ -54,6 +55,11 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
   const [quickLogged, setQuickLogged] = useState(false)
 
   const toast = useToast()
+
+  // Notify parent of playing state changes
+  useEffect(() => {
+    if (onPlayingChange) onPlayingChange(isPlaying)
+  }, [isPlaying, onPlayingChange])
 
   // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
 

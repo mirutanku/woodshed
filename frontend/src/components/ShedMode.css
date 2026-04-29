@@ -237,6 +237,14 @@
   color: var(--color-text-dim);
 }
 
+.shed-practice-timer {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
 /* Speed control */
 
 .shed-speed-control {

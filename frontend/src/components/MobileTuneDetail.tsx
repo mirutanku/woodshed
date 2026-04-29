@@ -66,6 +66,33 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const hasTrackedPlayback = useRef(false)
   const [quickLogged, setQuickLogged] = useState(false)
 
+  // Display timer — independent from tracking, shows total time on tune today
+  const [practiceElapsed, setPracticeElapsed] = useState(0)
+  const practiceStartRef = useRef(Date.now())
+  const practiceBaseRef = useRef(0)
+
+  useEffect(() => {
+    api.get(`/today?client_date=${localToday()}`).then(res => {
+      const tuneData = res.data.tunes?.find((t: any) => t.tune_id === tune.id)
+      if (tuneData?.play_seconds) {
+        practiceBaseRef.current = tuneData.play_seconds
+      }
+    }).catch(() => {})
+  }, [tune.id])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const sessionSeconds = Math.round((Date.now() - practiceStartRef.current) / 1000)
+      setPracticeElapsed(practiceBaseRef.current + sessionSeconds)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Keep isPlayingRef in sync
+  useEffect(() => {
+    isPlayingRef.current = isPlaying
+  }, [isPlaying])
+
   const { flush: flushTimer } = useVisibilityTimer((seconds) => {
     api.post(`/tunes/${tune.id}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
   }, isPlayingRef)
@@ -232,7 +259,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     const audio = audioRef.current
     if (!audio) return
 
-    if (loopSegment && loopSegment.id === segment.id) {
+    if (loopSegment?.id === segment.id) {
+      // Tapping active loop clears it
       setLoopSegment(null)
       setRampReachedMax(false)
     } else {
@@ -241,26 +269,12 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       audio.currentTime = segment.start_time
       setCurrentTime(segment.start_time)
       if (!isPlaying) {
-        // Wait for the seek to finish before playing
-        function onSeeked() {
-          audio.removeEventListener('seeked', onSeeked)
-          audio.play().then(() => {
-            setIsPlaying(true)
-            trackPlaybackIfNeeded()
-          }).catch(() => {})
-        }
-        audio.addEventListener('seeked', onSeeked)
+        audio.play().then(() => {
+          setIsPlaying(true)
+          trackPlaybackIfNeeded()
+        }).catch(() => {})
       }
     }
-  }
-
-  function handleTimelineClick(e: React.MouseEvent<HTMLDivElement>) {
-    const audio = audioRef.current
-    if (!audio || !duration) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    audio.currentTime = fraction * duration
-    setCurrentTime(fraction * duration)
   }
 
   async function handleQuickLog() {
@@ -269,10 +283,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       if (res.data.already_logged) {
         toast('Already in today\'s log')
       } else {
-        toast(`Logged '${tune.title}' ✓`)
+        toast(`Logged ${tune.title} ✓`)
       }
       setQuickLogged(true)
-    } catch (err: any) {
+    } catch (err) {
       toast('Failed to log', 'error')
     }
   }
@@ -283,60 +297,66 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     try {
       await api.patch(`/tunes/${tune.id}`, { notes: notesValue.trim() || null })
       if (onTuneChanged) onTuneChanged()
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to save notes:', err)
     } finally {
       setNotesSaving(false)
     }
   }
 
-  useEffect(() => {
-    isPlayingRef.current = isPlaying
-  }, [isPlaying])
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      const audio = audioRef.current
-      if (audio) { audio.pause(); audio.src = '' }
-    }
-  }, [])
+  function handleTimelineClick(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
+    const audio = audioRef.current
+    if (!audio || !duration) return
+    const rect = (e.target as HTMLElement).closest('.shed-timeline')?.getBoundingClientRect()
+    if (!rect) return
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    audio.currentTime = fraction * duration
+    setCurrentTime(audio.currentTime)
+  }
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
 
-  return (
-    <div className="shed-mode fade-in">
-      <button className="shed-back-btn" onClick={() => { stopPlayback(); flushTimer(); onBack() }}>
-        ← Back
-      </button>
-
-      {editingTune ? (
+  if (editingTune) {
+    return (
+      <div className="shed-mode">
+        <button className="shed-back-btn" onClick={() => setEditingTune(false)}>
+          ← Done
+        </button>
         <MobileTuneEditForm
           tune={tune}
           recordings={recordings}
-          onSave={() => { setEditingTune(false); if (onTuneChanged) onTuneChanged() }}
-          onDelete={() => { if (onTuneDeleted) onTuneDeleted() }}
-          onDeleteRecording={(recId) => {
+          onSave={() => { setEditingTune(false); onTuneChanged() }}
+          onDelete={() => { setEditingTune(false); onTuneDeleted() }}
+          onDeleteRecording={(recId: number) => {
             if (selectedRecording?.id === recId) {
-              stopPlayback()
               setSelectedRecording(null)
-              setSegments([])
+              stopPlayback()
             }
             onRecordingsChanged()
           }}
           onCancel={() => setEditingTune(false)}
         />
-      ) : (
-        <div className="shed-now-playing" onClick={() => setEditingTune(true)} style={{ cursor: 'pointer' }}>
-          <h1 className="shed-tune-now">{tune.title}</h1>
-          {tune.composer && (
-            <span className="shed-composer-now">{tune.composer}</span>
-          )}
-          {tune.key && (
-            <span className="shed-key-badge">{tune.key}</span>
-          )}
-        </div>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="shed-mode">
+      <button className="shed-back-btn" onClick={() => { stopPlayback(); flushTimer(); onBack() }}>
+        ← Back
+      </button>
+
+      {/* Now Playing header */}
+      <div className="shed-now-playing" onClick={() => setEditingTune(true)} style={{ cursor: 'pointer' }}>
+        <h1 className="shed-tune-now">{tune.title}</h1>
+        {tune.composer && (
+          <span className="shed-composer-now">{tune.composer}</span>
+        )}
+        {tune.key && (
+          <span className="shed-key-badge">{tune.key}</span>
+        )}
+      </div>
 
       {/* Notes */}
       {!editingTune && (
@@ -355,7 +375,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
       )}
 
       {/* Recording selector (if multiple) */}
-      {recordings.length > 0 && !editingTune && (
+      {recordings.length > 1 && (
         <div className="shed-recording-picker">
           {recordings.map(rec => (
             <button
@@ -369,6 +389,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         </div>
       )}
 
+      {/* Audio element */}
       {selectedRecording && (
         <>
           <audio
@@ -383,17 +404,25 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             }}
             onEnded={() => {
               if (loopSegment) {
-                audioRef.current!.currentTime = loopSegment.start_time
-                audioRef.current!.play()
+                const audio = audioRef.current
+                if (audio) {
+                  audio.currentTime = loopSegment.start_time
+                  audio.play()
+                }
               } else {
                 setIsPlaying(false)
+                setCurrentTime(0)
               }
             }}
           />
 
           {/* Timeline */}
-          <div className="shed-timeline" onClick={handleTimelineClick}>
-            {segments.map(seg => {
+          <div
+            className="shed-timeline"
+            onClick={handleTimelineClick}
+            onTouchStart={handleTimelineClick}
+          >
+            {duration > 0 && segments.map(seg => {
               const left = (seg.start_time / duration) * 100
               const width = ((seg.end_time - seg.start_time) / duration) * 100
               return (
@@ -416,6 +445,13 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
+
+          {/* Practice time display */}
+          {practiceElapsed > 0 && (
+            <div className="shed-practice-timer">
+              {formatTime(practiceElapsed)}
+            </div>
+          )}
 
           {/* Transport */}
           <div className="shed-transport">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import useIsMobile from '../useIsMobile'
@@ -12,6 +12,13 @@ import useVisibilityTimer from '../useVisibilityTimer'
 import { localToday } from '../dateUtils'
 import { parseKey, buildKey } from '../keyConstants'
 import './TuneDetail.css'
+
+function formatTime(seconds: number) {
+  const s = Math.round(seconds)
+  const mins = Math.floor(s / 60)
+  const secs = s % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 function TuneDetail({ tuneId, onBack }: {
   tuneId: number
@@ -36,9 +43,38 @@ function TuneDetail({ tuneId, onBack }: {
   const [editingRecordingId, setEditingRecordingId] = useState<number | null>(null)
   const [editRecordingForm, setEditRecordingForm] = useState({ original_name: '', artist: '', description: '', keyTonic: '', keyQuality: '' })
 
+  // Desktop audio-aware tracking
+  const isPlayingRef = useRef(false)
+
   const { flush: flushTimer } = useVisibilityTimer((seconds) => {
     api.post(`/tunes/${tuneId}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
-  })
+  }, isPlayingRef)
+
+  // Display timer — independent from tracking
+  const [practiceElapsed, setPracticeElapsed] = useState(0)
+  const practiceStartRef = useRef(Date.now())
+  const practiceBaseRef = useRef(0)
+
+  useEffect(() => {
+    api.get(`/today?client_date=${localToday()}`).then(res => {
+      const tuneData = res.data.tunes?.find((t: any) => t.tune_id === tuneId)
+      if (tuneData?.play_seconds) {
+        practiceBaseRef.current = tuneData.play_seconds
+      }
+    }).catch(() => {})
+  }, [tuneId])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const sessionSeconds = Math.round((Date.now() - practiceStartRef.current) / 1000)
+      setPracticeElapsed(practiceBaseRef.current + sessionSeconds)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  function handlePlayingChange(playing: boolean) {
+    isPlayingRef.current = playing
+  }
 
   useEffect(() => {
     fetchTune()
@@ -334,6 +370,13 @@ function TuneDetail({ tuneId, onBack }: {
         </>
       )}
 
+      {/* Practice time display */}
+      {practiceElapsed > 0 && (
+        <div className="tune-practice-timer">
+          {formatTime(practiceElapsed)} on this tune today
+        </div>
+      )}
+
       {/* Recordings section */}
       <div className="section-header">
         <h2>Recordings</h2>
@@ -438,6 +481,7 @@ function TuneDetail({ tuneId, onBack }: {
                       tuneTitle={tune.title}
                       segments={segments}
                       onTimeUpdate={setPlaybackTime}
+                      onPlayingChange={handlePlayingChange}
                     />
                     <SegmentList
                       recordingId={rec.id}
