@@ -50,7 +50,7 @@ function ForgotPassword({ onBack }: { onBack: () => void }) {
           Enter the email associated with your account and we'll send you a reset link.
         </p>
 
-        {error && <div className="login-error mb-md">{error}</div>}
+        {error && <div className="form-error mb-md">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group mb-md">

@@ -213,7 +213,7 @@ function SetlistManager({ onSelectTune } : {
           >
             <option value="created">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="performance">Performance Date</option>
+            <option value="performance">Gig Date</option>
           </select>
           <button
             className="btn-primary"
@@ -237,7 +237,7 @@ function SetlistManager({ onSelectTune } : {
           <h2 style={{ marginBottom: 'var(--space-lg)' }}>
             {editingId ? 'Edit Setlist' : 'New Setlist'}
           </h2>
-          {error && <div className="login-error mb-md">{error}</div>}
+          {error && <div className="form-error mb-md">{error}</div>}
 
           <form onSubmit={handleSubmit}>
             {!editingId && setlists.length > 0 && (
@@ -258,7 +258,7 @@ function SetlistManager({ onSelectTune } : {
                   }}
                   value=""
                 >
-                  <option value="">— Blank setlist —</option>
+                  <option value="">Start from scratch</option>
                   {setlists.map(s => (
                     <option key={s.id} value={s.id}>
                       {s.title} ({s.entries.length} tunes)
@@ -280,12 +280,12 @@ function SetlistManager({ onSelectTune } : {
                 />
               </div>
               <div className="form-group">
-                <label>Performance</label>
+                <label>Gig</label>
                 <select
                   value={performanceId}
                   onChange={e => setPerformanceId(e.target.value)}
                 >
-                  <option value="">No linked performance</option>
+                  <option value="">Link a gig (optional)</option>
                   {upcomingPerformances.map(p => (
                     <option key={p.id} value={p.id}>
                       {p.title} — {formatDate(p.date)}

@@ -250,7 +250,7 @@ function AddTuneForm({ onCancel, onAdded }: {
     <div className="card mb-lg slide-up">
       <h2 style={{ marginBottom: 'var(--space-lg)' }}>Add Tune</h2>
       <form onSubmit={handleSubmit}>
-        {error && <div className="login-error mb-md">{error}</div>}
+        {error && <div className="form-error mb-md">{error}</div>}
 
         <div className="form-group mb-md">
           <label>Title *</label>

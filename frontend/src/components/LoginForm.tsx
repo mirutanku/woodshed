@@ -75,7 +75,7 @@ function LoginForm({ onLogin, onForgotPassword } : {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="form-error">{error}</div>}
 
           <div className="form-group">
             <label htmlFor="username">Username</label>

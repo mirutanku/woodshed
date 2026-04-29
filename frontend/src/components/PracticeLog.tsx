@@ -298,7 +298,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                   value={editForm.setlistId || ''}
                   onChange={e => setEditForm(prev => ({ ...prev, setlistId: e.target.value }))}
                 >
-                  <option value="">No linked setlist</option>
+                  <option value="">Link a setlist (optional)</option>
                   {(setlists || [])
                     .filter((s: any) => !s.performance_id || s.id.toString() === editForm.originalSetlistId)
                     .map((s: any) => (
@@ -344,8 +344,8 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
       )}
     {confirmDeleteId && (
         <ConfirmDialog
-          title="Delete Performance"
-          message="Are you sure you want to remove this performance?"
+          title="Delete Gig"
+          message="Are you sure you want to delete this gig?"
           confirmLabel="Delete"
           danger
           onConfirm={() => { onDelete(confirmDeleteId); setConfirmDeleteId(null) }}
@@ -668,12 +668,12 @@ function PracticeLog({ onSelectTune }: { onSelectTune: (tuneId: number) => void 
   async function handleDeletePerformance(id: number) {
     await api.delete(`/performances/${id}`)
     setPerformances(prev => prev.filter(p => p.id !== id))
-    toast('Performance removed')
+    toast('Gig removed')
   }
 
   async function handleEditPerformance(id: number, data: any) {
     await api.patch(`/performances/${id}`, data)
-    toast('Performance updated')
+    toast('Gig updated')
     fetchPerformances()
   }
 
@@ -1158,8 +1158,8 @@ function PracticeLog({ onSelectTune }: { onSelectTune: (tuneId: number) => void 
       {confirmDeleteEntry && (
         <ConfirmDialog
           title="Delete Entry"
-          message="Are you sure you want to remove this entry from the session?"
-          confirmLabel="Remove"
+          message="Are you sure you want to delete this entry from the session?"
+          confirmLabel="Delete"
           danger
           onConfirm={() => {
             const entry = sessions

@@ -183,7 +183,7 @@ function RecordingUpload({ tuneId, onUploaded } : {
 
   return (
     <div style={{ marginBottom: 'var(--space-lg)' }}>
-      {(error || importError) && <div className="login-error mb-md">{error || importError}</div>}
+      {(error || importError) && <div className="form-error mb-md">{error || importError}</div>}
 
       {/* Mode toggle */}
       {!file && !preview && (

@@ -129,7 +129,7 @@ function SessionForm({ tunes, onSubmit, onCancel, saving, error } : {
   return (
     <div className="card mb-lg slide-up">
       <h2 style={{ marginBottom: 'var(--space-lg)' }}>Log Practice</h2>
-      {error && <div className="login-error mb-md">{error}</div>}
+      {error && <div className="form-error mb-md">{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="form-row mb-md">

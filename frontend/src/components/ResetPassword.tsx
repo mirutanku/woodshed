@@ -75,7 +75,7 @@ function ResetPassword({ token, onBackToLogin }: {
             : 'Choose a new password for your account.'}
         </p>
 
-        {error && <div className="login-error mb-md">{error}</div>}
+        {error && <div className="form-error mb-md">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group mb-md">
