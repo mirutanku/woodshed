@@ -146,6 +146,7 @@ function SegmentList({ recordingId, onChanged, playbackTime = 0 }: {
                   className="btn-ghost btn-action"
                   style={{ color: 'var(--color-danger)' }}
                   onClick={() => handleDelete(seg.id)}
+                  title="Delete segment"
                 >
                   ×
                 </button>

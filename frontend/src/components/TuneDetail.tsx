@@ -466,6 +466,7 @@ function TuneDetail({ tuneId, onBack }: {
                           className="btn-ghost btn-action"
                           style={{ color: 'var(--color-danger)' }}
                           onClick={e => { e.stopPropagation(); setConfirmDeleteRecording(rec.id) }}
+                          title="Delete recording"
                         >
                           ×
                         </button>

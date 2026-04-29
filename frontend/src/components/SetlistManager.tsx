@@ -384,6 +384,7 @@ function SetlistManager({ onSelectTune } : {
                       className="btn-ghost btn-action"
                       style={{ color: 'var(--color-danger)' }}
                       onClick={e => { e.stopPropagation(); setConfirmDeleteId(setlist.id) }}
+                      title="Delete setlist"
                     >
                       ×
                     </button>

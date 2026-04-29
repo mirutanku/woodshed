@@ -208,6 +208,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
         <button
           className="btn-ghost btn-action"
           onClick={() => setShowForm(!showForm)}
+          title={showForm ? 'Close' : 'Add gig'}
         >
           {showForm ? '×' : '+'}
         </button>
@@ -333,6 +334,7 @@ function UpcomingPerformances({ performances, setlists, onAdd, onDelete, onEdit,
                     className="btn-ghost btn-action"
                     style={{ color: 'var(--color-danger)' }}
                     onClick={() => setConfirmDeleteId(p.id)}
+                    title="Delete gig"
                   >
                     ×
                   </button>

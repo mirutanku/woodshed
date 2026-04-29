@@ -464,16 +464,17 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 audio.currentTime = 0
               }
               setCurrentTime(audio.currentTime)
-            }}>
+            }} title="Restart">
               ↺
             </button>
-            <button className="shed-play-btn" onClick={togglePlay}>
+            <button className="shed-play-btn" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
               {isPlaying ? '❚❚' : '▶'}
             </button>
             <div className="shed-speed-control">
               <button
                 className="shed-speed-nudge"
                 onClick={() => setPlaybackSpeed(Math.max(0.25, Math.round((speed - 0.05) * 100) / 100))}
+                title="Slow down"
               >
                 −
               </button>
@@ -481,6 +482,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
               <button
                 className="shed-speed-nudge"
                 onClick={() => setPlaybackSpeed(Math.min(1.5, Math.round((speed + 0.05) * 100) / 100))}
+                title="Speed up"
               >
                 +
               </button>

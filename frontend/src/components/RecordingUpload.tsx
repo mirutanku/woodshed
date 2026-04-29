@@ -230,7 +230,7 @@ function RecordingUpload({ tuneId, onUploaded } : {
         <div className="panel">
           <div className="upload-file-name">
             <span>♪ {file.name}</span>
-            <button className="btn-ghost btn-sm" onClick={handleClearFile}>×</button>
+            <button className="btn-ghost btn-sm" onClick={handleClearFile} title="Clear">×</button>
           </div>
 
           <div className="upload-fields">
