@@ -6,7 +6,7 @@ Upload recordings, loop and slow down passages, mark segments, track your practi
 
 Built to replace the workflow of juggling YouTube at 0.75x, a notes app, a calendar, and scattered audio files. Woodshed gives structure to the practice process without getting in the way of the music.
 
-<img width="2400" height="1000" alt="woodshed_readme_collage_thin" src="https://github.com/user-attachments/assets/deb47a66-7fc6-4df0-814b-43e6c670fcc3" />
+<img src="https://github.com/user-attachments/assets/deb47a66-7fc6-4df0-814b-43e6c670fcc3" alt="Woodshed" style="max-width: 100%;" />
 
 ## What it does
 
