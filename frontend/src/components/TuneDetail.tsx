@@ -46,7 +46,7 @@ function TuneDetail({ tuneId, onBack }: {
   // Desktop audio-aware tracking
   const isPlayingRef = useRef(false)
 
-  const { flush: flushTimer } = useVisibilityTimer((seconds) => {
+  const { flush: flushTimer } = useVisibilityTimer(isMobile ? null : (seconds) => {
     api.post(`/tunes/${tuneId}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
   }, isPlayingRef)
 
