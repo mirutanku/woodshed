@@ -510,6 +510,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 onPointerUp={() => stopSpeedHold(-1)}
                 onPointerLeave={cancelSpeedHold}
                 onPointerCancel={cancelSpeedHold}
+                onContextMenu={(e) => e.preventDefault()}
                 title="Slow down (hold to fine-tune)"
               >
                 −
@@ -527,6 +528,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 onPointerUp={() => stopSpeedHold(1)}
                 onPointerLeave={cancelSpeedHold}
                 onPointerCancel={cancelSpeedHold}
+                onContextMenu={(e) => e.preventDefault()}
                 title="Speed up (hold to fine-tune)"
               >
                 +
