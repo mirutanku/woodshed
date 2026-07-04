@@ -60,6 +60,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   const [marking, setMarking] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const speedHoldTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const speedHoldInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+  const speedHoldActive = useRef(false)
 
   // Practice tracking
   const hasCheckedIn = useRef(false)
@@ -249,6 +252,36 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     speedRef.current = clamped
     if (audioRef.current) audioRef.current.playbackRate = clamped
   }
+
+  function startSpeedHold(direction: 1 | -1) {
+    speedHoldActive.current = false
+    speedHoldTimeout.current = setTimeout(() => {
+      speedHoldActive.current = true
+      speedHoldInterval.current = setInterval(() => {
+        const next = Math.round(Math.min(1.5, Math.max(0.25, speedRef.current + direction * 0.01)) * 100) / 100
+        setPlaybackSpeed(next)
+      }, 80)
+    }, 400)
+  }
+
+  function stopSpeedHold(direction: 1 | -1) {
+    if (speedHoldTimeout.current) { clearTimeout(speedHoldTimeout.current); speedHoldTimeout.current = null }
+    if (speedHoldInterval.current) { clearInterval(speedHoldInterval.current); speedHoldInterval.current = null }
+    if (!speedHoldActive.current) {
+      setPlaybackSpeed(Math.round(Math.min(1.5, Math.max(0.25, speedRef.current + direction * 0.05)) * 100) / 100)
+    }
+    speedHoldActive.current = false
+  }
+
+  function cancelSpeedHold() {
+    if (speedHoldTimeout.current) { clearTimeout(speedHoldTimeout.current); speedHoldTimeout.current = null }
+    if (speedHoldInterval.current) { clearInterval(speedHoldInterval.current); speedHoldInterval.current = null }
+    speedHoldActive.current = false
+  }
+
+  useEffect(() => {
+    return () => { cancelSpeedHold() }
+  }, [])
 
   // Keep ramp ref in sync
   useEffect(() => {
@@ -473,16 +506,28 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             <div className="shed-speed-control">
               <button
                 className="shed-speed-nudge"
-                onClick={() => setPlaybackSpeed(Math.max(0.25, Math.round((speed - 0.05) * 100) / 100))}
-                title="Slow down"
+                onPointerDown={() => startSpeedHold(-1)}
+                onPointerUp={() => stopSpeedHold(-1)}
+                onPointerLeave={cancelSpeedHold}
+                onPointerCancel={cancelSpeedHold}
+                title="Slow down (hold to fine-tune)"
               >
                 −
               </button>
-              <span className="shed-speed-current">{Math.round(speed * 100)}%</span>
+              <button
+                className={`shed-speed-current${speed !== 1.0 ? ' off-tempo' : ''}`}
+                onClick={() => setPlaybackSpeed(1.0)}
+                title="Reset to 100%"
+              >
+                {Math.round(speed * 100)}%
+              </button>
               <button
                 className="shed-speed-nudge"
-                onClick={() => setPlaybackSpeed(Math.min(1.5, Math.round((speed + 0.05) * 100) / 100))}
-                title="Speed up"
+                onPointerDown={() => startSpeedHold(1)}
+                onPointerUp={() => stopSpeedHold(1)}
+                onPointerLeave={cancelSpeedHold}
+                onPointerCancel={cancelSpeedHold}
+                title="Speed up (hold to fine-tune)"
               >
                 +
               </button>
