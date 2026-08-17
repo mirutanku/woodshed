@@ -53,19 +53,26 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 // the signal reaches that element, so its own (iOS-locked) `.volume` is
 // never touched and stays irrelevant.
 //
-// This is the standard documented workaround for this exact problem, but
-// unlike the rest of this file it is NOT something with strong community
-// confirmation — reports on whether it survives backgrounding are thinner
-// and older than the volume fix's. It needs to be verified on-device same
-// as everything else here, with real expectations: even native <audio>
-// elements on iOS are known to lose playback at points where JavaScript has
-// to drive a state change (e.g. audiobook apps report chapter-boundary
-// drops in the background) because JS itself is throttled while
-// backgrounded. Our rAF-driven loop/auto-ramp logic is exactly that kind of
-// JS-driven state change — a looped segment will very likely stop
-// re-looping (and just play straight through past the loop point) while
-// backgrounded, even once plain single-track playback survives. That's a
-// known, not-yet-fixed gap, not an oversight.
+// This is the standard documented workaround for this exact problem, and
+// confirmed working for plain playthrough: playback now survives
+// backgrounding.
+//
+// Looped segments needed a second fix on top of that. The first version of
+// this engine drove looping from the rAF polling loop (jump back to
+// loopStart every time polled position crossed loopEnd) — but JS, including
+// rAF, is throttled while the page is backgrounded, so a loop just played
+// straight through the marker and out the far side while the user was away.
+// startSourceAt() now configures the source node's native loop/loopStart/
+// loopEnd instead, so wrapping happens inside the audio graph and keeps
+// working with no JS involved. computeCurrentBufferTime() then has to
+// simulate that wrap for its own bookkeeping (display position, detecting
+// when a pass completes for auto-ramp), since the graph's real wrap is
+// invisible to JS-side clock math otherwise.
+//
+// The pause path needed a fix too: pause() was stopping the upstream source
+// node but never actually pausing the bridge element consuming its stream,
+// leaving it "live" and rendering nothing — which surfaced as stutter and
+// distortion on pause/resume. pause() now pauses the element explicitly.
 
 const VOLUME_STORAGE_KEY = 'woodshed_playback_volume'
 const END_EPSILON = 0.02 // seconds of slack for "we've reached the end"
@@ -101,6 +108,7 @@ export default function useAudioEngine() {
   const loopSegmentRef = useRef<EngineSegment | null>(null)
   const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
   const rampLoopCountRef = useRef(0)
+  const loopPassesRef = useRef(0) // whole loop iterations completed since the last clock anchor, see computeLoopPasses()
 
   // Simulates `audio.currentTime` on top of a node that doesn't have one:
   // `bufferOffset` is the logical position as of the last anchor point
@@ -166,6 +174,11 @@ export default function useAudioEngine() {
     sourceRef.current = null
   }
 
+  // Starts a fresh source node. If a loop segment is active, configures
+  // native loop/loopStart/loopEnd so the loop runs inside the audio graph
+  // instead of being driven by rAF polling — that's what keeps a looped
+  // segment actually looping while the page is backgrounded and JS is
+  // throttled (see the "Backgrounding" note at the top of this file).
   function startSourceAt(offset: number) {
     const ctx = ensureContext()
     const buf = bufferRef.current
@@ -173,17 +186,56 @@ export default function useAudioEngine() {
     const src = ctx.createBufferSource()
     src.buffer = buf
     src.playbackRate.value = rateRef.current
+    const loop = loopSegmentRef.current
+    if (loop) {
+      src.loop = true
+      src.loopStart = loop.start_time
+      src.loopEnd = loop.end_time
+    }
     src.connect(gainRef.current)
     const clamped = Math.max(0, Math.min(buf.duration, offset))
     src.start(0, clamped)
     sourceRef.current = src
     clockRef.current = { contextStart: ctx.currentTime, bufferOffset: clamped }
+    loopPassesRef.current = 0
   }
 
-  function computeCurrentBufferTime(): number {
+  // Raw (unwrapped) position — grows past loop.end_time indefinitely, since
+  // the native loop wrapping happens inside the audio graph, invisible to
+  // this JS-side clock math.
+  function computeRawBufferTime(): number {
     if (!isPlayingRef.current || !ctxRef.current) return clockRef.current.bufferOffset
     const elapsed = ctxRef.current.currentTime - clockRef.current.contextStart
     return clockRef.current.bufferOffset + elapsed * rateRef.current
+  }
+
+  // Display/logical position — wraps into the loop segment's range while a
+  // loop is active, matching what the audio graph is actually doing.
+  function computeCurrentBufferTime(): number {
+    const raw = computeRawBufferTime()
+    const loop = loopSegmentRef.current
+    if (loop) {
+      const loopLen = loop.end_time - loop.start_time
+      if (loopLen > 0 && raw > loop.start_time) {
+        return loop.start_time + ((raw - loop.start_time) % loopLen)
+      }
+    }
+    return raw
+  }
+
+  // How many whole loop passes have completed since the current clock
+  // anchor — used to fire auto-ramp exactly once per pass. Resets to 0
+  // whenever the clock is rebased (new source, seek, or rate change), so
+  // this counts "since the anchor," not "since the loop started"; ramp
+  // logic doesn't care which, only that it fires once per completed pass.
+  function computeLoopPasses(): number {
+    const loop = loopSegmentRef.current
+    if (!loop || !isPlayingRef.current || !ctxRef.current) return 0
+    const loopLen = loop.end_time - loop.start_time
+    if (loopLen <= 0) return 0
+    const raw = computeRawBufferTime()
+    const sinceStart = Math.max(0, raw - loop.start_time)
+    return Math.floor(sinceStart / loopLen)
   }
 
   // Rebase the clock so playback rate can change mid-flight without
@@ -192,6 +244,7 @@ export default function useAudioEngine() {
   function applySpeed(rate: number) {
     if (isPlayingRef.current) {
       clockRef.current = { contextStart: ctxRef.current!.currentTime, bufferOffset: computeCurrentBufferTime() }
+      loopPassesRef.current = 0 // rebased the anchor, so "passes since anchor" restarts too
     }
     rateRef.current = rate
     if (sourceRef.current) sourceRef.current.playbackRate.value = rate
@@ -223,28 +276,37 @@ export default function useAudioEngine() {
     setCurrentTime(clamped)
   }
 
-  // rAF-driven progress loop. Also owns loop-boundary and end-of-track
-  // detection, replacing the native `timeupdate`/`ended` events the old
-  // <audio>-based players relied on. Reads everything through refs so it
+  // rAF-driven progress loop. Loop *wrapping* itself is native now (see
+  // startSourceAt) so it keeps working while backgrounded; this loop only
+  // needs to update the displayed position, fire auto-ramp once per
+  // completed pass, and detect end-of-track for the non-looping case —
+  // none of which iOS lets happen while backgrounded anyway, so none of it
+  // needs to survive backgrounding. Reads everything through refs so it
   // never needs to be recreated (and the polling loop never restarts) when
   // loop/ramp state changes.
   const tick = useCallback(() => {
     if (!isPlayingRef.current) return
-    const time = computeCurrentBufferTime()
-    const dur = bufferRef.current?.duration ?? 0
     const loop = loopSegmentRef.current
 
-    if (loop && time >= loop.end_time) {
-      applyRamp()
-      seekTo(loop.start_time)
-    } else if (!loop && dur > 0 && time >= dur - END_EPSILON) {
-      isPlayingRef.current = false
-      stopSourceNode()
-      clockRef.current.bufferOffset = 0
-      setCurrentTime(0)
-      setIsPlaying(false)
-      return // stopped — don't reschedule
+    if (loop) {
+      const passes = computeLoopPasses()
+      if (passes > loopPassesRef.current) {
+        const newPasses = passes - loopPassesRef.current
+        loopPassesRef.current = passes
+        for (let i = 0; i < newPasses; i++) applyRamp()
+      }
+      setCurrentTime(computeCurrentBufferTime())
     } else {
+      const time = computeCurrentBufferTime()
+      const dur = bufferRef.current?.duration ?? 0
+      if (dur > 0 && time >= dur - END_EPSILON) {
+        isPlayingRef.current = false
+        stopSourceNode()
+        clockRef.current.bufferOffset = 0
+        setCurrentTime(0)
+        setIsPlaying(false)
+        return // stopped — don't reschedule
+      }
       setCurrentTime(time)
     }
 
@@ -298,6 +360,11 @@ export default function useAudioEngine() {
     const pos = computeCurrentBufferTime()
     isPlayingRef.current = false
     stopSourceNode()
+    // The bridge element (see "Backgrounding" note above) has to be
+    // explicitly paused too, not just its upstream source — otherwise it's
+    // left "live" trying to render a MediaStream that's gone quiet, which
+    // is what caused the stutter/distortion on pause and resume.
+    mediaElRef.current?.pause()
     clockRef.current.bufferOffset = pos
     setCurrentTime(pos)
     setIsPlaying(false)
@@ -341,9 +408,26 @@ export default function useAudioEngine() {
   }, [])
 
   const loopOff = useCallback(() => {
+    if (isPlayingRef.current) {
+      // Rebase using the still-wrapped position *before* clearing loop
+      // state. computeRawBufferTime() never rebases during ordinary
+      // looping (by design — see startSourceAt), so it's been counting
+      // unwrapped elapsed time this whole loop; without this, clearing
+      // loopSegmentRef would make it start reporting that huge unwrapped
+      // number as the real position — past the buffer's actual duration
+      // after more than a couple of passes, which falsely trips the
+      // end-of-track check on the very next tick and silently kills
+      // playback (looked like "pause doesn't work" downstream).
+      const pos = computeCurrentBufferTime()
+      clockRef.current = { contextStart: ctxRef.current!.currentTime, bufferOffset: pos }
+    }
     loopSegmentRef.current = null
     setLoopSegmentState(null)
     setRampReachedMax(false)
+    // Flip the flag on the live node rather than stopping/restarting it —
+    // per spec this just lets the current pass finish and play on past
+    // loopEnd instead of wrapping again, no glitch.
+    if (sourceRef.current) sourceRef.current.loop = false
   }, [])
 
   // Fetch + decode a recording. Resets transport state exactly like
