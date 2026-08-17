@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback, Key } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
+import useAudioEngine from '../useAudioEngine'
 import './AudioPlayer.css'
 import { localToday } from '../dateUtils'
 
@@ -18,36 +19,17 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate, onPlayingChange }: { 
-  recordingId: number 
-  tuneId: number 
-  tuneTitle: string 
-  segments?: any[] 
+function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpdate, onPlayingChange }: {
+  recordingId: number
+  tuneId: number
+  tuneTitle: string
+  segments?: any[]
   onTimeUpdate: (time: number) => void
   onPlayingChange?: (playing: boolean) => void
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const engine = useAudioEngine()
   const progressRef = useRef<HTMLDivElement | null>(null)
-  const animFrameRef = useRef<number | null>(null)
-  const speedRef = useRef(1.0)
-  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
-  const rampLoopCount = useRef(0)
-
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [speed, setSpeed] = useState(1.0)
-  const [loopSegment, setLoopSegment] = useState<any>(null) // segment object or null
-  const [error, setError] = useState('')
-
-  // Auto-ramp state
-  const [rampEnabled, setRampEnabled] = useState(false)
-  const [rampEnd, setRampEnd] = useState(1.0)
-  const [rampStep, setRampStep] = useState(0.05)
-  const [rampLoopsPerStep, setRampLoopsPerStep] = useState(1)
-  const [rampReachedMax, setRampReachedMax] = useState(false)
-
-  const audioUrl = `/api/recordings/${recordingId}/stream?token=${localStorage.getItem('token')}`
+  const [playError, setPlayError] = useState('')
 
   // Practice tracking
   const hasCheckedIn = useRef(false)
@@ -56,179 +38,93 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
   const toast = useToast()
 
-  // Notify parent of playing state changes
+  // Load whenever the recording changes
   useEffect(() => {
-    if (onPlayingChange) onPlayingChange(isPlaying)
-  }, [isPlaying, onPlayingChange])
+    engine.load(recordingId)
+    hasTrackedPlayback.current = false
+    setQuickLogged(false)
+    setPlayError('')
+  }, [recordingId])
 
-  // Auto-ramp effect: when enabled, gradually increase speed by rampStep each loop until reaching rampEnd
-
-  function applyRamp(audio: HTMLAudioElement) {
-    const ramp = rampRef.current
-    if (!ramp.enabled) return
-    const currentSpeed = speedRef.current
-    if (currentSpeed >= ramp.end) return
-
-    rampLoopCount.current += 1
-    if (rampLoopCount.current < ramp.loopsPerStep) return
-
-    rampLoopCount.current = 0
-    const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
-    const rounded = Math.round(newSpeed * 100) / 100
-    setSpeed(rounded)
-    speedRef.current = rounded
-    audio.playbackRate = rounded
-    if (rounded >= ramp.end) setRampReachedMax(true)
-  }
-
-
-  // --- Animation frame loop for smooth progress updates ---
-
-  const tick = useCallback(() => {
-    const audio = audioRef.current
-    if (audio && !audio.paused) {
-      setCurrentTime(audio.currentTime)
-      if (onTimeUpdate) onTimeUpdate(audio.currentTime)
-
-      // Loop enforcement — if we're looping a segment and we've passed the end, jump back
-      if (loopSegment && audio.currentTime >= loopSegment.end_time) {
-        applyRamp(audio)
-        audio.currentTime = loopSegment.start_time
-      }
-
-      animFrameRef.current = requestAnimationFrame(tick)
-    }
-  }, [loopSegment, onTimeUpdate])
+  // Notify parent of playing/time changes
+  useEffect(() => {
+    if (onPlayingChange) onPlayingChange(engine.isPlaying)
+  }, [engine.isPlaying, onPlayingChange])
 
   useEffect(() => {
-    if (isPlaying) {
-      animFrameRef.current = requestAnimationFrame(tick)
-    }
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
-  }, [isPlaying, tick])
+    if (onTimeUpdate) onTimeUpdate(engine.currentTime)
+  }, [engine.currentTime, onTimeUpdate])
 
-  // --- Audio event handlers ---
-
-  function handleLoadedMetadata() {
-    const audio = audioRef.current
-    if (audio) {
-      setDuration(audio.duration)
-      setError('')
+  // Spacebar to toggle play/pause
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.code !== 'Space') return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      e.preventDefault()
+      togglePlay()
     }
-  }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
-  function handleEnded() {
-    // If looping a segment, restart it; otherwise stop
-    if (loopSegment) {
-      const audio = audioRef.current
-      audio.currentTime = loopSegment.start_time
-      audio.play()
-    } else {
-      setIsPlaying(false)
-      setCurrentTime(0)
+  function trackPlaybackIfNeeded() {
+    if (!hasCheckedIn.current) {
+      hasCheckedIn.current = true
+      api.post(`/checkin?client_date=${localToday()}`).then(res => {
+        if (!res.data.already_checked_in) {
+          toast('Practice streak updated ✓')
+        }
+      }).catch(() => {})
     }
-  }
-
-  function handleError() {
-    setError('Could not load audio file')
-    setIsPlaying(false)
+    if (!hasTrackedPlayback.current && tuneId) {
+      hasTrackedPlayback.current = true
+      api.post(`/tunes/${tuneId}/playback?client_date=${localToday()}`).catch(() => {})
+    }
   }
 
   // --- Transport controls ---
 
   function togglePlay() {
-    const audio = audioRef.current
-    if (!audio) return
-    if (audio.paused) {
-      audio.play().then(() => {
-        setIsPlaying(true)
-        trackPlaybackIfNeeded()
-      }).catch(() => setError('Playback failed'))
-    } else {
-      audio.pause()
-      setIsPlaying(false)
+    if (engine.isPlaying) {
+      engine.pause()
+      return
     }
+    setPlayError('')
+    engine.play().then(trackPlaybackIfNeeded).catch(() => setPlayError('Playback failed'))
   }
 
   function restart() {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (loopSegment) {
-      audio.currentTime = loopSegment.start_time
-    } else {
-      audio.currentTime = 0
-    }
-    setCurrentTime(audio.currentTime)
+    engine.restart()
   }
-
-  // --- Speed control ---
-
-  function handleSpeedChange(newSpeed: number) {
-    const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
-    const rounded = Math.round(clamped * 100) / 100
-    setSpeed(rounded)
-    speedRef.current = rounded
-    if (audioRef.current) {
-      audioRef.current.playbackRate = rounded
-    }
-  }
-
-  // Keep ramp ref in sync
-  useEffect(() => {
-    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep, loopsPerStep: rampLoopsPerStep }
-  }, [rampEnabled, rampEnd, rampStep, rampLoopsPerStep])
 
   // --- Progress bar interaction ---
 
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
-    const audio = audioRef.current
     const bar = progressRef.current
-    if (!audio || !bar || !duration) return
-
+    if (!bar || !engine.duration) return
     const rect = bar.getBoundingClientRect()
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const newTime = fraction * duration
-    audio.currentTime = newTime
-    setCurrentTime(newTime)
+    engine.seek(fraction * engine.duration)
   }
 
   // --- Segment looping ---
 
   function handleSegmentLoop(segment: any) {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (loopSegment && loopSegment.id === segment.id) {
-      // Clicking the active loop segment toggles it off
-      setLoopSegment(null)
-      setRampReachedMax(false)
+    if (engine.loopSegment && engine.loopSegment.id === segment.id) {
+      engine.loopOff()
     } else {
-      setLoopSegment(segment)
-      setRampReachedMax(false)
-      audio.currentTime = segment.start_time
-      setCurrentTime(segment.start_time)
-      if (!isPlaying) {
-        function onSeeked() {
-          audio.removeEventListener('seeked', onSeeked)
-          audio.play().then(() => {
-            setIsPlaying(true)
-            trackPlaybackIfNeeded()
-          }).catch(() => {})
-        }
-        audio.addEventListener('seeked', onSeeked)
+      engine.loopOn(segment)
+      if (!engine.isPlaying) {
+        setPlayError('')
+        engine.play().then(trackPlaybackIfNeeded).catch(() => setPlayError('Playback failed'))
       }
     }
   }
 
   // Jump to a segment's start time without looping
   function handleSegmentCue(segment: any) {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.currentTime = segment.start_time
-    setCurrentTime(segment.start_time)
+    engine.seek(segment.start_time)
   }
 
   // --- Practice quick log ---
@@ -247,90 +143,24 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
     }
   }
 
-  function trackPlaybackIfNeeded() {
-    if (!hasCheckedIn.current) {
-      hasCheckedIn.current = true
-      api.post(`/checkin?client_date=${localToday()}`).then(res => {
-        if (!res.data.already_checked_in) {
-          toast('Practice streak updated ✓')
-        }
-      }).catch(() => {})
-    }
-    if (!hasTrackedPlayback.current && tuneId) {
-      hasTrackedPlayback.current = true
-      api.post(`/tunes/${tuneId}/playback?client_date=${localToday()}`).catch(() => {})
-    }
-  }
-
-  // --- Cleanup on unmount ---
-
-  useEffect(() => {
-    return () => {
-      const audio = audioRef.current
-      if (audio) {
-        audio.pause()
-        audio.src = ''
-      }
-    }
-  }, [])
-
-  // Reset player state when recordingId changes
-  useEffect(() => {
-    setIsPlaying(false)
-    setCurrentTime(0)
-    setDuration(0)
-    setLoopSegment(null)
-    setSpeed(1.0)
-    speedRef.current = 1.0
-    setRampEnabled(false)
-    setRampReachedMax(false)
-    hasTrackedPlayback.current = false
-    setQuickLogged(false)
-    setError('')
-    if (audioRef.current) {
-      audioRef.current.playbackRate = 1.0
-    }
-  }, [recordingId])
-
-  // Spacebar to toggle play/pause
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      // Only handle spacebar, and not when typing in an input
-      if (e.code !== 'Space') return
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      e.preventDefault()
-      togglePlay()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isPlaying])
-
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progressPercent = engine.duration > 0 ? (engine.currentTime / engine.duration) * 100 : 0
+  const displayError = engine.error || playError
 
   return (
     <div className="audio-player">
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        preload="auto"
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
-        onError={handleError}
-      />
-
-      {error && <div className="player-error">{error}</div>}
+      {displayError && <div className="player-error">{displayError}</div>}
+      {engine.isLoading && !displayError && <div className="player-loading">Loading audio…</div>}
 
       {/* Timeline / progress bar */}
       <div className="player-timeline" ref={progressRef} onClick={handleProgressClick}>
         {/* Segment regions */}
-        {duration > 0 && segments.map(seg => (
+        {engine.duration > 0 && segments.map(seg => (
           <div
             key={seg.id}
-            className={`timeline-segment ${loopSegment?.id === seg.id ? 'looping' : ''}`}
+            className={`timeline-segment ${engine.loopSegment?.id === seg.id ? 'looping' : ''}`}
             style={{
-              left: `${(seg.start_time / duration) * 100}%`,
-              width: `${((seg.end_time - seg.start_time) / duration) * 100}%`,
+              left: `${(seg.start_time / engine.duration) * 100}%`,
+              width: `${((seg.end_time - seg.start_time) / engine.duration) * 100}%`,
               backgroundColor: seg.color || 'var(--color-amber)',
             }}
             title={`${seg.label}: ${formatTime(seg.start_time)} – ${formatTime(seg.end_time)}`}
@@ -343,8 +173,8 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
 
       {/* Time display */}
       <div className="player-time">
-        <span>{formatTime(currentTime)}</span>
-        <span className="text-muted">{formatTime(duration)}</span>
+        <span>{formatTime(engine.currentTime)}</span>
+        <span className="text-muted">{formatTime(engine.duration)}</span>
       </div>
 
       {/* Controls row */}
@@ -354,8 +184,13 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
           <button className="transport-btn" onClick={restart} title="Restart">
             ↺
           </button>
-          <button className="transport-btn play-btn" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
-            {isPlaying ? '⏸' : '▶'}
+          <button
+            className="transport-btn play-btn"
+            onClick={togglePlay}
+            disabled={engine.isLoading}
+            title={engine.isPlaying ? 'Pause' : 'Play'}
+          >
+            {engine.isPlaying ? '⏸' : '▶'}
           </button>
         </div>
 
@@ -366,8 +201,8 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
             {SPEED_PRESETS.map(p => (
               <button
                 key={p.value}
-                className={`speed-preset ${Math.abs(speed - p.value) < 0.01 ? 'active' : ''}`}
-                onClick={() => handleSpeedChange(p.value)}
+                className={`speed-preset ${Math.abs(engine.speed - p.value) < 0.01 ? 'active' : ''}`}
+                onClick={() => engine.setSpeed(p.value)}
               >
                 {p.label}
               </button>
@@ -379,38 +214,51 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
             min="0.25"
             max="2.0"
             step="0.05"
-            value={speed}
-            onChange={e => handleSpeedChange(parseFloat(e.target.value))}
+            value={engine.speed}
+            onChange={e => engine.setSpeed(parseFloat(e.target.value))}
           />
-          <span className="speed-value">{Math.round(speed * 100)}%</span>
+          <span className="speed-value">{Math.round(engine.speed * 100)}%</span>
+        </div>
+
+        {/* Volume control — independent of iOS hardware volume; see useAudioEngine.ts */}
+        <div className="player-volume">
+          <span className="speed-label">Vol</span>
+          <input
+            type="range"
+            className="speed-slider"
+            min="0"
+            max="1"
+            step="0.01"
+            value={engine.volume}
+            onChange={e => engine.setVolume(parseFloat(e.target.value))}
+          />
+          <span className="speed-value">{Math.round(engine.volume * 100)}%</span>
         </div>
 
         {/* Loop indicator + auto-ramp */}
-        {loopSegment && (
+        {engine.loopSegment && (
           <div className="loop-indicator-wrap">
             <div className="loop-indicator">
               <span
                 className="loop-dot"
-                style={{ backgroundColor: loopSegment.color || 'var(--color-amber)' }}
+                style={{ backgroundColor: engine.loopSegment.color || 'var(--color-amber)' }}
               />
-              <span className="loop-label">Looping: {loopSegment.label} at {Math.round(speed * 100)}%</span>
+              <span className="loop-label">Looping: {engine.loopSegment.label} at {Math.round(engine.speed * 100)}%</span>
               <button
                 className="btn-ghost btn-sm"
-                onClick={() => { setLoopSegment(null); setRampReachedMax(false) }}
+                onClick={() => engine.loopOff()}
               >
                 ×
               </button>
             </div>
-            {!rampEnabled ? (
+            {!engine.rampEnabled ? (
               <button
                 className="ramp-toggle"
                 onClick={() => {
-                  setRampEnd(1.0)
-                  setRampStep(0.05)
-                  setRampReachedMax(false)
-                  setRampEnabled(true)
-                  rampLoopCount.current = 0
-                  setRampEnabled(true)
+                  engine.setRampEnd(1.0)
+                  engine.setRampStep(0.05)
+                  engine.setRampReachedMax(false)
+                  engine.setRampEnabled(true)
                 }}
               >
                 Auto-Ramp ↗
@@ -422,8 +270,8 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                   <label>
                     Target
                     <select
-                      value={rampEnd}
-                      onChange={e => { setRampEnd(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                      value={engine.rampEnd}
+                      onChange={e => { engine.setRampEnd(parseFloat(e.target.value)); engine.setRampReachedMax(false) }}
                     >
                       {[0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25].map(v => (
                         <option key={v} value={v}>{Math.round(v * 100)}%</option>
@@ -433,8 +281,8 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                   <label>
                     Step
                     <select
-                      value={rampStep}
-                      onChange={e => { setRampStep(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                      value={engine.rampStep}
+                      onChange={e => { engine.setRampStep(parseFloat(e.target.value)); engine.setRampReachedMax(false) }}
                     >
                       <option value={0.01}>1%</option>
                       <option value={0.02}>2%</option>
@@ -445,8 +293,8 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                   <label>
                     Reps
                     <select
-                      value={rampLoopsPerStep}
-                      onChange={e => { setRampLoopsPerStep(parseInt(e.target.value, 10)); setRampReachedMax(false) }}
+                      value={engine.rampLoopsPerStep}
+                      onChange={e => { engine.setRampLoopsPerStep(parseInt(e.target.value, 10)); engine.setRampReachedMax(false) }}
                     >
                       <option value={1}>1x</option>
                       <option value={2}>2x</option>
@@ -455,10 +303,10 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                     </select>
                   </label>
                 </div>
-                {rampReachedMax && (
-                  <span className="ramp-done">Reached {Math.round(rampEnd * 100)}%!</span>
+                {engine.rampReachedMax && (
+                  <span className="ramp-done">Reached {Math.round(engine.rampEnd * 100)}%!</span>
                 )}
-                <button className="btn-ghost btn-sm" onClick={() => setRampEnabled(false)}>Off</button>
+                <button className="btn-ghost btn-sm" onClick={() => engine.setRampEnabled(false)}>Off</button>
               </div>
             )}
           </div>
@@ -479,7 +327,7 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
           {segments.map(seg => (
             <div
               key={seg.id}
-              className={`player-segment-chip ${loopSegment?.id === seg.id ? 'active' : ''}`}
+              className={`player-segment-chip ${engine.loopSegment?.id === seg.id ? 'active' : ''}`}
             >
               <span
                 className="segment-chip-color"
@@ -493,9 +341,9 @@ function AudioPlayer({ recordingId, tuneId, tuneTitle, segments = [], onTimeUpda
                 {seg.label}
               </button>
               <button
-                className={`segment-chip-loop ${loopSegment?.id === seg.id ? 'active' : ''}`}
+                className={`segment-chip-loop ${engine.loopSegment?.id === seg.id ? 'active' : ''}`}
                 onClick={() => handleSegmentLoop(seg)}
-                title={loopSegment?.id === seg.id ? 'Stop looping' : `Loop ${seg.label}`}
+                title={engine.loopSegment?.id === seg.id ? 'Stop looping' : `Loop ${seg.label}`}
               >
                 ↻
               </button>

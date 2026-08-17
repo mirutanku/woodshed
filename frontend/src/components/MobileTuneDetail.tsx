@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { useToast } from './Toast'
 import MobileTuneEditForm from './MobileTuneEditForm'
@@ -7,6 +7,7 @@ import MobileQuickMark from './MobileQuickMark'
 import RecordingUpload from './RecordingUpload'
 import { localToday } from '../dateUtils'
 import useVisibilityTimer from '../useVisibilityTimer'
+import useAudioEngine from '../useAudioEngine'
 import './ShedMode.css'
 
 function formatTime(seconds: number) {
@@ -26,33 +27,18 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 }) {
   const toast = useToast()
 
-  // Audio engine
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const animFrameRef = useRef<number | null>(null)
-  const speedRef = useRef(1.0)
-  const rampRef = useRef({ enabled: false, end: 1.0, step: 0.05, loopsPerStep: 1 })
-  const rampLoopCount = useRef(0)
-
-  // Playback
-  const [isPlaying, setIsPlaying] = useState(false)
+  // Audio engine — shared with the desktop player (see useAudioEngine.ts).
+  // Runs playback through Web Audio instead of a plain <audio> element so
+  // the volume slider below is a real, independent control on iOS.
+  const engine = useAudioEngine()
   const isPlayingRef = useRef(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [speed, setSpeed] = useState(1.0)
+  const speedRef = useRef(1.0)
 
   // Content
   const [selectedRecording, setSelectedRecording] = useState<any>(null)
   const [segments, setSegments] = useState<any[]>([])
   const [notesValue, setNotesValue] = useState(tune.notes || '')
   const [notesSaving, setNotesSaving] = useState(false)
-
-  // Looping and auto-ramp
-  const [loopSegment, setLoopSegment] = useState<any>(null)
-  const [rampEnabled, setRampEnabled] = useState(false)
-  const [rampEnd, setRampEnd] = useState(1.0)
-  const [rampStep, setRampStep] = useState(0.05)
-  const [rampLoopsPerStep, setRampLoopsPerStep] = useState(1)
-  const [rampReachedMax, setRampReachedMax] = useState(false)
 
   // UI modes — only one active at a time
   const [editingTune, setEditingTune] = useState(false)
@@ -91,10 +77,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     return () => clearInterval(interval)
   }, [])
 
-  // Keep isPlayingRef in sync
+  // Keep ref mirrors in sync — these feed setInterval/timer closures that
+  // can't see fresh state directly (see startSpeedHold below).
   useEffect(() => {
-    isPlayingRef.current = isPlaying
-  }, [isPlaying])
+    isPlayingRef.current = engine.isPlaying
+  }, [engine.isPlaying])
+
+  useEffect(() => {
+    speedRef.current = engine.speed
+  }, [engine.speed])
 
   const { flush: flushTimer } = useVisibilityTimer((seconds) => {
     api.post(`/tunes/${tune.id}/play-time?seconds=${seconds}&client_date=${localToday()}`).catch(() => {})
@@ -107,10 +98,17 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }, [recordings])
 
+  // Load the recording's audio into the engine whenever selection changes
+  useEffect(() => {
+    if (selectedRecording) {
+      engine.load(selectedRecording.id)
+      hasTrackedPlayback.current = false
+      setQuickLogged(false)
+    }
+  }, [selectedRecording?.id])
+
   async function selectRecording(rec: any) {
-    stopPlayback()
     setSelectedRecording(rec)
-    setLoopSegment(null)
     setMarking(false)
     try {
       const res = await api.get(`/recordings/${rec.id}/segments`)
@@ -131,15 +129,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   }
 
   function stopPlayback() {
-    const audio = audioRef.current
-    if (audio) {
-      audio.pause()
-      audio.currentTime = 0
-    }
-    setIsPlaying(false)
-    setCurrentTime(0)
-    setDuration(0)
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    engine.pause()
   }
 
   function trackPlaybackIfNeeded() {
@@ -157,68 +147,6 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     }
   }
 
-  function applyRamp(audio: HTMLAudioElement) {
-    const ramp = rampRef.current
-    if (!ramp.enabled) return
-    const currentSpeed = speedRef.current
-    if (currentSpeed >= ramp.end) return
-
-    rampLoopCount.current += 1
-    if (rampLoopCount.current < ramp.loopsPerStep) return
-
-    rampLoopCount.current = 0
-    const newSpeed = Math.min(currentSpeed + ramp.step, ramp.end)
-    const rounded = Math.round(newSpeed * 100) / 100
-    setSpeed(rounded)
-    speedRef.current = rounded
-    audio.playbackRate = rounded
-    if (rounded >= ramp.end) setRampReachedMax(true)
-  }
-
-  // rAF loop
-  const tick = useCallback(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    const time = audio.currentTime
-    setCurrentTime(time)
-
-    if (loopSegment && audio.currentTime >= loopSegment.end_time) {
-        applyRamp(audio)
-        audio.currentTime = loopSegment.start_time
-        setCurrentTime(loopSegment.start_time)
-    }
-
-    animFrameRef.current = requestAnimationFrame(tick)
-  }, [loopSegment])
-
-  useEffect(() => {
-    if (isPlaying) {
-      animFrameRef.current = requestAnimationFrame(tick)
-    } else {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
-    }
-  }, [isPlaying, tick])
-
-  // Fallback loop enforcement for background playback
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio || !loopSegment) return
-
-    function handleTimeUpdate() {
-      if (loopSegment && audio!.currentTime >= loopSegment.end_time) {
-        applyRamp(audio!)
-        audio!.currentTime = loopSegment.start_time
-        setCurrentTime(loopSegment.start_time)
-      }
-    }
-
-    audio.addEventListener('timeupdate', handleTimeUpdate)
-    return () => audio.removeEventListener('timeupdate', handleTimeUpdate)
-  }, [loopSegment])
-
   function handleSegmentPressStart(segment: any) {
     longPressTimer.current = setTimeout(() => {
       setEditingSegment(segment.id)
@@ -233,24 +161,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   }
 
   function togglePlay() {
-    const audio = audioRef.current
-    if (!audio) return
-    if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
+    if (engine.isPlaying) {
+      engine.pause()
     } else {
-      audio.play().then(() => {
-        setIsPlaying(true)
-        trackPlaybackIfNeeded()
-      }).catch(() => {})
+      engine.play().then(trackPlaybackIfNeeded).catch(() => {})
     }
   }
 
   function setPlaybackSpeed(newSpeed: number) {
-    const clamped = Math.round(newSpeed * 100) / 100
-    setSpeed(clamped)
-    speedRef.current = clamped
-    if (audioRef.current) audioRef.current.playbackRate = clamped
+    engine.setSpeed(newSpeed)
   }
 
   function startSpeedHold(direction: 1 | -1) {
@@ -283,29 +202,14 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
     return () => { cancelSpeedHold() }
   }, [])
 
-  // Keep ramp ref in sync
-  useEffect(() => {
-    rampRef.current = { enabled: rampEnabled, end: rampEnd, step: rampStep, loopsPerStep: rampLoopsPerStep }
-  }, [rampEnabled, rampEnd, rampStep, rampLoopsPerStep])
-
   function handleSegmentTap(segment: any) {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (loopSegment?.id === segment.id) {
+    if (engine.loopSegment?.id === segment.id) {
       // Tapping active loop clears it
-      setLoopSegment(null)
-      setRampReachedMax(false)
+      engine.loopOff()
     } else {
-      setLoopSegment(segment)
-      setRampReachedMax(false)
-      audio.currentTime = segment.start_time
-      setCurrentTime(segment.start_time)
-      if (!isPlaying) {
-        audio.play().then(() => {
-          setIsPlaying(true)
-          trackPlaybackIfNeeded()
-        }).catch(() => {})
+      engine.loopOn(segment)
+      if (!engine.isPlaying) {
+        engine.play().then(trackPlaybackIfNeeded).catch(() => {})
       }
     }
   }
@@ -338,17 +242,15 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
   }
 
   function handleTimelineClick(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
-    const audio = audioRef.current
-    if (!audio || !duration) return
+    if (!engine.duration) return
     const rect = (e.target as HTMLElement).closest('.shed-timeline')?.getBoundingClientRect()
     if (!rect) return
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    audio.currentTime = fraction * duration
-    setCurrentTime(audio.currentTime)
+    engine.seek(fraction * engine.duration)
   }
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progressPercent = engine.duration > 0 ? (engine.currentTime / engine.duration) * 100 : 0
 
   if (editingTune) {
     return (
@@ -422,32 +324,11 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
         </div>
       )}
 
-      {/* Audio element */}
+      {/* Player */}
       {selectedRecording && (
         <>
-          <audio
-            ref={audioRef}
-            src={`/api/recordings/${selectedRecording.id}/stream?token=${localStorage.getItem('token')}`}
-            preload="auto"
-            onLoadedMetadata={() => {
-              if (audioRef.current) {
-                setDuration(audioRef.current.duration)
-                audioRef.current.playbackRate = speed
-              }
-            }}
-            onEnded={() => {
-              if (loopSegment) {
-                const audio = audioRef.current
-                if (audio) {
-                  audio.currentTime = loopSegment.start_time
-                  audio.play()
-                }
-              } else {
-                setIsPlaying(false)
-                setCurrentTime(0)
-              }
-            }}
-          />
+          {engine.error && <div className="shed-error">{engine.error}</div>}
+          {engine.isLoading && !engine.error && <div className="shed-loading">Loading audio…</div>}
 
           {/* Timeline */}
           <div
@@ -455,13 +336,13 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             onClick={handleTimelineClick}
             onTouchStart={handleTimelineClick}
           >
-            {duration > 0 && segments.map(seg => {
-              const left = (seg.start_time / duration) * 100
-              const width = ((seg.end_time - seg.start_time) / duration) * 100
+            {engine.duration > 0 && segments.map(seg => {
+              const left = (seg.start_time / engine.duration) * 100
+              const width = ((seg.end_time - seg.start_time) / engine.duration) * 100
               return (
                 <div
                   key={seg.id}
-                  className={`shed-timeline-segment ${loopSegment?.id === seg.id ? 'looping' : ''}`}
+                  className={`shed-timeline-segment ${engine.loopSegment?.id === seg.id ? 'looping' : ''}`}
                   style={{
                     left: `${left}%`,
                     width: `${width}%`,
@@ -475,8 +356,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
           </div>
 
           <div className="shed-time">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
+            <span>{formatTime(engine.currentTime)}</span>
+            <span>{formatTime(engine.duration)}</span>
           </div>
 
           {/* Practice time display */}
@@ -488,20 +369,16 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
 
           {/* Transport */}
           <div className="shed-transport">
-            <button className="shed-restart-btn" onClick={() => {
-              const audio = audioRef.current
-              if (!audio) return
-              if (loopSegment) {
-                audio.currentTime = loopSegment.start_time
-              } else {
-                audio.currentTime = 0
-              }
-              setCurrentTime(audio.currentTime)
-            }} title="Restart">
+            <button className="shed-restart-btn" onClick={() => engine.restart()} title="Restart">
               ↺
             </button>
-            <button className="shed-play-btn" onClick={togglePlay} title={isPlaying ? 'Pause' : 'Play'}>
-              {isPlaying ? '❚❚' : '▶'}
+            <button
+              className="shed-play-btn"
+              onClick={togglePlay}
+              disabled={engine.isLoading}
+              title={engine.isPlaying ? 'Pause' : 'Play'}
+            >
+              {engine.isPlaying ? '❚❚' : '▶'}
             </button>
             <div className="shed-speed-control">
               <button
@@ -516,11 +393,11 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 −
               </button>
               <button
-                className={`shed-speed-current${speed !== 1.0 ? ' off-tempo' : ''}`}
+                className={`shed-speed-current${engine.speed !== 1.0 ? ' off-tempo' : ''}`}
                 onClick={() => setPlaybackSpeed(1.0)}
                 title="Reset to 100%"
               >
-                {Math.round(speed * 100)}%
+                {Math.round(engine.speed * 100)}%
               </button>
               <button
                 className="shed-speed-nudge"
@@ -536,6 +413,21 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             </div>
           </div>
 
+          {/* Volume — independent of the iOS hardware volume, see useAudioEngine.ts */}
+          <div className="shed-volume-row">
+            <span className="shed-volume-icon" aria-hidden="true">🔊</span>
+            <input
+              type="range"
+              className="shed-volume-slider"
+              min="0"
+              max="1"
+              step="0.01"
+              value={engine.volume}
+              onChange={e => engine.setVolume(parseFloat(e.target.value))}
+            />
+            <span className="shed-volume-value">{Math.round(engine.volume * 100)}%</span>
+          </div>
+
           {/* Segments */}
           {segments.length > 0 && (
             <div className="shed-segments">
@@ -544,10 +436,10 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                   <MobileSegmentEditForm
                     key={seg.id}
                     segment={seg}
-                    currentTime={currentTime}
+                    currentTime={engine.currentTime}
                     onSave={() => { setEditingSegment(null); fetchSegments() }}
                     onDelete={(segId) => {
-                      if (loopSegment?.id === segId) setLoopSegment(null)
+                      if (engine.loopSegment?.id === segId) engine.loopOff()
                       setEditingSegment(null)
                       fetchSegments()
                     }}
@@ -556,7 +448,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 ) : (
                   <button
                     key={seg.id}
-                    className={`shed-segment-btn ${loopSegment?.id === seg.id ? 'active' : ''}`}
+                    className={`shed-segment-btn ${engine.loopSegment?.id === seg.id ? 'active' : ''}`}
                     onClick={() => handleSegmentTap(seg)}
                     onTouchStart={() => handleSegmentPressStart(seg)}
                     onTouchEnd={handleSegmentPressEnd}
@@ -577,24 +469,23 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
           )}
 
           {/* Loop indicator + auto-ramp */}
-          {loopSegment && !marking && (
+          {engine.loopSegment && !marking && (
             <div className="shed-ramp-panel">
               <div className="shed-loop-indicator">
-                Looping: {loopSegment.label} at {Math.round(speed * 100)}%
-                <button className="shed-loop-clear" onClick={() => { setLoopSegment(null); setRampReachedMax(false) }}>
+                Looping: {engine.loopSegment.label} at {Math.round(engine.speed * 100)}%
+                <button className="shed-loop-clear" onClick={() => engine.loopOff()}>
                   Clear
                 </button>
               </div>
 
-              {!rampEnabled ? (
+              {!engine.rampEnabled ? (
                 <button
                   className="shed-ramp-toggle"
                   onClick={() => {
-                    setRampEnd(1.0)
-                    setRampStep(0.05)
-                    setRampReachedMax(false)
-                    setRampEnabled(true)
-                    rampLoopCount.current = 0
+                    engine.setRampEnd(1.0)
+                    engine.setRampStep(0.05)
+                    engine.setRampReachedMax(false)
+                    engine.setRampEnabled(true)
                   }}
                 >
                   Auto-Ramp ↗
@@ -603,14 +494,14 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                 <div className="shed-ramp-controls">
                   <div className="shed-ramp-header">
                     <span className="shed-mark-title">Auto-Ramp</span>
-                    <button className="btn-ghost btn-sm" onClick={() => setRampEnabled(false)}>Off</button>
+                    <button className="btn-ghost btn-sm" onClick={() => engine.setRampEnabled(false)}>Off</button>
                   </div>
                   <div className="shed-ramp-fields">
                     <div className="shed-ramp-field">
                       <label>Target</label>
                       <select
-                        value={rampEnd}
-                        onChange={e => { setRampEnd(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                        value={engine.rampEnd}
+                        onChange={e => { engine.setRampEnd(parseFloat(e.target.value)); engine.setRampReachedMax(false) }}
                       >
                         {[0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25].map(v => (
                           <option key={v} value={v}>{Math.round(v * 100)}%</option>
@@ -620,8 +511,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                     <div className="shed-ramp-field">
                       <label>Step</label>
                       <select
-                        value={rampStep}
-                        onChange={e => { setRampStep(parseFloat(e.target.value)); setRampReachedMax(false) }}
+                        value={engine.rampStep}
+                        onChange={e => { engine.setRampStep(parseFloat(e.target.value)); engine.setRampReachedMax(false) }}
                       >
                         <option value={0.01}>1%</option>
                         <option value={0.02}>2%</option>
@@ -632,8 +523,8 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                     <div className="shed-ramp-field">
                       <label>Reps</label>
                       <select
-                        value={rampLoopsPerStep}
-                        onChange={e => { setRampLoopsPerStep(parseInt(e.target.value)); setRampReachedMax(false) }}
+                        value={engine.rampLoopsPerStep}
+                        onChange={e => { engine.setRampLoopsPerStep(parseInt(e.target.value)); engine.setRampReachedMax(false) }}
                       >
                         <option value={1}>1x</option>
                         <option value={2}>2x</option>
@@ -642,9 +533,9 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
                       </select>
                     </div>
                   </div>
-                  {rampReachedMax && (
+                  {engine.rampReachedMax && (
                     <div className="shed-ramp-done">
-                      Reached {Math.round(rampEnd * 100)}%!
+                      Reached {Math.round(engine.rampEnd * 100)}%!
                     </div>
                   )}
                 </div>
@@ -657,7 +548,7 @@ function MobileTuneDetail({ tune, recordings, onBack, onRecordingsChanged, onTun
             <MobileQuickMark
               recordingId={selectedRecording.id}
               segmentCount={segments.length}
-              currentTime={currentTime}
+              currentTime={engine.currentTime}
               onSaved={() => { setMarking(false); fetchSegments() }}
               onCancel={() => setMarking(false)}
             />

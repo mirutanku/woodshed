@@ -14,6 +14,12 @@
   margin-bottom: var(--space-md);
 }
 
+.player-loading {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  margin-bottom: var(--space-md);
+}
+
 /* Timeline */
 
 .player-timeline {
@@ -214,6 +220,19 @@
   color: var(--color-text-dim);
   min-width: 3.5em;
   text-align: right;
+}
+
+/* Volume control — same shape as speed, reuses .speed-slider/.speed-value styling */
+
+.player-volume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.player-volume .speed-slider {
+  max-width: 100px;
 }
 
 /* Loop indicator */
@@ -422,6 +441,10 @@
   }
 
   .speed-slider {
+    max-width: none;
+  }
+
+  .player-volume .speed-slider {
     max-width: none;
   }
 

@@ -180,6 +180,20 @@
   margin-bottom: var(--space-sm);
 }
 
+.shed-loading {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.shed-error {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+  margin-bottom: var(--space-sm);
+}
+
 /* Transport */
 
 .shed-transport {
@@ -308,6 +322,62 @@
   background: transparent;
   border: none;
   color: var(--color-text-dim);
+}
+
+/* Volume — independent of the iOS hardware volume, see useAudioEngine.ts */
+
+.shed-volume-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding: 0 var(--space-xs);
+}
+
+.shed-volume-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.shed-volume-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-border);
+  border-radius: 2px;
+  outline: none;
+  border: none;
+  padding: 0;
+}
+
+.shed-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-amber);
+  cursor: pointer;
+  border: none;
+}
+
+.shed-volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-amber);
+  cursor: pointer;
+  border: none;
+}
+
+.shed-volume-value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 3em;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* Segments */
