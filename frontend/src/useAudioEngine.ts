@@ -36,6 +36,36 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 // with no error — that means `AudioContext.resume()` didn't happen inside a
 // user gesture. `play()` below calls `resume()` as the first thing it does,
 // specifically so it stays inside the click/tap that triggered it.
+//
+// --- Backgrounding ---
+//
+// A second, separate iOS quirk: a raw AudioContext connected straight to
+// `ctx.destination` gets suspended/interrupted as soon as Safari itself is
+// backgrounded (user switches to another app) — unlike an `<audio>` element,
+// which iOS treats as a real background-eligible media session and keeps
+// running. The old <audio>-based player had that for free; this engine lost
+// it by construction, since there's no element in the graph at all.
+//
+// The fix is to give iOS a real element to anchor the session to: route the
+// graph's final output through `createMediaStreamDestination()` into a
+// hidden <audio> element instead of connecting straight to
+// `ctx.destination`. The gain has already been applied upstream by the time
+// the signal reaches that element, so its own (iOS-locked) `.volume` is
+// never touched and stays irrelevant.
+//
+// This is the standard documented workaround for this exact problem, but
+// unlike the rest of this file it is NOT something with strong community
+// confirmation — reports on whether it survives backgrounding are thinner
+// and older than the volume fix's. It needs to be verified on-device same
+// as everything else here, with real expectations: even native <audio>
+// elements on iOS are known to lose playback at points where JavaScript has
+// to drive a state change (e.g. audiobook apps report chapter-boundary
+// drops in the background) because JS itself is throttled while
+// backgrounded. Our rAF-driven loop/auto-ramp logic is exactly that kind of
+// JS-driven state change — a looped segment will very likely stop
+// re-looping (and just play straight through past the loop point) while
+// backgrounded, even once plain single-track playback survives. That's a
+// known, not-yet-fixed gap, not an oversight.
 
 const VOLUME_STORAGE_KEY = 'woodshed_playback_volume'
 const END_EPSILON = 0.02 // seconds of slack for "we've reached the end"
@@ -58,6 +88,7 @@ export default function useAudioEngine() {
   // to a user gesture on iOS, and that happens inside play().
   const ctxRef = useRef<AudioContext | null>(null)
   const gainRef = useRef<GainNode | null>(null)
+  const mediaElRef = useRef<HTMLAudioElement | null>(null) // background-audio bridge, see note above
   const bufferRef = useRef<AudioBuffer | null>(null)
   const sourceRef = useRef<AudioBufferSourceNode | null>(null)
   const animFrameRef = useRef<number | null>(null)
@@ -108,9 +139,20 @@ export default function useAudioEngine() {
       const ctx: AudioContext = new Ctor()
       const gain = ctx.createGain()
       gain.gain.value = volumeRef.current
-      gain.connect(ctx.destination)
+
+      // Route through a hidden <audio> element instead of ctx.destination
+      // directly — see the "Backgrounding" note at the top of this file.
+      const mediaStreamDest = ctx.createMediaStreamDestination()
+      gain.connect(mediaStreamDest)
+
+      const audioEl = document.createElement('audio')
+      audioEl.srcObject = mediaStreamDest.stream
+      audioEl.style.display = 'none'
+      document.body.appendChild(audioEl)
+
       ctxRef.current = ctx
       gainRef.current = gain
+      mediaElRef.current = audioEl
     }
     return ctxRef.current
   }
@@ -223,12 +265,33 @@ export default function useAudioEngine() {
   const play = useCallback(async () => {
     const ctx = ensureContext()
     if (!bufferRef.current) return
-    if (ctx.state === 'suspended') {
-      await ctx.resume()
-    }
+    // Kick off both resumes synchronously, before awaiting either — iOS
+    // only honors resume()/play() calls made inside the user gesture that
+    // triggered this handler, and an `await` yields control, so anything
+    // started after one has already run risks falling outside that window.
+    const resumePromise = ctx.state !== 'running' ? ctx.resume() : Promise.resolve()
+    const elPlayPromise = mediaElRef.current ? mediaElRef.current.play().catch(() => {}) : Promise.resolve()
+    await Promise.all([resumePromise, elPlayPromise])
     startSourceAt(clockRef.current.bufferOffset)
     isPlayingRef.current = true
     setIsPlaying(true)
+  }, [])
+
+  // If iOS interrupts the context while backgrounded, proactively try to
+  // resume both halves of the bridge when the page comes back to the
+  // foreground, so returning to Woodshed doesn't require a manual
+  // pause/play to un-stick playback.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState !== 'visible') return
+      if (!isPlayingRef.current || !ctxRef.current) return
+      if (ctxRef.current.state !== 'running') {
+        ctxRef.current.resume().catch(() => {})
+      }
+      mediaElRef.current?.play().catch(() => {})
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
 
   const pause = useCallback(() => {
@@ -340,6 +403,11 @@ export default function useAudioEngine() {
       stopSourceNode()
       if (ctxRef.current) {
         ctxRef.current.close().catch(() => {})
+      }
+      if (mediaElRef.current) {
+        mediaElRef.current.pause()
+        mediaElRef.current.srcObject = null
+        mediaElRef.current.remove()
       }
     }
   }, [])
