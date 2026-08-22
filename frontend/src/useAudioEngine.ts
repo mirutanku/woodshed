@@ -211,14 +211,16 @@ export default function useAudioEngine() {
       await SoundTouchNode.register(ctx, soundTouchProcessorUrl)
       const stNode = new SoundTouchNode({ context: ctx })
       stNode.pitch.value = 1.0 // never shift key — only ever adjust tempo
-      // Wider processing/overlap windows than the (auto-tuned, ~50-125ms
-      // sequence / ~15-25ms seek window / 8ms overlap) defaults — trades a
-      // bit more latency for more slack against transient scheduling
-      // jitter on weaker/busier hardware, which is what an underrun
-      // (dropping to raw, un-pitch-corrected audio until the buffer
-      // refills) looks and sounds like. Unverified on real iOS hardware —
-      // see the "Pitch" note above.
-      stNode.setStretchParameters({ sequenceMs: 100, seekWindowMs: 20, overlapMs: 12 })
+      // Widening these (sequenceMs/seekWindowMs/overlapMs) beyond the
+      // library's own auto-tuned defaults was tried as an underrun
+      // mitigation and reverted: it traded that for a directly-caused,
+      // noticeable lag before pitch correction catches up after a speed
+      // change (bigger windows = more audio already "in flight" through
+      // the algorithm under the old rate before a new one takes over).
+      // Left at library defaults — the rAF/UI-update throttle below is a
+      // more direct fix for the likely actual cause of the underruns
+      // (main-thread contention with the worklet's real-time thread) and
+      // doesn't carry this latency cost.
       stNode.connect(gain)
       soundTouchNodeRef.current = stNode
       return stNode
