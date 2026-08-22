@@ -1,4 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { SoundTouchNode } from '@soundtouchjs/audio-worklet'
+import soundTouchProcessorUrl from '@soundtouchjs/audio-worklet/processor?url'
 
 // --- Why this exists ---
 //
@@ -73,6 +75,38 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 // node but never actually pausing the bridge element consuming its stream,
 // leaving it "live" and rendering nothing — which surfaced as stutter and
 // distortion on pause/resume. pause() now pauses the element explicitly.
+//
+// --- Pitch ---
+//
+// AudioBufferSourceNode.playbackRate is raw resampling, with no pitch
+// correction — unlike HTMLMediaElement.playbackRate, which browsers
+// pitch-correct by default. The old <audio>-based tempo control got that
+// correction for free; moving off the element loses it, and there's no
+// built-in replacement (confirmed against the Web Audio spec discussion —
+// left out on purpose, since there's no one agreed-upon time-stretch
+// algorithm to standardize). Left alone, "speed" now also means "key,"
+// which is unusable for practicing a tune in its actual key.
+//
+// Fixed by inserting a SoundTouchNode (from @soundtouchjs/audio-worklet, a
+// real-time WSOLA time-stretcher running in an AudioWorklet) between the
+// source and the gain node: source -> stNode -> gain -> mediaStreamDest ->
+// bridge element. `stNode.pitch` is pinned to 1.0 permanently — we only
+// ever want tempo to change, never the key — and `stNode.playbackRate` is
+// kept mirrored to the source's own playbackRate on every speed change, per
+// the library's documented pattern (it uses the source rate to keep its
+// internal buffer fed, and corrects pitch against that).
+//
+// The worklet processor module has to be registered on an AudioContext
+// before a SoundTouchNode can be constructed on it, and that registration
+// is asynchronous — the one genuinely new kind of async dependency in this
+// file. ensureContext() kicks it off (fire-and-forget) the moment a context
+// is created; startSourceAt() awaits it before starting playback, which by
+// then has almost always already resolved (module registration is fast;
+// load()'s fetch+decode round-trip is typically slower). If registration
+// fails for any reason (e.g. a browser without AudioWorklet support),
+// startSourceAt() falls back to connecting straight to the gain node —
+// audio still plays, just pitch-shifted with speed again, same as before
+// this fix existed, rather than going silent.
 
 const VOLUME_STORAGE_KEY = 'woodshed_playback_volume'
 const END_EPSILON = 0.02 // seconds of slack for "we've reached the end"
@@ -96,6 +130,8 @@ export default function useAudioEngine() {
   const ctxRef = useRef<AudioContext | null>(null)
   const gainRef = useRef<GainNode | null>(null)
   const mediaElRef = useRef<HTMLAudioElement | null>(null) // background-audio bridge, see note above
+  const soundTouchNodeRef = useRef<SoundTouchNode | null>(null) // pitch-preserving tempo, see "Pitch" note above
+  const soundTouchReadyRef = useRef<Promise<SoundTouchNode | null> | null>(null)
   const bufferRef = useRef<AudioBuffer | null>(null)
   const sourceRef = useRef<AudioBufferSourceNode | null>(null)
   const animFrameRef = useRef<number | null>(null)
@@ -161,8 +197,27 @@ export default function useAudioEngine() {
       ctxRef.current = ctx
       gainRef.current = gain
       mediaElRef.current = audioEl
+      soundTouchNodeRef.current = null
+      // Fire-and-forget: registers the worklet module and constructs the
+      // node, resolving to it (or null on failure — see the "Pitch" note
+      // above for the fallback path). startSourceAt() awaits this.
+      soundTouchReadyRef.current = setupSoundTouch(ctx, gain)
     }
     return ctxRef.current
+  }
+
+  async function setupSoundTouch(ctx: AudioContext, gain: GainNode): Promise<SoundTouchNode | null> {
+    try {
+      await SoundTouchNode.register(ctx, soundTouchProcessorUrl)
+      const stNode = new SoundTouchNode({ context: ctx })
+      stNode.pitch.value = 1.0 // never shift key — only ever adjust tempo
+      stNode.connect(gain)
+      soundTouchNodeRef.current = stNode
+      return stNode
+    } catch (err) {
+      console.error('SoundTouch worklet failed to register — tempo changes will shift pitch until this is fixed:', err)
+      return null
+    }
   }
 
   function stopSourceNode() {
@@ -179,20 +234,27 @@ export default function useAudioEngine() {
   // instead of being driven by rAF polling — that's what keeps a looped
   // segment actually looping while the page is backgrounded and JS is
   // throttled (see the "Backgrounding" note at the top of this file).
-  function startSourceAt(offset: number) {
+  async function startSourceAt(offset: number) {
     const ctx = ensureContext()
     const buf = bufferRef.current
     if (!buf || !gainRef.current) return
+    if (!soundTouchNodeRef.current && soundTouchReadyRef.current) {
+      await soundTouchReadyRef.current // resolves fast in practice; see "Pitch" note above
+    }
+    const stNode = soundTouchNodeRef.current
     const src = ctx.createBufferSource()
     src.buffer = buf
     src.playbackRate.value = rateRef.current
+    if (stNode) {
+      stNode.playbackRate.value = rateRef.current
+    }
     const loop = loopSegmentRef.current
     if (loop) {
       src.loop = true
       src.loopStart = loop.start_time
       src.loopEnd = loop.end_time
     }
-    src.connect(gainRef.current)
+    src.connect(stNode ?? gainRef.current)
     const clamped = Math.max(0, Math.min(buf.duration, offset))
     src.start(0, clamped)
     sourceRef.current = src
@@ -248,6 +310,7 @@ export default function useAudioEngine() {
     }
     rateRef.current = rate
     if (sourceRef.current) sourceRef.current.playbackRate.value = rate
+    if (soundTouchNodeRef.current) soundTouchNodeRef.current.playbackRate.value = rate
     setSpeedState(rate)
   }
 
@@ -263,13 +326,13 @@ export default function useAudioEngine() {
     if (rounded >= ramp.end) setRampReachedMax(true)
   }
 
-  function seekTo(time: number) {
+  async function seekTo(time: number) {
     const buf = bufferRef.current
     if (!buf) return
     const clamped = Math.max(0, Math.min(buf.duration, time))
     if (isPlayingRef.current) {
       stopSourceNode()
-      startSourceAt(clamped)
+      await startSourceAt(clamped)
     } else {
       clockRef.current.bufferOffset = clamped
     }
@@ -334,7 +397,7 @@ export default function useAudioEngine() {
     const resumePromise = ctx.state !== 'running' ? ctx.resume() : Promise.resolve()
     const elPlayPromise = mediaElRef.current ? mediaElRef.current.play().catch(() => {}) : Promise.resolve()
     await Promise.all([resumePromise, elPlayPromise])
-    startSourceAt(clockRef.current.bufferOffset)
+    await startSourceAt(clockRef.current.bufferOffset)
     isPlayingRef.current = true
     setIsPlaying(true)
   }, [])
@@ -378,12 +441,12 @@ export default function useAudioEngine() {
     }
   }, [play, pause])
 
-  const restart = useCallback(() => {
-    seekTo(loopSegmentRef.current ? loopSegmentRef.current.start_time : 0)
+  const restart = useCallback(async () => {
+    await seekTo(loopSegmentRef.current ? loopSegmentRef.current.start_time : 0)
   }, [])
 
-  const seek = useCallback((time: number) => {
-    seekTo(time)
+  const seek = useCallback(async (time: number) => {
+    await seekTo(time)
   }, [])
 
   const setSpeed = useCallback((rate: number) => {
@@ -400,11 +463,11 @@ export default function useAudioEngine() {
     localStorage.setItem(VOLUME_STORAGE_KEY, String(clamped))
   }, [])
 
-  const loopOn = useCallback((segment: EngineSegment) => {
+  const loopOn = useCallback(async (segment: EngineSegment) => {
     loopSegmentRef.current = segment
     setLoopSegmentState(segment)
     setRampReachedMax(false)
-    seekTo(segment.start_time)
+    await seekTo(segment.start_time)
   }, [])
 
   const loopOff = useCallback(() => {
@@ -493,6 +556,8 @@ export default function useAudioEngine() {
         mediaElRef.current.srcObject = null
         mediaElRef.current.remove()
       }
+      soundTouchNodeRef.current = null
+      soundTouchReadyRef.current = null
     }
   }, [])
 
