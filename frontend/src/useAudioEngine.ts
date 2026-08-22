@@ -211,6 +211,14 @@ export default function useAudioEngine() {
       await SoundTouchNode.register(ctx, soundTouchProcessorUrl)
       const stNode = new SoundTouchNode({ context: ctx })
       stNode.pitch.value = 1.0 // never shift key — only ever adjust tempo
+      // Wider processing/overlap windows than the (auto-tuned, ~50-125ms
+      // sequence / ~15-25ms seek window / 8ms overlap) defaults — trades a
+      // bit more latency for more slack against transient scheduling
+      // jitter on weaker/busier hardware, which is what an underrun
+      // (dropping to raw, un-pitch-corrected audio until the buffer
+      // refills) looks and sounds like. Unverified on real iOS hardware —
+      // see the "Pitch" note above.
+      stNode.setStretchParameters({ sequenceMs: 100, seekWindowMs: 20, overlapMs: 12 })
       stNode.connect(gain)
       soundTouchNodeRef.current = stNode
       return stNode
@@ -347,6 +355,26 @@ export default function useAudioEngine() {
   // needs to survive backgrounding. Reads everything through refs so it
   // never needs to be recreated (and the polling loop never restarts) when
   // loop/ramp state changes.
+  //
+  // Still polls every frame (loop-pass/end-of-track detection wants that
+  // precision), but throttles the React state update that drives it —
+  // a progress bar doesn't need 60 re-renders/sec, and cutting that down
+  // to ~15 leaves more main-thread headroom for the SoundTouch worklet's
+  // real-time scheduling, which is one plausible contributor to the
+  // intermittent pitch-correction dropouts reported on real iOS hardware
+  // (unverified — see the "Pitch" note above; this couldn't be reproduced
+  // in desktop testing to confirm it helps, just a reasonable thing to
+  // stop doing regardless).
+  const UI_UPDATE_INTERVAL_MS = 66
+  const lastUiUpdateRef = useRef(0)
+  function throttledSetCurrentTime(time: number) {
+    const now = performance.now()
+    if (now - lastUiUpdateRef.current >= UI_UPDATE_INTERVAL_MS) {
+      lastUiUpdateRef.current = now
+      setCurrentTime(time)
+    }
+  }
+
   const tick = useCallback(() => {
     if (!isPlayingRef.current) return
     const loop = loopSegmentRef.current
@@ -358,7 +386,7 @@ export default function useAudioEngine() {
         loopPassesRef.current = passes
         for (let i = 0; i < newPasses; i++) applyRamp()
       }
-      setCurrentTime(computeCurrentBufferTime())
+      throttledSetCurrentTime(computeCurrentBufferTime())
     } else {
       const time = computeCurrentBufferTime()
       const dur = bufferRef.current?.duration ?? 0
@@ -370,7 +398,7 @@ export default function useAudioEngine() {
         setIsPlaying(false)
         return // stopped — don't reschedule
       }
-      setCurrentTime(time)
+      throttledSetCurrentTime(time)
     }
 
     animFrameRef.current = requestAnimationFrame(tick)
